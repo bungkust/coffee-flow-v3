@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoffeeFlow Iconography System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#b86614",
+                        "primary-light": "#e6cba8",
+                        "primary-dark": "#7d4208",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#211911",
+                        "neutral-surface": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.5rem",
+                        "xl": "2rem",
+                        "2xl": "2.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "soft": "0 4px 20px -2px rgba(184, 102, 20, 0.08)",
+                        "glow": "0 0 15px rgba(184, 102, 20, 0.3)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar to match theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e6cba8; 
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b86614; 
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#211911] dark:text-[#f8f7f6] font-display min-h-screen antialiased selection:bg-primary/20 selection:text-primary">
+<div class="relative mx-auto flex h-full min-h-screen w-full max-w-md flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+<!-- Sticky Header -->
+<header class="sticky top-0 z-20 flex flex-col bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center justify-between p-4 pb-2">
+<button class="group flex size-10 items-center justify-center rounded-full bg-white dark:bg-[#32281e] shadow-sm hover:shadow-md transition-all active:scale-95 text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="text-sm font-bold uppercase tracking-widest text-primary/80">Design System</h1>
+<h2 class="text-lg font-bold leading-tight text-current">Iconography</h2>
+</div>
+<button class="group flex size-10 items-center justify-center rounded-full bg-white dark:bg-[#32281e] shadow-sm hover:shadow-md transition-all active:scale-95 text-primary">
+<span class="material-symbols-outlined">ios_share</span>
+</button>
+</div>
+<div class="px-6 py-4">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-2xl font-extrabold tracking-tight text-current">Visual Language</h2>
+<p class="text-sm font-medium text-primary/60 dark:text-primary-light/60">Version 1.0 • Updated Oct 2023</p>
+</div>
+<div class="flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-glow">
+<span class="material-symbols-outlined" style="font-size: 28px;">coffee</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-8">
+<!-- Section 1: Brewing Methods -->
+<section>
+<div class="flex items-center gap-3 px-2 pb-4">
+<div class="h-8 w-1.5 rounded-full bg-primary"></div>
+<h3 class="text-lg font-bold text-current">Brewing Methods</h3>
+<span class="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">7 Assets</span>
+</div>
+<div class="grid grid-cols-3 gap-3">
+<!-- Card Item -->
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">coffee_maker</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">V60</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">science</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">Chemex</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">opacity</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">Aeropress</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">local_cafe</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">French Press</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">kitchen</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">Moka Pot</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
+<div class="flex size-12 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">experiment</span>
+</div>
+<span class="text-xs font-semibold text-center text-gray-600 dark:text-gray-300">Siphon</span>
+</div>
+<div class="group flex flex-col items-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-4 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg col-span-3">
+<div class="flex w-full items-center justify-between px-4">
+<span class="text-xs font-semibold text-gray-600 dark:text-gray-300">Espresso Machine</span>
+<div class="flex size-10 items-center justify-center rounded-full bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">mode_heat</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Tools & Params -->
+<section>
+<div class="flex items-center gap-3 px-2 pb-4">
+<div class="h-8 w-1.5 rounded-full bg-primary"></div>
+<h3 class="text-lg font-bold text-current">Tools &amp; Params</h3>
+<span class="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">5 Assets</span>
+</div>
+<div class="flex gap-4 overflow-x-auto px-2 pb-2 scrollbar-hide snap-x">
+<div class="snap-start shrink-0">
+<div class="group flex h-28 w-24 flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-2 shadow-soft transition-all hover:scale-105">
+<span class="material-symbols-outlined text-3xl text-primary">grain</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Grinder</span>
+</div>
+</div>
+<div class="snap-start shrink-0">
+<div class="group flex h-28 w-24 flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-2 shadow-soft transition-all hover:scale-105">
+<span class="material-symbols-outlined text-3xl text-primary">water_drop</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Kettle</span>
+</div>
+</div>
+<div class="snap-start shrink-0">
+<div class="group flex h-28 w-24 flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-2 shadow-soft transition-all hover:scale-105">
+<span class="material-symbols-outlined text-3xl text-primary">thermostat</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Temp</span>
+</div>
+</div>
+<div class="snap-start shrink-0">
+<div class="group flex h-28 w-24 flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-2 shadow-soft transition-all hover:scale-105">
+<span class="material-symbols-outlined text-3xl text-primary">scale</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Scale</span>
+</div>
+</div>
+<div class="snap-start shrink-0">
+<div class="group flex h-28 w-24 flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-[#2a2018] p-2 shadow-soft transition-all hover:scale-105">
+<span class="material-symbols-outlined text-3xl text-primary">timer</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Timer</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: App Navigation -->
+<section>
+<div class="flex items-center gap-3 px-2 pb-4">
+<div class="h-8 w-1.5 rounded-full bg-primary"></div>
+<h3 class="text-lg font-bold text-current">App Navigation</h3>
+<span class="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">5 Assets</span>
+</div>
+<div class="rounded-3xl bg-white dark:bg-[#2a2018] p-6 shadow-soft mx-2">
+<div class="flex justify-between items-end">
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<span class="material-symbols-outlined text-primary text-3xl group-hover:scale-110 transition-transform">home</span>
+<span class="text-[10px] font-semibold text-primary">Home</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-gray-800 dark:text-gray-200 text-3xl">menu_book</span>
+<span class="text-[10px] font-semibold text-gray-500">Library</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-gray-800 dark:text-gray-200 text-3xl">auto_stories</span>
+<span class="text-[10px] font-semibold text-gray-500">Journal</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-gray-800 dark:text-gray-200 text-3xl">settings</span>
+<span class="text-[10px] font-semibold text-gray-500">Settings</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-40 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-gray-800 dark:text-gray-200 text-3xl">person</span>
+<span class="text-[10px] font-semibold text-gray-500">Profile</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Actions -->
+<section>
+<div class="flex items-center gap-3 px-2 pb-4">
+<div class="h-8 w-1.5 rounded-full bg-primary"></div>
+<h3 class="text-lg font-bold text-current">Action Icons</h3>
+<span class="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">5 Assets</span>
+</div>
+<div class="grid grid-cols-5 gap-2 px-2">
+<div class="aspect-square flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="aspect-square flex items-center justify-center rounded-xl bg-white dark:bg-[#2a2018] text-gray-600 dark:text-gray-300 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<span class="material-symbols-outlined">search</span>
+</div>
+<div class="aspect-square flex items-center justify-center rounded-xl bg-white dark:bg-[#2a2018] text-gray-600 dark:text-gray-300 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<span class="material-symbols-outlined">ios_share</span>
+</div>
+<div class="aspect-square flex items-center justify-center rounded-xl bg-white dark:bg-[#2a2018] text-gray-600 dark:text-gray-300 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<span class="material-symbols-outlined">favorite</span>
+</div>
+<div class="aspect-square flex items-center justify-center rounded-xl bg-white dark:bg-[#2a2018] text-gray-600 dark:text-gray-300 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<span class="material-symbols-outlined">history</span>
+</div>
+</div>
+<div class="grid grid-cols-5 gap-2 px-2 pt-2 text-center">
+<span class="text-[10px] font-medium text-gray-400">Add</span>
+<span class="text-[10px] font-medium text-gray-400">Search</span>
+<span class="text-[10px] font-medium text-gray-400">Share</span>
+<span class="text-[10px] font-medium text-gray-400">Fave</span>
+<span class="text-[10px] font-medium text-gray-400">History</span>
+</div>
+</section>
+</main>
+<!-- Floating Action Button for Style Guide -->
+<div class="absolute bottom-6 right-6 z-30">
+<button class="flex h-14 w-14 items-center justify-center rounded-full bg-[#181411] text-white shadow-2xl hover:scale-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</body></html>

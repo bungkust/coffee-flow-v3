@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CoffeeFlow Component Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#bd580f",
+                        "primary-hover": "#a04a0b",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#221810",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Work Sans", "sans-serif"],
+                        "sans": ["Work Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Checkbox/Radio Styles since Tailwind forms plugin might not be enough for specific design */
+        .custom-checkbox:checked {
+            background-color: #bd580f;
+            border-color: #bd580f;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        }
+        .custom-radio:checked {
+            background-color: #bd580f;
+            border-color: #bd580f;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3ccircle cx='8' cy='8' r='3'/%3e%3c/svg%3e");
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-slate-900 font-display antialiased min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-surface-light border-b border-stone-200 px-6 py-4 shadow-sm">
+<div class="flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 tracking-tight">Design System</h1>
+<p class="text-sm text-stone-500 font-medium mt-1">CoffeeFlow iOS • v1.0</p>
+</div>
+<div class="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">palette</span>
+</div>
+</div>
+</header>
+<main class="flex-1 p-6 pb-32 space-y-12 max-w-md mx-auto w-full">
+<!-- 01. Typography -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">01. Typography</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="space-y-4">
+<div>
+<h1 class="text-3xl font-bold text-slate-900 leading-tight">Heading 1</h1>
+<p class="text-xs text-stone-400 mt-1">Work Sans Bold / 30px</p>
+</div>
+<div>
+<h2 class="text-xl font-bold text-slate-900 leading-tight">Heading 2</h2>
+<p class="text-xs text-stone-400 mt-1">Work Sans Bold / 20px</p>
+</div>
+<div>
+<p class="text-base text-slate-700 leading-relaxed">
+                        Body text is used for standard content descriptions. Coffee brewing is an art form that requires precision and passion.
+                    </p>
+<p class="text-xs text-stone-400 mt-1">Work Sans Regular / 16px</p>
+</div>
+<div>
+<p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Caption / Label</p>
+<p class="text-xs text-stone-400 mt-1">Work Sans Medium / 12px</p>
+</div>
+</div>
+</section>
+<!-- 02. Buttons -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">02. Buttons</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="space-y-4">
+<!-- Primary -->
+<div class="flex flex-col gap-2">
+<button class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3.5 px-6 rounded-lg shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">coffee_maker</span>
+                        Start Brewing
+                    </button>
+<div class="flex justify-between text-xs text-stone-400 px-1"><span>Primary Large</span></div>
+</div>
+<!-- Secondary & Outline -->
+<div class="grid grid-cols-2 gap-3">
+<button class="w-full bg-white border border-primary text-primary font-semibold py-2.5 px-4 rounded-lg active:bg-primary/5 transition-colors">
+                        Save Recipe
+                    </button>
+<button class="w-full bg-stone-100 text-stone-600 font-semibold py-2.5 px-4 rounded-lg hover:bg-stone-200 transition-colors">
+                        Cancel
+                    </button>
+</div>
+<div class="flex justify-between text-xs text-stone-400 px-1"><span>Secondary Outline</span> <span>Neutral / Ghost</span></div>
+<!-- Icon Only & Small -->
+<div class="flex items-center gap-4">
+<button class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+<button class="h-10 w-10 rounded-full border border-stone-200 text-stone-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<button class="text-primary font-semibold text-sm hover:underline">
+                        Text Link
+                    </button>
+</div>
+</div>
+</section>
+<!-- 03. Inputs -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">03. Inputs</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="space-y-4">
+<!-- Default -->
+<div class="space-y-1.5">
+<label class="text-sm font-medium text-slate-700">Bean Name</label>
+<input class="w-full rounded-lg border-stone-200 bg-white px-4 py-3 text-slate-900 placeholder-stone-400 focus:border-primary focus:ring-primary/20 transition-shadow" placeholder="e.g. Ethiopian Yirgacheffe" type="text"/>
+</div>
+<!-- Active -->
+<div class="space-y-1.5">
+<label class="text-sm font-medium text-primary">Grind Size (Active)</label>
+<input class="w-full rounded-lg border-primary bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10" type="text" value="Medium-Fine"/>
+</div>
+<!-- Error -->
+<div class="space-y-1.5">
+<label class="text-sm font-medium text-red-600">Water Amount</label>
+<div class="relative">
+<input class="w-full rounded-lg border-red-500 bg-red-50 px-4 py-3 text-red-900 focus:border-red-500 focus:ring-red-200" type="text" value="abc"/>
+<div class="absolute right-3 top-3 text-red-500">
+<span class="material-symbols-outlined text-[20px]">error</span>
+</div>
+</div>
+<p class="text-xs text-red-600">Please enter a valid number in ml.</p>
+</div>
+<!-- Search -->
+<div class="relative">
+<div class="absolute left-3 top-3 text-stone-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full rounded-full border-none bg-stone-100 px-4 py-2.5 pl-10 text-slate-900 placeholder-stone-400 focus:ring-2 focus:ring-primary/20" placeholder="Search recipes..." type="text"/>
+</div>
+</div>
+</section>
+<!-- 04. Selection Controls -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">04. Selection</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<!-- Toggles -->
+<div class="flex items-center justify-between">
+<span class="text-base text-slate-700">Notifications</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Checkboxes & Radios -->
+<div class="flex gap-8">
+<div class="flex flex-col gap-3">
+<label class="flex items-center gap-3">
+<input checked="" class="custom-checkbox h-5 w-5 rounded border-stone-300 text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-sm text-slate-700">Iced</span>
+</label>
+<label class="flex items-center gap-3">
+<input class="custom-checkbox h-5 w-5 rounded border-stone-300 text-primary focus:ring-primary/20" type="checkbox"/>
+<span class="text-sm text-slate-700">Milk</span>
+</label>
+</div>
+<div class="flex flex-col gap-3">
+<label class="flex items-center gap-3">
+<input checked="" class="custom-radio h-5 w-5 border-stone-300 text-primary focus:ring-primary/20" name="temp" type="radio"/>
+<span class="text-sm text-slate-700">Celsius</span>
+</label>
+<label class="flex items-center gap-3">
+<input class="custom-radio h-5 w-5 border-stone-300 text-primary focus:ring-primary/20" name="temp" type="radio"/>
+<span class="text-sm text-slate-700">Fahrenheit</span>
+</label>
+</div>
+</div>
+<!-- Chips -->
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-full bg-primary text-white text-sm font-medium shadow-sm">Espresso</button>
+<button class="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">Pour Over</button>
+<button class="px-3 py-1.5 rounded-full bg-white border border-stone-200 text-slate-600 text-sm font-medium">French Press</button>
+<button class="px-3 py-1.5 rounded-full bg-white border border-stone-200 text-slate-600 text-sm font-medium">Aeropress</button>
+</div>
+</div>
+</section>
+<!-- 05. Cards -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">05. Cards</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="space-y-4">
+<!-- Recipe Card -->
+<div class="bg-surface-light rounded-xl overflow-hidden shadow-sm border border-stone-100">
+<div class="h-32 w-full bg-stone-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="Close up of coffee pouring" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwbvy-1k4VWk7uIfaDBnG2bSm_RPDaSr8gDqFiOaUXyIujlRRy-WSIlYsp8TLJerwRCbZcdQXzdfriJih0kB3gLxyBdCys2JDhgxMD26toFQXDsLZj60arK_DY3Xz0PStBpE4ot7rYsBYUWJGEnyXUt17uqUsLXP5ASrFAU_W9YNthX67r0ypwM1yBBk0-Ol8ar2gvmk6vEdXOPdQshLs7iSR6DM7D0WYwvTomseefY8mzJhnsnDZymbGJ7HRa6-FOFF7Y2tUXM0s"/>
+<div class="absolute bottom-2 left-3 z-20 flex items-center gap-1 text-white">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill">star</span>
+<span class="text-xs font-bold">4.8</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-bold text-lg text-slate-900">Morning V60</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase">Easy</span>
+</div>
+<p class="text-xs text-stone-500 mb-3">By Alex Barista • 5 mins</p>
+<div class="flex items-center gap-4 text-xs font-medium text-slate-600">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[16px]">water_drop</span>
+                                250ml
+                            </div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[16px]">grain</span>
+                                15g
+                            </div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[16px]">thermostat</span>
+                                93°C
+                            </div>
+</div>
+</div>
+</div>
+<!-- Journal Entry Card -->
+<div class="bg-surface-light rounded-xl p-4 shadow-sm border border-stone-100 flex gap-4 items-start">
+<div class="h-12 w-12 rounded-lg bg-stone-100 flex items-center justify-center shrink-0 text-stone-400">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<h4 class="font-semibold text-slate-900">Colombia Huila</h4>
+<span class="text-xs text-stone-400">Oct 24</span>
+</div>
+<p class="text-sm text-slate-600 line-clamp-2">The floral notes were really prominent today. Adjusted grind size slightly coarser which reduced bitterness.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 06. Feedback & Progress -->
+<section>
+<div class="flex items-center gap-2 mb-4">
+<span class="text-xs font-bold uppercase tracking-wider text-stone-400">06. Feedback</span>
+<div class="h-px bg-stone-200 flex-1"></div>
+</div>
+<div class="space-y-6">
+<!-- Progress Bar -->
+<div>
+<div class="flex justify-between text-xs font-medium text-slate-600 mb-2">
+<span>Brewing...</span>
+<span>45%</span>
+</div>
+<div class="w-full bg-stone-200 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<!-- Toast Notification -->
+<div class="bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-400 text-[20px]">check_circle</span>
+<span class="text-sm font-medium">Recipe saved successfully</span>
+</div>
+<button class="text-xs font-bold text-stone-400 hover:text-white uppercase">Undo</button>
+</div>
+<!-- Alert/Modal Style -->
+<div class="bg-white rounded-xl p-5 shadow-sm border border-stone-100 text-center">
+<div class="h-10 w-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+<span class="material-symbols-outlined">delete</span>
+</div>
+<h4 class="font-bold text-slate-900 mb-1">Delete Recipe?</h4>
+<p class="text-sm text-stone-500 mb-4">This action cannot be undone.</p>
+<div class="flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-stone-100 text-stone-600 text-sm font-semibold">Cancel</button>
+<button class="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold">Delete</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Component -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-light border-t border-stone-200 px-6 pb-6 pt-3 z-40">
+<div class="flex justify-between items-end max-w-md mx-auto">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="House">
+<span class="material-symbols-outlined text-[24px] fill-current" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<p class="text-primary text-[10px] font-bold leading-normal tracking-[0.015em]">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-stone-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Recipes</p>
+</a>
+<!-- Center Action Button (Floating Style for Emphasis) -->
+<div class="relative -top-5">
+<button class="h-14 w-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center transform hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[28px]">coffee</span>
+</button>
+</div>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-stone-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">timer</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Brew</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-stone-400 hover:text-primary transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Settings</p>
+</a>
+</div>
+</div>
+</body></html>
