@@ -120,5 +120,18 @@ export const MIGRATIONS = [
   {
     version: 3,
     sql: `ALTER TABLE recipes ADD COLUMN is_favorite INTEGER DEFAULT 0;`
+  },
+  {
+    version: 4,
+    sql: `
+      ALTER TABLE recipes ADD COLUMN difficulty TEXT;
+      ALTER TABLE recipes ADD COLUMN style TEXT;
+      ALTER TABLE recipes ADD COLUMN description_short TEXT;
+      ALTER TABLE recipes ADD COLUMN description_detailed TEXT;
+      ALTER TABLE recipes ADD COLUMN philosophy TEXT;
+      ALTER TABLE recipes ADD COLUMN best_for_tags TEXT;
+      ALTER TABLE recipes ADD COLUMN not_recommended_tags TEXT;
+      ALTER TABLE recipe_steps ADD COLUMN instruction TEXT;
+    `
   }
 ];

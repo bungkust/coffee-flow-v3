@@ -17,6 +17,7 @@ export interface BrewStep {
     label: string;
     duration_seconds: number;
     target_weight?: number;
+    instruction?: string;
     created_at: string;
     updated_at: string;
 }
@@ -29,6 +30,13 @@ export interface Recipe {
     grind_size?: string;
     temperature?: number;
     total_water?: number;
+    difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+    style?: string;
+    description_short?: string;
+    description_detailed?: string;
+    philosophy?: string;
+    best_for_tags?: string[]; // JSON array in DB
+    not_recommended_tags?: string[]; // JSON array in DB
     is_custom: boolean;
     is_favorite?: boolean;
     version: number;

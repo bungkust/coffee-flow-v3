@@ -97,7 +97,9 @@ export const RecipePreparationPage = () => {
                 <div className="grid grid-cols-4 gap-2">
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{recipe.ratio.split(':')[0]}g</span>
+                        <span className="text-sm font-bold text-[#181411]">
+                            {Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'))}g
+                        </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Coffee</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
@@ -126,22 +128,22 @@ export const RecipePreparationPage = () => {
                 </h2>
                 <div className="space-y-3">
                     <CheckItem
-                        label={`Weigh & Grind ${recipe.ratio.split(':')[0]}g coffee`}
+                        label={`Weigh ${Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'))}g coffee & Grind (${recipe.grind_size || 'Medium'})`}
                         checked={checklist.coffee}
                         onToggle={() => toggleCheck('coffee')}
                     />
                     <CheckItem
-                        label={`Heat water to ${recipe.temperature}°C`}
+                        label={`Heat ${recipe.total_water}ml water to ${recipe.temperature}°C`}
                         checked={checklist.water}
                         onToggle={() => toggleCheck('water')}
                     />
                     <CheckItem
-                        label="Rinse filter paper & preheat"
+                        label="Rinse filter paper & preheat dripper"
                         checked={checklist.filter}
                         onToggle={() => toggleCheck('filter')}
                     />
                     <CheckItem
-                        label="Place server & scale"
+                        label="Add coffee to dripper & tare scale"
                         checked={checklist.scale}
                         onToggle={() => toggleCheck('scale')}
                     />

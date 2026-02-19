@@ -71,6 +71,8 @@ export class BrewService {
             is_custom: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            best_for_tags: original.best_for_tags ? [...original.best_for_tags] : [],
+            not_recommended_tags: original.not_recommended_tags ? [...original.not_recommended_tags] : [],
             steps: original.steps.map(s => ({
                 ...s,
                 id: crypto.randomUUID(),

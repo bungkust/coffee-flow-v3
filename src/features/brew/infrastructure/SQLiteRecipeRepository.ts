@@ -21,6 +21,8 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
                 ...row,
                 is_custom: row.is_custom === 1,
                 is_favorite: row.is_favorite === 1,
+                best_for_tags: row.best_for_tags ? JSON.parse(row.best_for_tags) : [],
+                not_recommended_tags: row.not_recommended_tags ? JSON.parse(row.not_recommended_tags) : [],
                 steps: stepsResult.values || []
             });
         }
@@ -43,6 +45,8 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
             ...row,
             is_custom: row.is_custom === 1,
             is_favorite: row.is_favorite === 1,
+            best_for_tags: row.best_for_tags ? JSON.parse(row.best_for_tags) : [],
+            not_recommended_tags: row.not_recommended_tags ? JSON.parse(row.not_recommended_tags) : [],
             steps: stepsResult.values || []
         };
     }
@@ -52,8 +56,8 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
 
         await this.db.run(
             `INSERT OR REPLACE INTO recipes 
-      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, version, created_at, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, version, created_at, updated_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 recipe.id,
                 recipe.method_id,
@@ -64,18 +68,26 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
                 recipe.total_water,
                 recipe.is_custom ? 1 : 0,
                 recipe.is_favorite ? 1 : 0,
+                recipe.difficulty,
+                recipe.style,
+                recipe.description_short,
+                recipe.description_detailed,
+                recipe.philosophy,
+                JSON.stringify(recipe.best_for_tags || []),
+                JSON.stringify(recipe.not_recommended_tags || []),
                 recipe.version || 1,
                 recipe.created_at || now,
                 now
             ]
         );
 
-        // Update steps
+        // Delete existing steps and re-insert
         await this.db.run('DELETE FROM recipe_steps WHERE recipe_id = ?', [recipe.id]);
+
         for (const step of recipe.steps) {
             await this.db.run(
-                `INSERT INTO recipe_steps (id, recipe_id, step_order, label, duration_seconds, target_weight, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO recipe_steps (id, recipe_id, step_order, label, duration_seconds, target_weight, instruction, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     step.id || crypto.randomUUID(),
                     recipe.id,
@@ -83,6 +95,7 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
                     step.label,
                     step.duration_seconds,
                     step.target_weight,
+                    step.instruction,
                     step.created_at || now,
                     now
                 ]
