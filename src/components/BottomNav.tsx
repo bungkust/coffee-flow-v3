@@ -16,7 +16,7 @@ export const BottomNav = ({ activeTab }: BottomNavProps) => {
                     active={activeTab === 'home'}
                 />
                 <NavItem
-                    to="/create-brew"
+                    to="/brew-methods"
                     icon="coffee_maker"
                     label="Brewing"
                     active={activeTab === 'brewing'}

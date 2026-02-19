@@ -30,6 +30,7 @@ export interface Recipe {
     temperature?: number;
     total_water?: number;
     is_custom: boolean;
+    is_favorite?: boolean;
     version: number;
     steps: BrewStep[];
     created_at: string;

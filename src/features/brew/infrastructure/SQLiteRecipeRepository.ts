@@ -20,6 +20,7 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
             recipes.push({
                 ...row,
                 is_custom: row.is_custom === 1,
+                is_favorite: row.is_favorite === 1,
                 steps: stepsResult.values || []
             });
         }
@@ -41,6 +42,7 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
         return {
             ...row,
             is_custom: row.is_custom === 1,
+            is_favorite: row.is_favorite === 1,
             steps: stepsResult.values || []
         };
     }
@@ -50,8 +52,8 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
 
         await this.db.run(
             `INSERT OR REPLACE INTO recipes 
-      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, version, created_at, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, version, created_at, updated_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 recipe.id,
                 recipe.method_id,
@@ -61,6 +63,7 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
                 recipe.temperature,
                 recipe.total_water,
                 recipe.is_custom ? 1 : 0,
+                recipe.is_favorite ? 1 : 0,
                 recipe.version || 1,
                 recipe.created_at || now,
                 now

@@ -67,6 +67,22 @@ export const RecipeListPage = () => {
         }
     };
 
+    const handleToggleFavorite = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        try {
+            // Optimistic update
+            setRecipes(current =>
+                current.map(r => r.id === id ? { ...r, is_favorite: !r.is_favorite } : r)
+            );
+            await brewService.toggleFavorite(id);
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+            // Revert on failure
+            fetchRecipes();
+        }
+    };
+
+
     const handleDeleteClick = (e: React.MouseEvent, recipe: any) => {
         e.stopPropagation();
         setRecipeToDelete(recipe);
@@ -157,8 +173,11 @@ export const RecipeListPage = () => {
                                     <p className="text-xs text-gray-500 font-medium">Synced from {recipe.method_id}</p>
                                 </div>
                                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                                    <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-accent-light text-primary transition-colors cursor-pointer">
-                                        <Icon name="bookmark" className="text-[20px]" style={{ fontVariationSettings: "'FILL' 0" }} />
+                                    <button
+                                        onClick={(e) => handleToggleFavorite(e, recipe.id)}
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-accent-light text-primary transition-colors cursor-pointer"
+                                    >
+                                        <Icon name="bookmark" className="text-[20px]" style={{ fontVariationSettings: recipe.is_favorite ? "'FILL' 1" : "'FILL' 0" }} />
                                     </button>
                                     <div className="relative">
                                         <button

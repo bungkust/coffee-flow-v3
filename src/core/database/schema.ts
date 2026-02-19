@@ -116,5 +116,9 @@ export const MIGRATIONS = [
       ALTER TABLE brew_logs ADD COLUMN bitterness INTEGER;
       ALTER TABLE brew_logs ADD COLUMN flavor_tags TEXT;
     `
+  },
+  {
+    version: 3,
+    sql: `ALTER TABLE recipes ADD COLUMN is_favorite INTEGER DEFAULT 0;`
   }
 ];

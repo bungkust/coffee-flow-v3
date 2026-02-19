@@ -81,4 +81,17 @@ export class BrewService {
 
         await this.recipeRepo.save(clone);
     }
+
+    async toggleFavorite(id: EntityId): Promise<void> {
+        const recipe = await this.recipeRepo.findById(id);
+        if (!recipe) throw new Error('Recipe not found');
+
+        const updatedRecipe = {
+            ...recipe,
+            is_favorite: !recipe.is_favorite,
+            updated_at: new Date().toISOString()
+        };
+
+        await this.recipeRepo.save(updatedRecipe);
+    }
 }
