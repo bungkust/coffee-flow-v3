@@ -56,6 +56,10 @@ export class BrewService {
         return this.logRepo.getRecentWithRecipes(limit);
     }
 
+    async getAllLogs() {
+        return this.logRepo.getRecentWithRecipesAll();
+    }
+
     async deleteRecipe(id: EntityId): Promise<void> {
         await this.recipeRepo.delete(id);
     }

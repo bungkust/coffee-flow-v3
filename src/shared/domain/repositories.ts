@@ -8,10 +8,12 @@ export interface IRecipeRepository {
 }
 
 export interface IBrewLogRepository {
+    findAll(): Promise<BrewLog[]>;
     findAllByRecipeId(recipeId: EntityId): Promise<BrewLog[]>;
     save(log: BrewLog): Promise<void>;
     getStats(): Promise<any>;
     getRecentWithRecipes(limit?: number): Promise<any[]>;
+    getRecentWithRecipesAll(): Promise<any[]>;
 }
 
 export interface IDrinkRepository {
@@ -22,6 +24,9 @@ export interface IDrinkRepository {
 }
 
 export interface IDrinkLogRepository {
+    findAll(): Promise<DrinkLog[]>;
     findAllByDrinkId(drinkId: EntityId): Promise<DrinkLog[]>;
     save(log: DrinkLog): Promise<void>;
+    getStats(): Promise<any>;
+    getRecentWithDrinks(): Promise<any[]>;
 }

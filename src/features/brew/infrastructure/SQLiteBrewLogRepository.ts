@@ -33,6 +33,11 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
         );
     }
 
+    async findAll(): Promise<BrewLog[]> {
+        const result = await this.db.query('SELECT * FROM brew_logs ORDER BY brewed_at DESC');
+        return result.values || [];
+    }
+
     async getStats(): Promise<any> {
         const weeklyBrews = await this.db.query(
             "SELECT COUNT(*) as count FROM brew_logs WHERE brewed_at >= date('now', '-7 days')"
@@ -59,6 +64,16 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
             ORDER BY b.brewed_at DESC
             LIMIT ?
         `, [limit]);
+        return result.values || [];
+    }
+
+    async getRecentWithRecipesAll(): Promise<any[]> {
+        const result = await this.db.query(`
+            SELECT b.*, r.name as recipe_name, r.method_id, r.ratio 
+            FROM brew_logs b
+            JOIN recipes r ON b.recipe_id = r.id
+            ORDER BY b.brewed_at DESC
+        `);
         return result.values || [];
     }
 }

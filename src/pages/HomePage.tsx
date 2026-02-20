@@ -123,7 +123,12 @@ export const HomePage = () => {
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                         <h2 className="text-base font-bold text-neutral-text">Recent Brews</h2>
-                        <button className="text-xs font-semibold text-primary hover:text-primary-dark cursor-pointer">View Log</button>
+                        <button
+                            onClick={() => navigate('/journal')}
+                            className="text-xs font-semibold text-primary hover:text-primary-dark cursor-pointer"
+                        >
+                            View Log
+                        </button>
                     </div>
                     {loading ? (
                         <div className="animate-pulse flex flex-col gap-2">
