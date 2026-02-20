@@ -11,6 +11,7 @@ export const PantryPage = () => {
     const [activeTab, setActiveTab] = useState<Tab>('supplies');
     const [items, setItems] = useState<PantryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedBean, setSelectedBean] = useState<PantryItem | null>(null);
 
     useEffect(() => {
         loadData();
@@ -118,7 +119,11 @@ export const PantryPage = () => {
                                     </h2>
                                     <div className="space-y-3">
                                         {beans.map(item => (
-                                            <div key={item.id} className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-primary/30 transition-all">
+                                            <div
+                                                key={item.id}
+                                                onClick={() => setSelectedBean(item)}
+                                                className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
+                                            >
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
                                                         <h3 className="font-bold text-neutral-text text-base mb-0.5">{item.name}</h3>
@@ -262,6 +267,77 @@ export const PantryPage = () => {
 
             {/* Bottom Navigation */}
             <BottomNav activeTab="pantry" />
+
+            {/* Bean Details Modal */}
+            {selectedBean && (
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-t-3xl pt-8 pb-10 px-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-[#181411] mb-1">{selectedBean.name}</h2>
+                                <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest">{selectedBean.brand || 'Unknown Roastery'}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedBean(null)}
+                                className="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 flex items-center justify-center -mt-2 -mr-2"
+                            >
+                                <Icon name="close" className="text-[20px]" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Tags Section */}
+                            {selectedBean.tags_json && selectedBean.tags_json.length > 0 && (
+                                <div>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Profile & Specs</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedBean.tags_json.map((tag, idx) => (
+                                            <span key={idx} className="bg-gray-50 border border-gray-100 text-gray-600 text-[11px] font-bold px-3 py-1.5 rounded-lg">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Description Section */}
+                            {selectedBean.description && (
+                                <div>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Tasting Notes</h4>
+                                    <p className="text-sm text-[#181411] leading-relaxed bg-primary/5 p-4 rounded-xl border border-primary/10">
+                                        "{selectedBean.description}"
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-3 mt-6">
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
+                                    <Icon name="calendar_month" className="text-primary mb-2 text-[20px]" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Roast Date</span>
+                                    <span className="text-sm font-bold text-[#181411]">
+                                        {selectedBean.roast_date ? new Date(selectedBean.roast_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}
+                                    </span>
+                                </div>
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-center">
+                                    <Icon name="scale" className="text-primary mb-2 text-[20px]" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Stock Left</span>
+                                    <span className="text-sm font-bold text-[#181411]">
+                                        {selectedBean.remaining_stock}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            className="w-full mt-8 bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-[0.98]"
+                            onClick={() => setSelectedBean(null)}
+                        >
+                            Got It
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
