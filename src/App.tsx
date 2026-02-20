@@ -12,6 +12,9 @@ import { BrewFlowPage } from './pages/BrewFlowPage';
 import { BrewLogPage } from './pages/BrewLogPage';
 import { RecipeEditPage } from './pages/RecipeEditPage';
 
+import { SettingsPage } from './pages/SettingsPage';
+import { BackupRestorePage } from './pages/BackupRestorePage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -27,6 +30,8 @@ function App() {
         <Route path="/recipes/:id/prepare" element={<RecipePreparationPage />} />
         <Route path="/brew-flow" element={<BrewFlowPage />} />
         <Route path="/brew-log" element={<BrewLogPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/backup" element={<BackupRestorePage />} />
         <Route path="/playground" element={<PlaygroundPage />} />
       </Routes>
     </BrowserRouter>

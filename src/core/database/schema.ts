@@ -100,6 +100,15 @@ export const ENHANCED_SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_recipes_method ON recipes(method_id);
   CREATE INDEX IF NOT EXISTS idx_steps_recipe ON recipe_steps(recipe_id);
   CREATE INDEX IF NOT EXISTS idx_brew_logs_recipe ON brew_logs(recipe_id);
+
+  -- 10. Backups
+  CREATE TABLE IF NOT EXISTS backups (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    location TEXT NOT NULL,
+    status TEXT NOT NULL
+  );
 `;
 
 export const MIGRATIONS = [
@@ -132,6 +141,18 @@ export const MIGRATIONS = [
       ALTER TABLE recipes ADD COLUMN best_for_tags TEXT;
       ALTER TABLE recipes ADD COLUMN not_recommended_tags TEXT;
       ALTER TABLE recipe_steps ADD COLUMN instruction TEXT;
+    `
+  },
+  {
+    version: 5,
+    sql: `
+      CREATE TABLE IF NOT EXISTS backups (
+        id TEXT PRIMARY KEY,
+        created_at TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT NOT NULL
+      );
     `
   }
 ];
