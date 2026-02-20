@@ -17,12 +17,13 @@ export const BrewMethodsPage = () => {
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-32">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-4 px-6 border-b border-gray-100">
+            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-neutral-text tracking-tight text-2xl font-bold leading-tight">Brew Methods</h1>
-                    <button className="flex items-center justify-center w-9 h-9 rounded-full bg-white text-neutral-text hover:bg-gray-100 transition-colors shadow-sm cursor-pointer">
-                        <Icon name="history" className="text-[20px]" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                            Brew Methods
+                        </h1>
+                    </div>
                 </div>
                 <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">

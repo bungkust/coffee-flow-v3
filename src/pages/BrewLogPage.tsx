@@ -80,9 +80,13 @@ export const BrewLogPage = () => {
     return (
         <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl font-display text-[#181411]">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md pt-12 pb-4 px-6 flex flex-col border-b border-gray-50">
-                <h1 className="text-3xl font-extrabold text-[#181411]">How was it?</h1>
-                <p className="text-sm font-bold text-gray-500 mt-1">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</p>
+            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
+                <div className="flex flex-col mb-4">
+                    <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                        How was it?
+                    </h1>
+                    <p className="text-xs font-medium text-gray-500 mt-1">{activeRecipe.method_id.toUpperCase()} • {activeRecipe.name}</p>
+                </div>
             </div>
 
             <div className="flex-1 flex flex-col px-6 py-6 overflow-y-auto pb-10">

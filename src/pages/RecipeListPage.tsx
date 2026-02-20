@@ -120,9 +120,6 @@ export const RecipeListPage = () => {
                             {methodFilter ? `${methodFilter} Recipes` : 'Recipes'}
                         </h1>
                     </div>
-                    <button className="flex items-center justify-center w-10 h-10 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer">
-                        <Icon name="tune" className="text-[24px]" />
-                    </button>
                 </div>
                 <div className="relative mb-2">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">

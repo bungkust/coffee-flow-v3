@@ -51,78 +51,86 @@ export const BackupRestorePage = () => {
     };
 
     return (
-        <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl font-display text-[#181411]">
+        <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl font-display text-neutral-text pb-24">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-gray-50">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-[#181411]"
-                >
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <h2 className="text-lg font-bold tracking-tight text-[#181411]">Backup & Restore</h2>
-                <div className="w-10"></div>
-            </header>
+            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                        >
+                            <Icon name="arrow_back" className="text-[24px]" />
+                        </button>
+                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                            Backup & Restore
+                        </h1>
+                    </div>
+                </div>
+            </div>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col p-6 gap-6">
+            <main className="flex-1 flex flex-col px-4 pt-4 gap-6">
                 {/* Backup Status Card */}
-                <section className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex flex-col gap-1">
-                                <h3 className="text-[#181411] text-base font-bold">Last Successful Backup</h3>
+                <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 ml-1">Device Status</h3>
+                    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-neutral-text text-base font-bold">Last Successful Backup</h3>
+                                    {lastBackup ? (
+                                        <div className="flex items-center gap-1.5 text-primary">
+                                            <Icon name="check_circle" className="text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                            <span className="text-sm font-medium">Synced</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-1.5 text-gray-400">
+                                            <Icon name="cloud_off" className="text-[18px]" />
+                                            <span className="text-sm font-medium">Not Synced</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="bg-primary/10 rounded-full p-2 text-primary">
+                                    <Icon name="cloud_done" className="text-[24px]" />
+                                </div>
+                            </div>
+                            <div className="text-gray-500 text-sm leading-relaxed border-t border-gray-100 pt-3">
                                 {lastBackup ? (
-                                    <div className="flex items-center gap-1.5 text-primary">
-                                        <Icon name="check_circle" className="text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                        <span className="text-sm font-medium">Synced</span>
-                                    </div>
+                                    <>
+                                        <p>{new Date(lastBackup.created_at).toLocaleString()}</p>
+                                        <p>Size: {(lastBackup.size_bytes / 1024 / 1024).toFixed(1)} MB • {lastBackup.location}</p>
+                                    </>
                                 ) : (
-                                    <div className="flex items-center gap-1.5 text-gray-400">
-                                        <Icon name="cloud_off" className="text-[18px]" />
-                                        <span className="text-sm font-medium">Not Synced</span>
-                                    </div>
+                                    <p>No backups found</p>
                                 )}
                             </div>
-                            <div className="bg-primary/10 rounded-full p-2 text-primary">
-                                <Icon name="cloud_done" className="text-[24px]" />
-                            </div>
+                            <button
+                                onClick={handleBackup}
+                                disabled={isBackingUp}
+                                className={`mt-2 flex w-full cursor-pointer items-center justify-center rounded-xl h-12 text-sm font-bold transition-all shadow-md gap-2 ${isBackingUp ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-primary-dark active:scale-[0.98] shadow-primary/20'}`}
+                            >
+                                {isBackingUp ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Backing up...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="backup" className="text-[20px]" />
+                                        <span>Backup Now</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
-                        <div className="text-gray-500 text-sm leading-relaxed border-t border-gray-100 pt-3">
-                            {lastBackup ? (
-                                <>
-                                    <p>{new Date(lastBackup.created_at).toLocaleString()}</p>
-                                    <p>Size: {(lastBackup.size_bytes / 1024 / 1024).toFixed(1)} MB • {lastBackup.location}</p>
-                                </>
-                            ) : (
-                                <p>No backups found</p>
-                            )}
-                        </div>
-                        <button
-                            onClick={handleBackup}
-                            disabled={isBackingUp}
-                            className={`mt-2 flex w-full cursor-pointer items-center justify-center rounded-xl h-12 text-sm font-bold transition-all shadow-md gap-2 ${isBackingUp ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-primary-dark active:scale-[0.98] shadow-primary/20'}`}
-                        >
-                            {isBackingUp ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                                    <span>Backing up...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Icon name="backup" className="text-[20px]" />
-                                    <span>Backup Now</span>
-                                </>
-                            )}
-                        </button>
                     </div>
-                </section>
+                </div>
 
                 {/* Available Backups List */}
-                <section className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between px-1">
-                        <h3 className="text-[#181411] text-lg font-bold">Cloud History</h3>
-                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">iCloud Drive</span>
+                <div>
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Cloud History</h3>
+                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">iCloud Drive</span>
                     </div>
                     <div className="flex flex-col gap-3">
                         {backups.map(backup => (
@@ -132,38 +140,38 @@ export const BackupRestorePage = () => {
                                         <Icon name="cloud" className="text-[24px]" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <p className="text-[#181411] text-base font-bold">{new Date(backup.created_at).toLocaleDateString()}</p>
+                                        <p className="text-neutral-text text-base font-bold">{new Date(backup.created_at).toLocaleDateString()}</p>
                                         <p className="text-gray-400 text-xs font-semibold">{new Date(backup.created_at).toLocaleTimeString()} • {(backup.size_bytes / 1024 / 1024).toFixed(1)} MB</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => handleRestore(backup.id)}
-                                    className="shrink-0 rounded-lg px-4 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/15 active:bg-primary/20 transition-colors uppercase tracking-wider"
+                                    className="shrink-0 rounded-lg px-4 py-2 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/15 active:bg-primary/20 transition-colors uppercase tracking-wider cursor-pointer"
                                 >
                                     Restore
                                 </button>
                             </div>
                         ))}
                         {backups.length === 0 && (
-                            <div className="text-center py-8 text-gray-400 text-sm">
+                            <div className="text-center py-8 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
                                 No backup history available
                             </div>
                         )}
                     </div>
-                </section>
+                </div>
 
                 {/* Info Section */}
-                <section className="mt-2 rounded-xl bg-gray-50/80 p-4 border border-dashed border-gray-200">
+                <div className="rounded-xl bg-white p-4 border border-gray-100 shadow-sm">
                     <div className="flex items-start gap-3">
-                        <Icon name="info" className="text-gray-400 text-[20px] mt-0.5" />
+                        <Icon name="info" className="text-primary/60 text-[20px] mt-0.5" />
                         <div className="flex flex-col gap-1">
-                            <p className="text-xs font-bold text-[#181411]">Data Safety</p>
+                            <p className="text-sm font-bold text-neutral-text">Data Safety</p>
                             <p className="text-xs text-text-secondary leading-relaxed text-gray-500">
                                 Restoring a backup will overwrite your current recipes, brewing logs, and inventory settings. This action cannot be undone.
                             </p>
                         </div>
                     </div>
-                </section>
+                </div>
             </main>
         </div>
     );

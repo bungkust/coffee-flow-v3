@@ -65,21 +65,21 @@ export const JournalPage = () => {
     }, {});
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl font-display text-[#181411]">
+        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl font-display text-[#181411]">
             {/* Header */}
-            <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#f4f2f0]">
-                <div className="flex items-center justify-between px-4 py-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center justify-center p-2 text-neutral-dark rounded-full hover:bg-gray-50 transition-colors"
-                    >
-                        <Icon name="arrow_back" className="text-[24px]" />
-                    </button>
-                    <h1 className="text-lg font-bold tracking-tight text-[#181411]">Activity Journal</h1>
-                    <button className="flex items-center justify-center p-2 text-neutral-dark rounded-full hover:bg-gray-50 transition-colors relative">
-                        <Icon name="calendar_month" className="text-[24px]" />
-                        <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary ring-2 ring-white"></span>
-                    </button>
+            <div className="sticky top-0 z-20 bg-background-light/95 backdrop-blur-md pt-12 pb-0 border-b border-gray-100">
+                <div className="flex items-center justify-between px-4 mb-2">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                        >
+                            <Icon name="arrow_back" className="text-[24px]" />
+                        </button>
+                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                            Activity Journal
+                        </h1>
+                    </div>
                 </div>
                 {/* Toggle Switch */}
                 <div className="px-4 pb-4 pt-1">
@@ -104,7 +104,7 @@ export const JournalPage = () => {
                         </label>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto pb-24 scrollbar-hide">

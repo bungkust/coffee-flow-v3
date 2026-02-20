@@ -2,7 +2,7 @@ import { Icon } from './Icons';
 import { Link } from 'react-router-dom';
 
 interface BottomNavProps {
-    activeTab?: 'home' | 'brewing' | 'drinks' | 'journal' | 'settings';
+    activeTab?: 'home' | 'brewing' | 'drinks' | 'pantry' | 'settings' | 'journal';
 }
 
 export const BottomNav = ({ activeTab }: BottomNavProps) => {
@@ -28,10 +28,10 @@ export const BottomNav = ({ activeTab }: BottomNavProps) => {
                     active={activeTab === 'drinks'}
                 />
                 <NavItem
-                    to="/journal"
-                    icon="menu_book"
-                    label="Journal"
-                    active={activeTab === 'journal'}
+                    to="/pantry"
+                    icon="inventory_2"
+                    label="Pantry"
+                    active={activeTab === 'pantry'}
                 />
                 <NavItem
                     to="/settings"

@@ -109,6 +109,24 @@ export const ENHANCED_SCHEMA = `
     location TEXT NOT NULL,
     status TEXT NOT NULL
   );
+  -- 11. Pantry Items
+  CREATE TABLE IF NOT EXISTS pantry_items (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    brand TEXT,
+    description TEXT,
+    remaining_stock INTEGER,
+    is_low_stock INTEGER DEFAULT 0,
+    roast_date TEXT,
+    purchase_date TEXT,
+    tags_json TEXT,
+    icon TEXT,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT
+  );
 `;
 
 export const MIGRATIONS = [
@@ -152,6 +170,28 @@ export const MIGRATIONS = [
         size_bytes INTEGER NOT NULL,
         location TEXT NOT NULL,
         status TEXT NOT NULL
+      );
+    `
+  },
+  {
+    version: 6,
+    sql: `
+      CREATE TABLE IF NOT EXISTS pantry_items (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        brand TEXT,
+        description TEXT,
+        remaining_stock INTEGER,
+        is_low_stock INTEGER DEFAULT 0,
+        roast_date TEXT,
+        purchase_date TEXT,
+        tags_json TEXT,
+        icon TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        deleted_at TEXT
       );
     `
   }
