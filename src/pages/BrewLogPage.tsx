@@ -6,7 +6,7 @@ import { brewService } from '../core/services';
 
 export const BrewLogPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, stopBrew } = useBrewStore();
+    const { activeRecipe, selectedBeanId, stopBrew } = useBrewStore();
 
     const [rating, setRating] = useState(4);
     const [notes, setNotes] = useState('');
@@ -60,7 +60,8 @@ export const BrewLogPage = () => {
                 rating,
                 notes,
                 profile,
-                selectedTags
+                selectedTags,
+                selectedBeanId || undefined
             );
             stopBrew();
             navigate('/home');

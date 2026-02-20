@@ -23,6 +23,20 @@ export class SQLiteSettingsRepository {
         return result.values?.[0]?.value || '';
     }
 
+    async getUserId(): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_id']);
+        return result.values?.[0]?.value || '';
+    }
+
+    async setUserId(id: string): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_id', id, now]
+        );
+        await dbService.saveToLocalStore();
+    }
+
     async setUserName(name: string): Promise<void> {
         const now = new Date().toISOString();
         await this.db.run(

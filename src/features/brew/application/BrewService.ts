@@ -30,11 +30,13 @@ export class BrewService {
         rating: number,
         notes: string,
         profile: { sweetness: number, acidity: number, body: number, bitterness: number },
-        flavorTags: string[]
+        flavorTags: string[],
+        beanId?: string
     ): Promise<void> {
         const log: BrewLog = {
             id: crypto.randomUUID(),
             recipe_id: recipeId,
+            bean_id: beanId,
             rating,
             notes,
             sweetness: profile.sweetness,

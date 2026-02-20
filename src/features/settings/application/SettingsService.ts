@@ -23,6 +23,14 @@ export class SettingsService {
         return this.repo.getUserName();
     }
 
+    async getUserId(): Promise<string> {
+        return this.repo.getUserId();
+    }
+
+    async setUserId(id: string): Promise<void> {
+        return this.repo.setUserId(id);
+    }
+
     async setUserName(name: string): Promise<void> {
         return this.repo.setUserName(name);
     }

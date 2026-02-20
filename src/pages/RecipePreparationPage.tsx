@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { brewService } from '../core/services';
+import { brewService, pantryService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
+import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
+import { Dropdown } from '../components/Dropdown';
 
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -12,6 +14,8 @@ export const RecipePreparationPage = () => {
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
+    const [beans, setBeans] = useState<PantryItem[]>([]);
+    const [selectedBeanId, setSelectedBeanId] = useState<string>('');
     const [checklist, setChecklist] = useState({
         coffee: false,
         water: false,
@@ -23,8 +27,18 @@ export const RecipePreparationPage = () => {
         const fetchRecipe = async () => {
             if (!id) return;
             try {
-                const data = await brewService.getRecipe(id);
+                const [data, pantryItems] = await Promise.all([
+                    brewService.getRecipe(id),
+                    pantryService.getPantryItems()
+                ]);
                 setRecipe(data);
+
+                const availableBeans = pantryItems.filter(item => item.category === 'beans');
+                setBeans(availableBeans);
+
+                if (availableBeans.length > 0) {
+                    setSelectedBeanId(availableBeans[0].id);
+                }
             } catch (err) {
                 console.error('Error fetching recipe:', err);
             } finally {
@@ -59,7 +73,7 @@ export const RecipePreparationPage = () => {
 
     const handleProceedToBrew = () => {
         if (recipe) {
-            startBrew(recipe);
+            startBrew(recipe, selectedBeanId);
             navigate('/brew-flow');
         }
     };
@@ -93,8 +107,8 @@ export const RecipePreparationPage = () => {
             </div>
 
             {/* Stats Quad */}
-            <div className="px-6 py-8">
-                <div className="grid grid-cols-4 gap-2">
+            <div className="px-6 py-6">
+                <div className="grid grid-cols-4 gap-2 mb-6">
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                         <span className="text-sm font-bold text-[#181411]">
@@ -117,6 +131,36 @@ export const RecipePreparationPage = () => {
                         <span className="text-sm font-bold text-[#181411]">{recipe.grind_size || 'Coarse'}</span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Grind</span>
                     </div>
+                </div>
+
+                {/* Bean Selection */}
+                <div className="mb-2">
+                    {beans.length > 0 ? (
+                        <Dropdown
+                            label="Choose Beans from Pantry"
+                            icon="inventory_2"
+                            options={beans.map(b => ({ value: b.id, label: b.name }))}
+                            value={selectedBeanId}
+                            onChange={setSelectedBeanId}
+                            placeholder="Select a coffee bean..."
+                            className="w-full"
+                        />
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                                <Icon name="inventory_2" className="text-[16px]" /> Choose Beans from Pantry
+                            </label>
+                            <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-500">No beans available</span>
+                                <button
+                                    onClick={() => navigate('/pantry')}
+                                    className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
+                                >
+                                    Add Beans
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

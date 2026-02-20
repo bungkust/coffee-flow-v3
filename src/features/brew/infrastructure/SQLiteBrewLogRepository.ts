@@ -15,11 +15,12 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
     async save(log: BrewLog): Promise<void> {
         const now = new Date().toISOString();
         await this.db.run(
-            `INSERT INTO brew_logs (id, recipe_id, rating, notes, sweetness, acidity, body, bitterness, flavor_tags, brewed_at, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO brew_logs (id, recipe_id, bean_id, rating, notes, sweetness, acidity, body, bitterness, flavor_tags, brewed_at, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 log.id,
                 log.recipe_id,
+                log.bean_id || null,
                 log.rating,
                 log.notes,
                 log.sweetness,

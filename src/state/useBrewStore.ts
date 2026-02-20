@@ -5,9 +5,10 @@ import type { Recipe } from '../shared/domain/entities';
 
 interface BrewStoreState {
     activeRecipe: Recipe | null;
+    selectedBeanId: string | null;
     engine: BrewEngine | null;
     engineState: BrewEngineState | null;
-    startBrew: (recipe: Recipe) => void;
+    startBrew: (recipe: Recipe, beanId?: string) => void;
     stopBrew: () => void;
     pauseBrew: () => void;
     resumeBrew: () => void;
@@ -15,10 +16,11 @@ interface BrewStoreState {
 
 export const useBrewStore = create<BrewStoreState>((set, get) => ({
     activeRecipe: null,
+    selectedBeanId: null,
     engine: null,
     engineState: null,
 
-    startBrew: (recipe: Recipe) => {
+    startBrew: (recipe: Recipe, beanId?: string) => {
         const engine = new BrewEngine(recipe.steps);
 
         engine.addListener((state) => {
@@ -28,6 +30,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
         // Mapping enhanced schema fields to state
         set({
             activeRecipe: recipe,
+            selectedBeanId: beanId || null,
             engine,
             engineState: {
                 currentStepIndex: 0,
@@ -43,7 +46,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
     stopBrew: () => {
         const { engine } = get();
         engine?.stop();
-        set({ activeRecipe: null, engine: null, engineState: null });
+        set({ activeRecipe: null, selectedBeanId: null, engine: null, engineState: null });
     },
 
     pauseBrew: () => {

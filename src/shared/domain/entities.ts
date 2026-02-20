@@ -49,6 +49,7 @@ export interface Recipe {
 export interface BrewLog {
     id: EntityId;
     recipe_id: EntityId;
+    bean_id?: string;
     rating?: number; // 1-5
     notes?: string;
     sweetness?: number;

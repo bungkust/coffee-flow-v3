@@ -66,6 +66,13 @@ export const OnboardingPage = () => {
                 await settingsService.setUserName(name);
                 if (brewingGoal) await settingsService.setUserBrewingGoal(brewingGoal);
                 await settingsService.setAppUnit(appUnit);
+
+                // Generate a unique user ID if one doesn't exist already
+                const existingId = await settingsService.getUserId();
+                if (!existingId) {
+                    await settingsService.setUserId(crypto.randomUUID());
+                }
+
                 setStep('equipment');
             }
         } else if (step === 'equipment') {

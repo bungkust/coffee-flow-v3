@@ -194,5 +194,11 @@ export const MIGRATIONS = [
         deleted_at TEXT
       );
     `
+  },
+  {
+    version: 7,
+    sql: `
+      ALTER TABLE brew_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
+    `
   }
 ];

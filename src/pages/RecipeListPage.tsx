@@ -23,7 +23,7 @@ export const RecipeListPage = () => {
             setLoading(true);
             let data = await brewService.getAllRecipes();
             if (methodFilter) {
-                data = data.filter(r => r.method_id === methodFilter);
+                data = data.filter(r => r.method_id.toLowerCase() === methodFilter.toLowerCase());
             }
             setRecipes(data);
         } catch (err) {

@@ -42,11 +42,14 @@ export class SQLitePantryRepository {
                 null
             ]
         );
+
+        await dbService.saveToLocalStore();
     }
 
     async delete(id: EntityId): Promise<void> {
         const now = new Date().toISOString();
         await this.db.run('UPDATE pantry_items SET deleted_at = ? WHERE id = ?', [now, id]);
+        await dbService.saveToLocalStore();
     }
 
     async clearByCategory(category: string): Promise<void> {
@@ -57,6 +60,7 @@ export class SQLitePantryRepository {
         // Let's make it accept an array of categories or just a single one. 
         // Simpler: Just delete by category.
         await this.db.run('UPDATE pantry_items SET deleted_at = ? WHERE category = ?', [now, category]);
+        await dbService.saveToLocalStore();
     }
 
     async clearEquipment(): Promise<void> {
@@ -68,5 +72,6 @@ export class SQLitePantryRepository {
               WHERE category IN ('dripper', 'grinder', 'kettle', 'scale', 'accessory')`,
             [now]
         );
+        await dbService.saveToLocalStore();
     }
 }
