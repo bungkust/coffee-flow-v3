@@ -18,6 +18,94 @@ export class SQLiteSettingsRepository {
         );
     }
 
+    async getUserName(): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_name']);
+        return result.values?.[0]?.value || '';
+    }
+
+    async setUserName(name: string): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_name', name, now]
+        );
+    }
+
+    async getUserExperienceLevel(): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_experience_level']);
+        return result.values?.[0]?.value || '';
+    }
+
+    async setUserExperienceLevel(level: string): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_experience_level', level, now]
+        );
+    }
+
+    async getUserTasteProfile(): Promise<string[]> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_taste_profile']);
+        try {
+            return JSON.parse(result.values?.[0]?.value || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    async setUserTasteProfile(profile: string[]): Promise<void> {
+        const now = new Date().toISOString();
+        const json = JSON.stringify(profile);
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_taste_profile', json, now]
+        );
+    }
+
+    async getUserBrewingGoal(): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_brewing_goal']);
+        return result.values?.[0]?.value || '';
+    }
+
+    async setUserBrewingGoal(goal: string): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_brewing_goal', goal, now]
+        );
+    }
+
+    async getUserDailyCups(): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_daily_cups']);
+        return result.values?.[0]?.value || '';
+    }
+
+    async setUserDailyCups(cups: string): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_daily_cups', cups, now]
+        );
+    }
+
+    async getUserPreferredMethods(): Promise<string[]> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_preferred_methods']);
+        try {
+            return JSON.parse(result.values?.[0]?.value || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    async setUserPreferredMethods(methods: string[]): Promise<void> {
+        const now = new Date().toISOString();
+        const json = JSON.stringify(methods);
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_preferred_methods', json, now]
+        );
+    }
+
     async clearUserData(): Promise<void> {
         // 1. Clear Logs
         await this.db.run('DELETE FROM brew_logs');

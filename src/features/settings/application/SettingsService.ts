@@ -18,4 +18,36 @@ export class SettingsService {
     async clearUserData(): Promise<void> {
         return this.repo.clearUserData();
     }
+
+    async getUserName(): Promise<string> {
+        return this.repo.getUserName();
+    }
+
+    async setUserName(name: string): Promise<void> {
+        return this.repo.setUserName(name);
+    }
+
+    async setUserExperienceLevel(level: string): Promise<void> {
+        return this.repo.setUserExperienceLevel(level);
+    }
+
+    async setUserTasteProfile(profile: string[]): Promise<void> {
+        return this.repo.setUserTasteProfile(profile);
+    }
+
+    async setUserBrewingGoal(goal: string): Promise<void> {
+        return this.repo.setUserBrewingGoal(goal);
+    }
+
+    async setUserDailyCups(cups: string): Promise<void> {
+        return this.repo.setUserDailyCups(cups);
+    }
+
+    async getUserPreferredMethods(): Promise<string[]> {
+        return this.repo.getUserPreferredMethods();
+    }
+
+    async setUserPreferredMethods(methods: string[]): Promise<void> {
+        return this.repo.setUserPreferredMethods(methods);
+    }
 }

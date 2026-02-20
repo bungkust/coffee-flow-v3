@@ -40,4 +40,8 @@ export class PantryService {
     async deletePantryItem(id: EntityId): Promise<void> {
         await this.repository.delete(id);
     }
+
+    async clearEquipment(): Promise<void> {
+        await this.repository.clearEquipment();
+    }
 }

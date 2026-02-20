@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { pantryService } from '../core/services';
-import { seedInitialData } from '../core/database/seeding';
+import { removeDummyPantryItems } from '../core/database/seeding';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
 type Tab = 'supplies' | 'gear';
@@ -18,7 +18,7 @@ export const PantryPage = () => {
 
     const loadData = async () => {
         try {
-            // await seedInitialData(); // Removed auto-seeding per user request
+            await removeDummyPantryItems();
             const data = await pantryService.getPantryItems();
             setItems(data);
         } catch (error) {

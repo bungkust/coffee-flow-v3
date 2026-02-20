@@ -1,77 +1,31 @@
-import { brewService, drinkService, pantryService } from '../services';
+import { brewService } from '../services';
+import { dbService } from './sqlite';
 
 export const seedInitialData = async () => {
     // Check if recipes exist
-    // Fix: brewService.getRecipes -> brewService.getAllRecipes
     const recipes = await brewService.getAllRecipes();
     if (recipes.length === 0) {
         console.log('Seeding initial recipes...');
         // Add default recipes if needed
-        // (This part was empty in previous file, keeping it minimal as focus is pantry)
-    }
-
-    // Seed Pantry Items
-    const pantryItems = await pantryService.getPantryItems();
-    if (pantryItems.length === 0) {
-        console.log('Seeding initial pantry items...');
-
-        // Beans
-        await pantryService.addPantryItem('Ethiopia Yirgacheffe', 'beans', {
-            brand: 'Onyx Coffee Lab',
-            roast_date: '2023-10-12',
-            remaining_stock: 60,
-            tags_json: ['Washed', 'Light Roast']
-        });
-
-        await pantryService.addPantryItem('Holiday Blend', 'beans', {
-            brand: 'Stumptown',
-            roast_date: '2023-11-02',
-            remaining_stock: 85,
-            tags_json: ['Blend', 'Medium Roast']
-        });
-
-        // Essentials
-        await pantryService.addPantryItem('Oatly Barista Edition', 'milk', {
-            brand: 'Oatly',
-            description: 'Dairy Alternative',
-            remaining_stock: 80,
-            icon: 'water_drop'
-        });
-
-        await pantryService.addPantryItem('Hario V60 Size 02', 'filter', {
-            brand: 'Hario',
-            is_low_stock: true,
-            remaining_stock: 20,
-            icon: 'layers'
-        });
-
-        await pantryService.addPantryItem('Demerara Sugar', 'other', {
-            description: 'Sweetener',
-            remaining_stock: 100,
-            icon: 'grain'
-        });
-
-        // Gear
-        await pantryService.addPantryItem('Hario V60', 'dripper', {
-            brand: 'Hario',
-            description: 'Ceramic • Size 02',
-            tags_json: ['Daily Driver']
-        });
-
-        await pantryService.addPantryItem('Chemex', 'dripper', {
-            brand: 'Chemex',
-            description: '6 Cup • Classic Series'
-        });
-
-        await pantryService.addPantryItem('Fellow Ode', 'grinder', {
-            brand: 'Fellow',
-            description: 'Gen 2 • Brew Grinder',
-            tags_json: ['Electric']
-        });
-
-        await pantryService.addPantryItem('Fellow Stagg EKG', 'kettle', {
-            brand: 'Fellow',
-            description: 'Electric Gooseneck'
-        });
     }
 };
+
+export const removeDummyPantryItems = async () => {
+    try {
+        const db = dbService.getDb();
+        const dummyNames = [
+            'Ethiopia Yirgacheffe', 'Holiday Blend', 'Oatly Barista Edition',
+            'Hario V60 Size 02', 'Demerara Sugar', 'Hario V60', 'Chemex',
+            'Fellow Ode', 'Fellow Stagg EKG'
+        ];
+
+        // Use placeholders to prevent SQL injection and properly match strings
+        const placeholders = dummyNames.map(() => '?').join(',');
+        const query = `DELETE FROM pantry_items WHERE name IN (${placeholders})`;
+        await db.run(query, dummyNames);
+        console.log('Dummy pantry items removed successfully.');
+    } catch (error) {
+        console.error('Failed to remove dummy pantry items:', error);
+    }
+};
+

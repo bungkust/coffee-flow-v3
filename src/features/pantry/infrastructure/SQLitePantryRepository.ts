@@ -48,4 +48,25 @@ export class SQLitePantryRepository {
         const now = new Date().toISOString();
         await this.db.run('UPDATE pantry_items SET deleted_at = ? WHERE id = ?', [now, id]);
     }
+
+    async clearByCategory(category: string): Promise<void> {
+        const now = new Date().toISOString();
+        // Since we have multiple equipment categories (dripper, grinder, etc.), we might need a more flexible query or handle it in service.
+        // For now, let's assume we pass the specific category or we handle multiple.
+        // Actually, for onboarding, we want to clear ALL equipment, which might be spread across categories.
+        // Let's make it accept an array of categories or just a single one. 
+        // Simpler: Just delete by category.
+        await this.db.run('UPDATE pantry_items SET deleted_at = ? WHERE category = ?', [now, category]);
+    }
+
+    async clearEquipment(): Promise<void> {
+        const now = new Date().toISOString();
+        // Equipment categories: dripper, grinder, kettle, scale, accessory
+        await this.db.run(
+            `UPDATE pantry_items 
+              SET deleted_at = ? 
+              WHERE category IN ('dripper', 'grinder', 'kettle', 'scale', 'accessory')`,
+            [now]
+        );
+    }
 }
