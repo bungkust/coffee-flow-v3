@@ -236,7 +236,10 @@ export const RecipeListPage = () => {
             </div>
 
             {/* Floating Add Button */}
-            <button className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer">
+            <button
+                onClick={() => navigate(`/recipes/new/edit?method=${methodFilter || 'V60'}`)}
+                className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer"
+            >
                 <Icon name="add" className="text-[32px]" />
             </button>
 

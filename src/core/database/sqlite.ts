@@ -43,10 +43,23 @@ class DatabaseService {
             await this.db.open();
             await this.runMigrations();
 
+            // Save to store immediately after initializing/migrating
+            await this.saveToLocalStore();
+
             this.isInitialized = true;
         } catch (error) {
             console.error('Database initialization failed:', error);
             throw new Error('Database initialization failed');
+        }
+    }
+
+    async saveToLocalStore(): Promise<void> {
+        try {
+            if (this.sqlite && Capacitor.getPlatform() === 'web') {
+                await this.sqlite.saveToStore('coffee_flow_db');
+            }
+        } catch (err) {
+            console.error('Failed to save SQLite to IndexedDB Store:', err);
         }
     }
 

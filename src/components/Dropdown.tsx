@@ -14,6 +14,7 @@ interface DropdownProps {
     onChange: (value: string) => void;
     placeholder?: string;
     className?: string;
+    buttonClassName?: string;
     icon?: string;
     required?: boolean;
 }
@@ -25,6 +26,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     onChange,
     placeholder = 'Select an option',
     className = '',
+    buttonClassName = '',
     icon,
     required = false,
 }) => {
@@ -63,10 +65,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full text-left rounded-xl py-3 px-4 border focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium transition-all flex items-center justify-between ${isOpen
-                    ? 'border-primary ring-2 ring-primary/20 bg-white dark:bg-[#2C241B]'
-                    : 'bg-white dark:bg-[#2C241B] border-gray-200 dark:border-gray-700 hover:border-primary/30'
-                    }`}
+                className={`w-full text-left px-4 border focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium transition-all flex items-center justify-between ${buttonClassName?.includes('py-') || buttonClassName?.includes('p-') ? '' : 'py-3'
+                    } ${buttonClassName?.includes('rounded-') ? '' : 'rounded-xl'
+                    } ${isOpen
+                        ? 'border-primary ring-2 ring-primary/20 bg-white dark:bg-[#2C241B]'
+                        : 'bg-white dark:bg-[#2C241B] border-gray-200 dark:border-gray-700 hover:border-primary/30'
+                    } ${buttonClassName}`}
             >
                 <span className={selectedOption ? 'text-neutral-text dark:text-white' : 'text-gray-400'}>
                     {selectedOption ? selectedOption.label : placeholder}

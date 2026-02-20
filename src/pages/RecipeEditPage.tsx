@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Dropdown } from '../components/Dropdown';
 import { brewService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 import { BottomNav } from '../components/BottomNav';
@@ -8,6 +9,7 @@ import { BottomNav } from '../components/BottomNav';
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -17,8 +19,33 @@ export const RecipeEditPage = () => {
         const fetchRecipe = async () => {
             if (!id) return;
             try {
-                const data = await brewService.getRecipe(id);
-                setRecipe(data);
+                if (id === 'new') {
+                    const method = searchParams.get('method') || 'V60';
+                    const newId = crypto.randomUUID();
+                    const now = new Date().toISOString();
+
+                    // Always initialize with a blank template
+                    setRecipe({
+                        id: newId,
+                        method_id: method,
+                        name: '',
+                        ratio: '',
+                        temperature: undefined,
+                        grind_size: '',
+                        total_water: undefined,
+                        is_custom: true,
+                        is_favorite: false,
+                        version: 1,
+                        created_at: now,
+                        updated_at: now,
+                        steps: [
+                            { id: crypto.randomUUID(), recipe_id: newId, step_order: 1, label: '', duration_seconds: 0, target_weight: undefined, created_at: now, updated_at: now }
+                        ]
+                    });
+                } else {
+                    const data = await brewService.getRecipe(id);
+                    setRecipe(data);
+                }
             } catch (err) {
                 console.error('Error fetching recipe:', err);
             } finally {
@@ -26,7 +53,7 @@ export const RecipeEditPage = () => {
             }
         };
         fetchRecipe();
-    }, [id]);
+    }, [id, searchParams]);
 
     const handleSave = async () => {
         if (!recipe) return;
@@ -115,6 +142,7 @@ export const RecipeEditPage = () => {
                                 value={recipe.name}
                                 onChange={(e) => setRecipe({ ...recipe, name: e.target.value })}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                placeholder="e.g. Even Extraction Flow"
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -132,9 +160,36 @@ export const RecipeEditPage = () => {
                                 <label className="block text-sm font-bold text-gray-700 mb-1">Total Water (ml)</label>
                                 <input
                                     type="number"
-                                    value={recipe.total_water}
-                                    onChange={(e) => setRecipe({ ...recipe, total_water: parseInt(e.target.value) || 0 })}
+                                    value={recipe.total_water || ''}
+                                    onChange={(e) => setRecipe({ ...recipe, total_water: parseInt(e.target.value) || undefined })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    placeholder="250"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Difficulty</label>
+                                <Dropdown
+                                    buttonClassName="py-3 bg-gray-50 border-gray-100"
+                                    value={recipe.difficulty || ''}
+                                    options={[
+                                        { value: 'Beginner', label: 'Beginner' },
+                                        { value: 'Intermediate', label: 'Intermediate' },
+                                        { value: 'Advanced', label: 'Advanced' }
+                                    ]}
+                                    onChange={(val) => setRecipe({ ...recipe, difficulty: val as any })}
+                                    placeholder="Select"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Style</label>
+                                <input
+                                    type="text"
+                                    value={recipe.style || ''}
+                                    onChange={(e) => setRecipe({ ...recipe, style: e.target.value })}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    placeholder="Balanced / Round"
                                 />
                             </div>
                         </div>
@@ -143,9 +198,10 @@ export const RecipeEditPage = () => {
                                 <label className="block text-sm font-bold text-gray-700 mb-1">Temp (°C)</label>
                                 <input
                                     type="number"
-                                    value={recipe.temperature}
-                                    onChange={(e) => setRecipe({ ...recipe, temperature: parseInt(e.target.value) || 0 })}
+                                    value={recipe.temperature || ''}
+                                    onChange={(e) => setRecipe({ ...recipe, temperature: parseInt(e.target.value) || undefined })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    placeholder="92"
                                 />
                             </div>
                             <div>
@@ -158,6 +214,70 @@ export const RecipeEditPage = () => {
                                     placeholder="Medium"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Details Section */}
+                <section className="space-y-4">
+                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Details & Philosophy</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Short Description</label>
+                            <input
+                                type="text"
+                                value={recipe.description_short || ''}
+                                onChange={(e) => setRecipe({ ...recipe, description_short: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                placeholder="A brief summary..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Detailed Description</label>
+                            <textarea
+                                value={recipe.description_detailed || ''}
+                                onChange={(e) => setRecipe({ ...recipe, description_detailed: e.target.value })}
+                                rows={3}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                placeholder="Explain the brewing approach..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Philosophy</label>
+                            <textarea
+                                value={recipe.philosophy || ''}
+                                onChange={(e) => setRecipe({ ...recipe, philosophy: e.target.value })}
+                                rows={2}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                placeholder="Why this recipe works..."
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Tags Section */}
+                <section className="space-y-4">
+                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tags (Comma Separated)</h2>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Best For</label>
+                            <input
+                                type="text"
+                                value={(recipe.best_for_tags || []).join(', ')}
+                                onChange={(e) => setRecipe({ ...recipe, best_for_tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                placeholder="Arabica, Light Roast, Washed"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Not Recommended For</label>
+                            <input
+                                type="text"
+                                value={(recipe.not_recommended_tags || []).join(', ')}
+                                onChange={(e) => setRecipe({ ...recipe, not_recommended_tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                placeholder="Dark Roast, Robusta"
+                            />
                         </div>
                     </div>
                 </section>
@@ -190,23 +310,32 @@ export const RecipeEditPage = () => {
                                             className="w-full bg-transparent border-none p-0 text-base font-bold text-[#181411] focus:ring-0 placeholder:text-gray-300"
                                             placeholder="Step label..."
                                         />
+                                        <textarea
+                                            value={step.instruction || ''}
+                                            onChange={(e) => updateStep(index, { instruction: e.target.value })}
+                                            rows={2}
+                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-primary/20 outline-none resize-none placeholder:text-gray-300"
+                                            placeholder="Step instruction..."
+                                        />
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Duration (s)</label>
                                                 <input
                                                     type="number"
-                                                    value={step.duration_seconds}
+                                                    value={step.duration_seconds || ''}
                                                     onChange={(e) => updateStep(index, { duration_seconds: parseInt(e.target.value) || 0 })}
                                                     className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-sm font-bold"
+                                                    placeholder="30"
                                                 />
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Target (g)</label>
                                                 <input
                                                     type="number"
-                                                    value={step.target_weight || 0}
-                                                    onChange={(e) => updateStep(index, { target_weight: parseInt(e.target.value) || 0 })}
+                                                    value={step.target_weight || ''}
+                                                    onChange={(e) => updateStep(index, { target_weight: parseInt(e.target.value) || undefined })}
                                                     className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-sm font-bold"
+                                                    placeholder="50"
                                                 />
                                             </div>
                                         </div>

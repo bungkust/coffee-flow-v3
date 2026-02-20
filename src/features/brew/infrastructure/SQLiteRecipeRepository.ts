@@ -7,6 +7,10 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
         return dbService.getDb();
     }
 
+    private get dbService() {
+        return dbService;
+    }
+
     async findAll(): Promise<Recipe[]> {
         const result = await this.db.query('SELECT * FROM recipes WHERE deleted_at IS NULL');
         const recipes: Recipe[] = [];
@@ -101,11 +105,14 @@ export class SQLiteRecipeRepository implements IRecipeRepository {
                 ]
             );
         }
+
+        await this.dbService.saveToLocalStore();
     }
 
     async delete(id: EntityId): Promise<void> {
         const now = new Date().toISOString();
         // Soft delete
         await this.db.run('UPDATE recipes SET deleted_at = ? WHERE id = ?', [now, id]);
+        await this.dbService.saveToLocalStore();
     }
 }

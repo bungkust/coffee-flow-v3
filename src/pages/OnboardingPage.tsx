@@ -471,6 +471,7 @@ export const OnboardingPage = () => {
                                                     <div className="space-y-1">
                                                         <label className="text-[10px] font-bold uppercase text-gray-500">Type</label>
                                                         <Dropdown
+                                                            buttonClassName="py-2 rounded-lg"
                                                             label=""
                                                             value={comp.type}
                                                             options={[
