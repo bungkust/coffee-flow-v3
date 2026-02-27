@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Dropdown } from '../components/Dropdown';
@@ -44,6 +44,21 @@ export const OnboardingPage = () => {
     const [brewingGoal, setBrewingGoal] = useState('');
     const [appUnit, setAppUnit] = useState<'metric' | 'imperial'>('metric');
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+
+    useEffect(() => {
+        const checkDone = async () => {
+            try {
+                const existingName = await settingsService.getUserName();
+                const methods = await settingsService.getUserPreferredMethods();
+                if (existingName && existingName.trim().length > 0 && methods && methods.length === 6) {
+                    navigate('/home', { replace: true });
+                }
+            } catch (e) {
+                // Ignore
+            }
+        };
+        checkDone();
+    }, [navigate]);
 
     // Bean Form State
     const [beanName, setBeanName] = useState('');

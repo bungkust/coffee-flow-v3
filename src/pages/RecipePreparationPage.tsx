@@ -16,6 +16,8 @@ export const RecipePreparationPage = () => {
     const [loading, setLoading] = useState(true);
     const [beans, setBeans] = useState<PantryItem[]>([]);
     const [selectedBeanId, setSelectedBeanId] = useState<string>('');
+    const [filters, setFilters] = useState<PantryItem[]>([]);
+    const [selectedFilterId, setSelectedFilterId] = useState<string>('');
     const [checklist, setChecklist] = useState({
         coffee: false,
         water: false,
@@ -36,8 +38,14 @@ export const RecipePreparationPage = () => {
                 const availableBeans = pantryItems.filter(item => item.category === 'beans');
                 setBeans(availableBeans);
 
+                const availableFilters = pantryItems.filter(item => item.category === 'filter');
+                setFilters(availableFilters);
+
                 if (availableBeans.length > 0) {
                     setSelectedBeanId(availableBeans[0].id);
+                }
+                if (availableFilters.length > 0) {
+                    setSelectedFilterId(availableFilters[0].id);
                 }
             } catch (err) {
                 console.error('Error fetching recipe:', err);
@@ -73,7 +81,7 @@ export const RecipePreparationPage = () => {
 
     const handleProceedToBrew = () => {
         if (recipe) {
-            startBrew(recipe, selectedBeanId);
+            startBrew(recipe, selectedBeanId, selectedFilterId);
             navigate('/brew-flow');
         }
     };
@@ -134,7 +142,7 @@ export const RecipePreparationPage = () => {
                 </div>
 
                 {/* Bean Selection */}
-                <div className="mb-2">
+                <div className="mb-4">
                     {beans.length > 0 ? (
                         <Dropdown
                             label="Choose Beans from Pantry"
@@ -157,6 +165,36 @@ export const RecipePreparationPage = () => {
                                     className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
                                 >
                                     Add Beans
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Filter Selection */}
+                <div className="mb-2">
+                    {filters.length > 0 ? (
+                        <Dropdown
+                            label="Choose Filter from Pantry"
+                            icon="filter_list"
+                            options={filters.map(f => ({ value: f.id, label: f.name }))}
+                            value={selectedFilterId}
+                            onChange={setSelectedFilterId}
+                            placeholder="Select a filter..."
+                            className="w-full"
+                        />
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                                <Icon name="filter_list" className="text-[16px]" /> Choose Filter from Pantry
+                            </label>
+                            <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-500">No filters available</span>
+                                <button
+                                    onClick={() => navigate('/pantry')}
+                                    className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
+                                >
+                                    Add Filters
                                 </button>
                             </div>
                         </div>

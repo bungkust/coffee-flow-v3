@@ -58,4 +58,12 @@ export class SettingsService {
     async setUserPreferredMethods(methods: string[]): Promise<void> {
         return this.repo.setUserPreferredMethods(methods);
     }
+
+    async getUserPreferredDrinks(): Promise<string[]> {
+        return this.repo.getUserPreferredDrinks();
+    }
+
+    async setUserPreferredDrinks(drinks: string[]): Promise<void> {
+        return this.repo.setUserPreferredDrinks(drinks);
+    }
 }

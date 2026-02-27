@@ -12,10 +12,14 @@ import { BrewFlowPage } from './pages/BrewFlowPage';
 import { BrewLogPage } from './pages/BrewLogPage';
 import { JournalPage } from './pages/JournalPage';
 import { PantryPage } from './pages/PantryPage';
+import { PantryAddSelectionPage } from './pages/PantryAddSelectionPage';
+import { PantryAddFormPage } from './pages/PantryAddFormPage';
 import { RecipeEditPage } from './pages/RecipeEditPage';
 
 import { SettingsPage } from './pages/SettingsPage';
 import { BackupRestorePage } from './pages/BackupRestorePage';
+
+import { DrinkMenuPage } from './pages/DrinkMenuPage';
 
 function App() {
   return (
@@ -34,6 +38,9 @@ function App() {
         <Route path="/brew-log" element={<BrewLogPage />} />
         <Route path="/journal" element={<JournalPage />} />
         <Route path="/pantry" element={<PantryPage />} />
+        <Route path="/pantry/add" element={<PantryAddSelectionPage />} />
+        <Route path="/pantry/add/:category" element={<PantryAddFormPage />} />
+        <Route path="/drinks" element={<DrinkMenuPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/backup" element={<BackupRestorePage />} />
         <Route path="/playground" element={<PlaygroundPage />} />

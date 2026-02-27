@@ -22,8 +22,8 @@ export class SQLitePantryRepository {
 
         await this.db.run(
             `INSERT OR REPLACE INTO pantry_items 
-            (id, name, category, brand, description, remaining_stock, is_low_stock, roast_date, purchase_date, tags_json, icon, is_active, created_at, updated_at, deleted_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (id, name, category, brand, description, remaining_stock, quantity, unit, is_low_stock, roast_date, purchase_date, tags_json, icon, is_active, created_at, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 item.id,
                 item.name,
@@ -31,6 +31,8 @@ export class SQLitePantryRepository {
                 item.brand || null,
                 item.description || null,
                 item.remaining_stock || null,
+                item.quantity || null,
+                item.unit || null,
                 item.is_low_stock ? 1 : 0,
                 item.roast_date || null,
                 item.purchase_date || null,

@@ -1,9 +1,26 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import welcomeHero from '../assets/welcome-hero.jpg';
+import { settingsService } from '../core/services';
 
 export const WelcomePage = () => {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const checkDone = async () => {
+            try {
+                const name = await settingsService.getUserName();
+                const methods = await settingsService.getUserPreferredMethods();
+                if (name && name.trim().length > 0 && methods && methods.length === 6) {
+                    navigate('/home', { replace: true });
+                }
+            } catch (e) {
+                // Ignore
+            }
+        };
+        checkDone();
+    }, [navigate]);
 
     return (
         <div className="relative flex h-screen w-full flex-col bg-cream font-display overflow-hidden">

@@ -6,9 +6,10 @@ import type { Recipe } from '../shared/domain/entities';
 interface BrewStoreState {
     activeRecipe: Recipe | null;
     selectedBeanId: string | null;
+    selectedFilterId: string | null;
     engine: BrewEngine | null;
     engineState: BrewEngineState | null;
-    startBrew: (recipe: Recipe, beanId?: string) => void;
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string) => void;
     stopBrew: () => void;
     pauseBrew: () => void;
     resumeBrew: () => void;
@@ -17,10 +18,11 @@ interface BrewStoreState {
 export const useBrewStore = create<BrewStoreState>((set, get) => ({
     activeRecipe: null,
     selectedBeanId: null,
+    selectedFilterId: null,
     engine: null,
     engineState: null,
 
-    startBrew: (recipe: Recipe, beanId?: string) => {
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string) => {
         const engine = new BrewEngine(recipe.steps);
 
         engine.addListener((state) => {
@@ -31,6 +33,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
         set({
             activeRecipe: recipe,
             selectedBeanId: beanId || null,
+            selectedFilterId: filterId || null,
             engine,
             engineState: {
                 currentStepIndex: 0,
@@ -46,7 +49,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
     stopBrew: () => {
         const { engine } = get();
         engine?.stop();
-        set({ activeRecipe: null, selectedBeanId: null, engine: null, engineState: null });
+        set({ activeRecipe: null, selectedBeanId: null, selectedFilterId: null, engine: null, engineState: null });
     },
 
     pauseBrew: () => {

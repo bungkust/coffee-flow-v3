@@ -1,15 +1,37 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { settingsService } from '../core/services';
 
 export const SplashPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            navigate('/welcome');
-        }, 2800); // Slightly longer than the 2.5s progress animation
+        const checkOnboardingState = async () => {
+            try {
+                const name = await settingsService.getUserName();
+                const methods = await settingsService.getUserPreferredMethods();
 
-        return () => clearTimeout(timer);
+                const hasCompletedName = name && name.trim().length > 0;
+                // Assuming Step 2 mandates exactly 6 selected equipment methods:
+                const hasCompletedEquipment = methods && methods.length === 6;
+
+                const timer = setTimeout(() => {
+                    if (hasCompletedName && hasCompletedEquipment) {
+                        navigate('/home');
+                    } else {
+                        navigate('/welcome');
+                    }
+                }, 2800); // Slightly longer than the 2.5s progress animation
+
+                return () => clearTimeout(timer);
+            } catch (err) {
+                console.error("Failed to check onboarding state", err);
+                const timer = setTimeout(() => navigate('/welcome'), 2800);
+                return () => clearTimeout(timer);
+            }
+        };
+
+        checkOnboardingState();
     }, [navigate]);
 
     return (

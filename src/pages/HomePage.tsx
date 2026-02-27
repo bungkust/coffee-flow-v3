@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '../components/Icons';
-import profileUser from '../assets/profile-user.jpg';
-import { brewService } from '../core/services';
+import { brewService, settingsService } from '../core/services';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 
@@ -9,17 +8,22 @@ export const HomePage = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({ weeklyBrews: 0, avgRating: 0, beansCount: 0 });
     const [recentBrews, setRecentBrews] = useState<any[]>([]);
+    const [userName, setUserName] = useState('Brewmaster');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [s, rb] = await Promise.all([
+                const [s, rb, name] = await Promise.all([
                     brewService.getDashboardStats(),
-                    brewService.getRecentBrews(3)
+                    brewService.getRecentBrews(3),
+                    settingsService.getUserName()
                 ]);
                 setStats(s);
                 setRecentBrews(rb);
+                if (name && name.trim().length > 0) {
+                    setUserName(name);
+                }
             } catch (err) {
                 console.error('Error fetching dashboard data:', err);
             } finally {
@@ -56,20 +60,8 @@ export const HomePage = () => {
                         {new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date())}
                     </p>
                     <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
-                        {getGreeting()}, Brewmaster!
+                        {getGreeting()}, {userName}!
                     </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button className="flex items-center justify-center w-9 h-9 rounded-full bg-background-light text-neutral-text hover:bg-gray-100 transition-colors">
-                        <Icon name="notifications" className="text-[20px]" />
-                    </button>
-                    <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden border-2 border-white shadow-sm relative">
-                        <img
-                            alt="User Profile"
-                            className="w-full h-full object-cover"
-                            src={profileUser}
-                        />
-                    </div>
                 </div>
             </div>
 

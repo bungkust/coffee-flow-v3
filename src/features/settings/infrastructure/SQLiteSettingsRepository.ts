@@ -120,6 +120,24 @@ export class SQLiteSettingsRepository {
         );
     }
 
+    async getUserPreferredDrinks(): Promise<string[]> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_preferred_drinks']);
+        try {
+            return JSON.parse(result.values?.[0]?.value || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    async setUserPreferredDrinks(drinks: string[]): Promise<void> {
+        const now = new Date().toISOString();
+        const json = JSON.stringify(drinks);
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['user_preferred_drinks', json, now]
+        );
+    }
+
     async clearUserData(): Promise<void> {
         // 1. Clear Logs
         await this.db.run('DELETE FROM brew_logs');

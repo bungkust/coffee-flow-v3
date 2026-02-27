@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { pantryService } from '../core/services';
@@ -8,6 +9,7 @@ import type { PantryItem } from '../features/pantry/domain/entities';
 type Tab = 'supplies' | 'gear';
 
 export const PantryPage = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<Tab>('supplies');
     const [items, setItems] = useState<PantryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -138,11 +140,13 @@ export const PantryPage = () => {
                                                 <div className="mt-4">
                                                     <div className="flex justify-between items-end mb-1.5">
                                                         <span className="text-xs font-semibold text-gray-500">Remaining Stock</span>
-                                                        <span className="text-xs font-bold text-primary">{item.remaining_stock}%</span>
+                                                        <span className="text-xs font-bold text-primary">{item.quantity ? `${item.quantity}${item.unit}` : `${item.remaining_stock}%`}</span>
                                                     </div>
-                                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div className="bg-primary h-full rounded-full" style={{ width: `${item.remaining_stock}%` }}></div>
-                                                    </div>
+                                                    {(!item.quantity || item.unit === '%') && (
+                                                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div className="bg-primary h-full rounded-full" style={{ width: `${item.quantity || item.remaining_stock}%` }}></div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -175,10 +179,14 @@ export const PantryPage = () => {
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
-                                                    <span className={`text-xs font-bold ${item.is_low_stock ? 'text-red-500' : 'text-gray-600'}`}>{item.remaining_stock}%</span>
-                                                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                        <div className={`${item.is_low_stock ? 'bg-red-500' : 'bg-primary'} h-full rounded-full`} style={{ width: `${item.remaining_stock}%` }}></div>
-                                                    </div>
+                                                    <span className={`text-xs font-bold ${item.is_low_stock ? 'text-red-500' : 'text-gray-600'}`}>
+                                                        {item.quantity ? `${item.quantity}${item.unit}` : `${item.remaining_stock}%`}
+                                                    </span>
+                                                    {(!item.quantity || item.unit === '%') && (
+                                                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div className={`${item.is_low_stock ? 'bg-red-500' : 'bg-primary'} h-full rounded-full`} style={{ width: `${item.quantity || item.remaining_stock}%` }}></div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -261,7 +269,10 @@ export const PantryPage = () => {
             </main>
 
             {/* Floating Add Button */}
-            <button className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer">
+            <button
+                onClick={() => navigate('/pantry/add')}
+                className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer"
+            >
                 <Icon name="add" className="text-[32px]" />
             </button>
 
@@ -323,7 +334,7 @@ export const PantryPage = () => {
                                     <Icon name="scale" className="text-primary mb-2 text-[20px]" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Stock Left</span>
                                     <span className="text-sm font-bold text-[#181411]">
-                                        {selectedBean.remaining_stock}%
+                                        {selectedBean.quantity ? `${selectedBean.quantity}${selectedBean.unit}` : `${selectedBean.remaining_stock}%`}
                                     </span>
                                 </div>
                             </div>

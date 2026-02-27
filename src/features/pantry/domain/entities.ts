@@ -8,7 +8,9 @@ export interface PantryItem {
     category: PantryCategory;
     brand?: string;
     description?: string;
-    remaining_stock?: number; // 0-100 percentage
+    remaining_stock?: number; // 0-100 percentage (Legacy)
+    quantity?: number; // Universal numerical amount
+    unit?: 'g' | 'ml' | 'pcs' | '%'; // Type of measurement
     is_low_stock?: boolean;
     roast_date?: string; // ISO date string for beans
     purchase_date?: string; // ISO date string

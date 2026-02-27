@@ -200,5 +200,13 @@ export const MIGRATIONS = [
     sql: `
       ALTER TABLE brew_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
     `
+  },
+  {
+    version: 8,
+    sql: `
+      ALTER TABLE pantry_items ADD COLUMN quantity INTEGER;
+      ALTER TABLE pantry_items ADD COLUMN unit TEXT;
+      UPDATE pantry_items SET quantity = remaining_stock, unit = '%' WHERE remaining_stock IS NOT NULL;
+    `
   }
 ];

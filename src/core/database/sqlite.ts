@@ -7,6 +7,7 @@ class DatabaseService {
     private sqlite: SQLiteConnection | null = null;
     private db: SQLiteDBConnection | null = null;
     private isInitialized = false;
+    private initPromise: Promise<void> | null = null;
 
     private constructor() { }
 
@@ -19,38 +20,43 @@ class DatabaseService {
 
     async initialize(): Promise<void> {
         if (this.isInitialized) return;
+        if (this.initPromise) return this.initPromise;
 
-        try {
-            this.sqlite = new SQLiteConnection(CapacitorSQLite);
+        this.initPromise = (async () => {
+            try {
+                this.sqlite = new SQLiteConnection(CapacitorSQLite);
 
-            const platform = Capacitor.getPlatform();
+                const platform = Capacitor.getPlatform();
 
-            if (platform === 'web') {
-                const jeepSqlite = document.createElement('jeep-sqlite');
-                document.body.appendChild(jeepSqlite);
-                await customElements.whenDefined('jeep-sqlite');
-                await this.sqlite.initWebStore();
+                if (platform === 'web') {
+                    // Stencil jeep-sqlite component is injected in main.tsx BEFORE React begins.
+                    // Just initialize the webstore mechanism here.
+                    await this.sqlite.initWebStore();
+                }
+
+                this.db = await this.sqlite.createConnection(
+                    'coffee_flow_db',
+                    false,
+                    'no-encryption',
+                    1,
+                    false
+                );
+
+                await this.db.open();
+                await this.runMigrations();
+
+                // Save to store immediately after initializing/migrating
+                await this.saveToLocalStore();
+
+                this.isInitialized = true;
+            } catch (error) {
+                console.error('Database initialization failed:', error);
+                this.initPromise = null; // allow retrying
+                throw new Error('Database initialization failed');
             }
+        })();
 
-            this.db = await this.sqlite.createConnection(
-                'coffee_flow_db',
-                false,
-                'no-encryption',
-                1,
-                false
-            );
-
-            await this.db.open();
-            await this.runMigrations();
-
-            // Save to store immediately after initializing/migrating
-            await this.saveToLocalStore();
-
-            this.isInitialized = true;
-        } catch (error) {
-            console.error('Database initialization failed:', error);
-            throw new Error('Database initialization failed');
-        }
+        return this.initPromise;
     }
 
     async saveToLocalStore(): Promise<void> {
