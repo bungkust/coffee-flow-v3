@@ -81,7 +81,8 @@ export const RecipePreparationPage = () => {
 
     const handleProceedToBrew = () => {
         if (recipe) {
-            startBrew(recipe, selectedBeanId, selectedFilterId);
+            const coffeeWeight = Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'));
+            startBrew(recipe, selectedBeanId, selectedFilterId, coffeeWeight);
             navigate('/brew-flow');
         }
     };

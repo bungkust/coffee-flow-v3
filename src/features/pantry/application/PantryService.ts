@@ -44,4 +44,8 @@ export class PantryService {
     async clearEquipment(): Promise<void> {
         await this.repository.clearEquipment();
     }
+
+    async deductStock(id: string, amount: number): Promise<void> {
+        await this.repository.deductStock(id, amount);
+    }
 }

@@ -1,16 +1,20 @@
 import type { IRecipeRepository, IBrewLogRepository } from '../../../shared/domain/repositories';
 import type { Recipe, BrewLog, EntityId } from '../../../shared/domain/entities';
+import type { PantryService } from '../../pantry/application/PantryService';
 
 export class BrewService {
     private recipeRepo: IRecipeRepository;
     private logRepo: IBrewLogRepository;
+    private pantryService: PantryService;
 
     constructor(
         recipeRepo: IRecipeRepository,
-        logRepo: IBrewLogRepository
+        logRepo: IBrewLogRepository,
+        pantryService: PantryService
     ) {
         this.recipeRepo = recipeRepo;
         this.logRepo = logRepo;
+        this.pantryService = pantryService;
     }
 
     async getAllRecipes(): Promise<Recipe[]> {
@@ -31,7 +35,9 @@ export class BrewService {
         notes: string,
         profile: { sweetness: number, acidity: number, body: number, bitterness: number },
         flavorTags: string[],
-        beanId?: string
+        beanId?: string,
+        filterId?: string,
+        coffeeConsumed?: number
     ): Promise<void> {
         const log: BrewLog = {
             id: crypto.randomUUID(),
@@ -48,6 +54,16 @@ export class BrewService {
             created_at: new Date().toISOString()
         };
         await this.logRepo.save(log);
+
+        // Deduct bean stock
+        if (beanId && coffeeConsumed) {
+            await this.pantryService.deductStock(beanId, coffeeConsumed);
+        }
+
+        // Deduct filter stock (always 1 for filter-based methods)
+        if (filterId) {
+            await this.pantryService.deductStock(filterId, 1);
+        }
     }
 
     async getDashboardStats() {

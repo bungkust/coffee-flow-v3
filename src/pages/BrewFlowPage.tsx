@@ -111,10 +111,6 @@ export const BrewFlowPage = () => {
                         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Brewing Method</span>
                         <h1 className="text-lg font-bold text-[#181411]">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
                     </div>
-                    <div className="flex items-center gap-2 bg-[#F2FAF5] px-3 py-1.5 rounded-full border border-[#E1F2E8]">
-                        <Icon name="check_circle" className="text-[#34A853] text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
-                        <span className="text-lg font-bold text-[#34A853] tabular-nums">{formatTime(totalElapsed)}</span>
-                    </div>
                 </div>
 
                 <div className="flex-1 flex flex-col px-6 py-4 overflow-y-auto hide-scrollbar">
@@ -201,10 +197,6 @@ export const BrewFlowPage = () => {
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Brewing Method</span>
                     <h1 className="text-lg font-bold text-[#181411]">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
-                </div>
-                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                    <Icon name="timer" className="text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }} />
-                    <span className="text-lg font-bold text-[#181411] tabular-nums">{formatTime(totalElapsed)}</span>
                 </div>
             </div>
 

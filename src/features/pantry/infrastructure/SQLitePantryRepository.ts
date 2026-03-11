@@ -76,4 +76,28 @@ export class SQLitePantryRepository {
         );
         await dbService.saveToLocalStore();
     }
+
+    async deductStock(id: string, amount: number): Promise<void> {
+        const result = await this.db.query('SELECT quantity, unit, remaining_stock FROM pantry_items WHERE id = ?', [id]);
+        if (!result.values || result.values.length === 0) return;
+
+        const item = result.values[0];
+        const currentQty = item.quantity || 0;
+        const newQty = Math.max(0, currentQty - amount);
+        const now = new Date().toISOString();
+
+        // Update quantity and also remaining_stock if it's percentage-based
+        if (item.unit === '%') {
+            await this.db.run(
+                'UPDATE pantry_items SET quantity = ?, remaining_stock = ?, updated_at = ? WHERE id = ?',
+                [newQty, newQty, now, id]
+            );
+        } else {
+            await this.db.run(
+                'UPDATE pantry_items SET quantity = ?, updated_at = ? WHERE id = ?',
+                [newQty, now, id]
+            );
+        }
+        await dbService.saveToLocalStore();
+    }
 }

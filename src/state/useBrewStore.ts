@@ -7,9 +7,10 @@ interface BrewStoreState {
     activeRecipe: Recipe | null;
     selectedBeanId: string | null;
     selectedFilterId: string | null;
+    coffeeConsumed: number | null;
     engine: BrewEngine | null;
     engineState: BrewEngineState | null;
-    startBrew: (recipe: Recipe, beanId?: string, filterId?: string) => void;
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number) => void;
     stopBrew: () => void;
     pauseBrew: () => void;
     resumeBrew: () => void;
@@ -19,10 +20,11 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
     activeRecipe: null,
     selectedBeanId: null,
     selectedFilterId: null,
+    coffeeConsumed: null,
     engine: null,
     engineState: null,
 
-    startBrew: (recipe: Recipe, beanId?: string, filterId?: string) => {
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number) => {
         const engine = new BrewEngine(recipe.steps);
 
         engine.addListener((state) => {
@@ -34,6 +36,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
             activeRecipe: recipe,
             selectedBeanId: beanId || null,
             selectedFilterId: filterId || null,
+            coffeeConsumed: coffeeConsumed || null,
             engine,
             engineState: {
                 currentStepIndex: 0,
@@ -49,7 +52,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
     stopBrew: () => {
         const { engine } = get();
         engine?.stop();
-        set({ activeRecipe: null, selectedBeanId: null, selectedFilterId: null, engine: null, engineState: null });
+        set({ activeRecipe: null, selectedBeanId: null, selectedFilterId: null, coffeeConsumed: null, engine: null, engineState: null });
     },
 
     pauseBrew: () => {
