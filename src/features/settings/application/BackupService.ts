@@ -18,24 +18,25 @@ export class BackupService {
     }
 
     async performBackup(): Promise<Backup> {
-        // Simulate backup process
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const snapshot = await this.repo.createSnapshot();
+        const size = new Blob([snapshot]).size;
 
         const newBackup: Backup = {
             id: crypto.randomUUID(),
             created_at: new Date().toISOString(),
-            size_bytes: Math.floor(Math.random() * (150 - 130 + 1) + 130) * 1024 * 1024, // Random size between 130-150MB
-            location: 'iCloud Drive',
+            size_bytes: size,
+            location: 'Local Snapshot',
             status: 'Success'
         };
 
+        localStorage.setItem(`coffee_flow_backup_${newBackup.id}`, snapshot);
         await this.repo.save(newBackup);
         return newBackup;
     }
 
     async restoreBackup(id: string): Promise<void> {
-        // Simulate restore
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        console.log(`Restored backup ${id}`);
+        const snapshot = localStorage.getItem(`coffee_flow_backup_${id}`);
+        if (!snapshot) throw new Error('Backup snapshot not found');
+        await this.repo.restoreSnapshot(snapshot);
     }
 }

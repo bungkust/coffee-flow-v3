@@ -3,13 +3,15 @@ import { Icon } from '../components/Icons';
 import { brewService, settingsService } from '../core/services';
 import { useNavigate } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
+import type { BrewLogWithRecipe } from '../shared/domain/entities';
 
 export const HomePage = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({ weeklyBrews: 0, avgRating: 0, beansCount: 0 });
-    const [recentBrews, setRecentBrews] = useState<any[]>([]);
+    const [recentBrews, setRecentBrews] = useState<BrewLogWithRecipe[]>([]);
     const [userName, setUserName] = useState('Brewmaster');
     const [loading, setLoading] = useState(true);
+    const [showTip, setShowTip] = useState(() => localStorage.getItem('coffee_flow_tip_dismissed') !== 'true');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -63,6 +65,13 @@ export const HomePage = () => {
                         {getGreeting()}, {userName}!
                     </h1>
                 </div>
+                <button
+                    onClick={() => navigate('/settings')}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-500 hover:bg-primary/10 hover:text-primary transition-colors"
+                    aria-label="Open settings"
+                >
+                    <Icon name="settings" className="text-[22px]" />
+                </button>
             </div>
 
             {/* Main Content Scrollable Area */}
@@ -100,7 +109,7 @@ export const HomePage = () => {
                         </div>
                         <Icon name="arrow_forward" className="text-[18px] opacity-80" />
                     </button>
-                    <button className="group flex items-center p-3 rounded-xl bg-white text-neutral-text shadow-sm border border-gray-100 hover:border-primary/20 transition-all active:scale-95 cursor-pointer">
+                    <button onClick={() => navigate('/drinks')} className="group flex items-center p-3 rounded-xl bg-white text-neutral-text shadow-sm border border-gray-100 hover:border-primary/20 transition-all active:scale-95 cursor-pointer">
                         <div className="w-10 h-10 rounded-full bg-accent-light flex items-center justify-center text-primary shrink-0 mr-3 shadow-sm">
                             <Icon name="local_cafe" className="text-[22px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
                         </div>
@@ -146,15 +155,18 @@ export const HomePage = () => {
                 </div>
 
                 {/* Tip Card */}
-                <div className="bg-gray-900 rounded-lg p-3 text-white flex gap-3 items-center shadow-sm mt-1">
+                {showTip && <div className="bg-gray-900 rounded-lg p-3 text-white flex gap-3 items-center shadow-sm mt-1">
                     <Icon name="lightbulb" className="text-yellow-300 text-xl shrink-0" />
                     <p className="text-xs text-gray-200 leading-snug flex-1">
                         <span className="font-bold text-yellow-300">Tip:</span> Filtered water significantly improves brew clarity.
                     </p>
-                    <button className="text-gray-400 hover:text-white shrink-0 cursor-pointer">
+                    <button onClick={() => {
+                        localStorage.setItem('coffee_flow_tip_dismissed', 'true');
+                        setShowTip(false);
+                    }} className="text-gray-400 hover:text-white shrink-0 cursor-pointer">
                         <Icon name="close" className="text-lg" />
                     </button>
-                </div>
+                </div>}
             </div>
 
             <BottomNav activeTab="home" />

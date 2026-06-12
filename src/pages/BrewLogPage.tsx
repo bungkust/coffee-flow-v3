@@ -157,7 +157,10 @@ export const BrewLogPage = () => {
                                 {tag}
                             </button>
                         ))}
-                        <button className="px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-400 border border-gray-100 hover:bg-gray-100 transition-all flex items-center justify-center">
+                        <button onClick={() => {
+                            const customTag = window.prompt('Add flavor tag');
+                            if (customTag?.trim()) setSelectedTags([...selectedTags, customTag.trim()]);
+                        }} className="px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-400 border border-gray-100 hover:bg-gray-100 transition-all flex items-center justify-center">
                             <Icon name="add" className="text-[18px]" />
                         </button>
                     </div>

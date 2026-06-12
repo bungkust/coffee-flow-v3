@@ -202,7 +202,7 @@ export const BrewMethodsPage = () => {
                     <div className="mt-8 mb-2">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Other Tools</p>
                         <div className="flex flex-col gap-3">
-                            <button className="flex items-center p-4 bg-white dark:bg-[#2C241B] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5 hover:border-primary/30 group cursor-pointer text-left w-full transition-all">
+                            <button onClick={() => navigate('/quick-timer')} className="flex items-center p-4 bg-white dark:bg-[#2C241B] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5 hover:border-primary/30 group cursor-pointer text-left w-full transition-all">
                                 <div className="w-10 h-10 rounded-full bg-accent-light dark:bg-white/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center mr-4 shadow-sm">
                                     <Icon name="timer" className="text-[20px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
                                 </div>
@@ -212,7 +212,7 @@ export const BrewMethodsPage = () => {
                                 </div>
                                 <Icon name="chevron_right" className="text-gray-300 dark:text-gray-600" />
                             </button>
-                            <button className="flex items-center p-4 bg-white dark:bg-[#2C241B] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5 hover:border-primary/30 group cursor-pointer text-left w-full transition-all">
+                            <button onClick={() => navigate('/ratio-calculator')} className="flex items-center p-4 bg-white dark:bg-[#2C241B] rounded-xl shadow-sm border border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5 hover:border-primary/30 group cursor-pointer text-left w-full transition-all">
                                 <div className="w-10 h-10 rounded-full bg-accent-light dark:bg-white/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex items-center justify-center mr-4 shadow-sm">
                                     <Icon name="calculate" className="text-[20px]" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
                                 </div>
@@ -232,4 +232,3 @@ export const BrewMethodsPage = () => {
         </div>
     );
 };
-

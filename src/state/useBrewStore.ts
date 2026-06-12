@@ -11,6 +11,7 @@ interface BrewStoreState {
     engine: BrewEngine | null;
     engineState: BrewEngineState | null;
     startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number) => void;
+    hydrateBrew: () => boolean;
     stopBrew: () => void;
     pauseBrew: () => void;
     resumeBrew: () => void;
@@ -36,7 +37,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
             activeRecipe: recipe,
             selectedBeanId: beanId || null,
             selectedFilterId: filterId || null,
-            coffeeConsumed: coffeeConsumed || null,
+            coffeeConsumed: coffeeConsumed ?? null,
             engine,
             engineState: {
                 currentStepIndex: 0,
@@ -47,11 +48,47 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
                 isCompleted: false
             }
         });
+
+        sessionStorage.setItem('coffee_flow_active_brew', JSON.stringify({
+            recipe,
+            beanId: beanId || null,
+            filterId: filterId || null,
+            coffeeConsumed: coffeeConsumed ?? null
+        }));
+    },
+
+    hydrateBrew: () => {
+        const current = get();
+        if (current.activeRecipe && current.engineState) return true;
+
+        const raw = sessionStorage.getItem('coffee_flow_active_brew');
+        if (!raw) return false;
+
+        try {
+            const draft = JSON.parse(raw) as {
+                recipe: Recipe;
+                beanId?: string | null;
+                filterId?: string | null;
+                coffeeConsumed?: number | null;
+            };
+            if (!draft.recipe?.steps?.length) return false;
+            get().startBrew(
+                draft.recipe,
+                draft.beanId || undefined,
+                draft.filterId || undefined,
+                draft.coffeeConsumed ?? undefined
+            );
+            return true;
+        } catch {
+            sessionStorage.removeItem('coffee_flow_active_brew');
+            return false;
+        }
     },
 
     stopBrew: () => {
         const { engine } = get();
         engine?.stop();
+        sessionStorage.removeItem('coffee_flow_active_brew');
         set({ activeRecipe: null, selectedBeanId: null, selectedFilterId: null, coffeeConsumed: null, engine: null, engineState: null });
     },
 

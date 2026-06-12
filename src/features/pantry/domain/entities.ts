@@ -1,6 +1,21 @@
 import type { EntityId } from '../../../shared/domain/entities';
 
-export type PantryCategory = 'beans' | 'milk' | 'syrup' | 'filter' | 'other' | 'dripper' | 'grinder' | 'kettle' | 'scale' | 'accessory';
+export type PantryCategory =
+    | 'beans'
+    | 'milk'
+    | 'syrup'
+    | 'sugar'
+    | 'filter'
+    | 'other'
+    | 'other_ingredient'
+    | 'machine'
+    | 'dripper'
+    | 'french_press'
+    | 'aeropress'
+    | 'grinder'
+    | 'kettle'
+    | 'scale'
+    | 'accessory';
 
 export interface PantryItem {
     id: EntityId;

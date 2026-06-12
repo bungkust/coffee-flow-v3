@@ -2,70 +2,33 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
-import { settingsService } from '../core/services';
+import { drinkService, settingsService } from '../core/services';
+import type { Drink } from '../shared/domain/entities';
 
-const DRINKS = [
-    {
-        id: 'espresso',
-        name: 'Espresso',
-        image: '/assets/drinks/espresso.png',
-        ingredients: 'Ground Coffee, Water',
-        time: '2m'
-    },
-    {
-        id: 'cappuccino',
-        name: 'Cappuccino',
-        image: '/assets/drinks/cappuccino.png',
-        ingredients: 'Espresso, Steamed Milk, Foam',
-        time: '5m'
-    },
-    {
-        id: 'latte',
-        name: 'Latte',
-        image: '/assets/drinks/latte.png',
-        ingredients: 'Espresso, Steamed Milk',
-        time: '4m'
-    },
-    {
-        id: 'flat_white',
-        name: 'Flat White',
-        image: '/assets/drinks/flat_white.png',
-        ingredients: 'Double Espresso, Microfoam',
-        time: '4m'
-    },
-    {
-        id: 'mocha',
-        name: 'Mocha',
-        image: '/assets/drinks/mocha.png',
-        ingredients: 'Espresso, Chocolate, Milk',
-        time: '6m'
-    },
-    {
-        id: 'cold_brew',
-        name: 'Cold Brew',
-        image: '/assets/drinks/cold_brew.png',
-        ingredients: 'Coarse Ground Coffee, Cold Water',
-        time: '12h'
-    },
-    {
-        id: 'americano',
-        name: 'Americano',
-        image: '/assets/drinks/americano.png',
-        ingredients: 'Espresso, Hot Water',
-        time: '3m'
-    },
-    {
-        id: 'macchiato',
-        name: 'Macchiato',
-        image: '/assets/drinks/espresso.png', // Reusing espresso for now due to quota
-        ingredients: 'Espresso, Foam',
-        time: '3m'
-    },
-];
+const DRINK_IMAGES: Record<string, string> = {
+    espresso: '/assets/drinks/espresso.png',
+    cappuccino: '/assets/drinks/cappuccino.png',
+    latte: '/assets/drinks/latte.png',
+    flat_white: '/assets/drinks/flat_white.png',
+    mocha: '/assets/drinks/mocha.png',
+    cold_brew: '/assets/drinks/cold_brew.png',
+    americano: '/assets/drinks/americano.png',
+    macchiato: '/assets/drinks/espresso.png'
+};
+
+const getDrinkImage = (id: string) => DRINK_IMAGES[id] || '/assets/drinks/espresso.png';
+const parseList = (json: string): string[] => {
+    try {
+        return JSON.parse(json);
+    } catch {
+        return [];
+    }
+};
 
 export const DrinkMenuPage = () => {
     const navigate = useNavigate();
-    const [availableDrinks, setAvailableDrinks] = useState<typeof DRINKS>([]);
+    const [allDrinks, setAllDrinks] = useState<Drink[]>([]);
+    const [availableDrinks, setAvailableDrinks] = useState<Drink[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
@@ -75,18 +38,18 @@ export const DrinkMenuPage = () => {
         const fetchDrinks = async () => {
             try {
                 const preferredDrinks = await settingsService.getUserPreferredDrinks();
+                const drinks = await drinkService.getAllDrinks();
+                setAllDrinks(drinks);
 
                 if (preferredDrinks && preferredDrinks.length > 0) {
                     const drinkIds = new Set(preferredDrinks);
-                    const filtered = DRINKS.filter(drink => drinkIds.has(drink.id));
-                    setAvailableDrinks(filtered.length > 0 ? filtered : DRINKS.slice(0, 4));
+                    const filtered = drinks.filter(drink => drinkIds.has(drink.id));
+                    setAvailableDrinks(filtered.length > 0 ? filtered : drinks.slice(0, 4));
                 } else {
-                    // Fallback to first 4 drinks if none are saved
-                    setAvailableDrinks(DRINKS.slice(0, 4));
+                    setAvailableDrinks(drinks.slice(0, 4));
                 }
             } catch (error) {
                 console.error("Failed to load preferred drinks:", error);
-                setAvailableDrinks(DRINKS.slice(0, 4));
             } finally {
                 setLoading(false);
             }
@@ -121,10 +84,10 @@ export const DrinkMenuPage = () => {
 
     const filteredDisplayDrinks = availableDrinks.filter(d =>
         d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        d.ingredients.toLowerCase().includes(searchQuery.toLowerCase())
+        parseList(d.ingredients_json).join(' ').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const editableDrinks = DRINKS.filter(d =>
+    const editableDrinks = allDrinks.filter(d =>
         d.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -186,7 +149,7 @@ export const DrinkMenuPage = () => {
                                         </div>
                                     )}
                                     <div className="w-16 h-16 rounded-xl bg-gray-50 dark:bg-white/5 flex items-center justify-center overflow-hidden mb-3 border border-gray-50 dark:border-white/5">
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover p-1" />
+                                        <img src={getDrinkImage(item.id)} alt={item.name} className="w-full h-full object-cover p-1" />
                                     </div>
                                     <span className={`font-bold text-sm text-center ${isSelected
                                         ? 'text-primary'
@@ -228,11 +191,11 @@ export const DrinkMenuPage = () => {
                             {filteredDisplayDrinks.map((drink) => (
                                 <button
                                     key={drink.id}
-                                    onClick={() => navigate(`/recipes?drink=${drink.id}`)}
+                                    onClick={() => navigate(`/drinks/${drink.id}`)}
                                     className="group flex items-center p-3 rounded-2xl bg-white dark:bg-[#2C241B] border border-gray-100 dark:border-white/5 active:scale-[0.98] transition-all hover:border-primary/20 shadow-sm w-full text-left"
                                 >
                                     <div className="w-16 h-16 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-white/5 mr-4 transition-transform group-hover:scale-105">
-                                        <img src={drink.image} alt={drink.name} className="w-full h-full object-cover p-1" />
+                                        <img src={getDrinkImage(drink.id)} alt={drink.name} className="w-full h-full object-cover p-1" />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
@@ -240,11 +203,11 @@ export const DrinkMenuPage = () => {
                                                 {drink.name}
                                             </h3>
                                             <span className="text-[11px] font-bold text-gray-400 group-hover:text-primary transition-colors">
-                                                {drink.time}
+                                                {drink.category}
                                             </span>
                                         </div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                                            {drink.ingredients}
+                                            {parseList(drink.ingredients_json).join(', ')}
                                         </p>
                                     </div>
                                     <div className="ml-2 text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-1">
@@ -264,7 +227,7 @@ export const DrinkMenuPage = () => {
                 </div>
             )}
 
-            {!isEditing && <BottomNav activeTab="drinks" />}
+            {!isEditing && <BottomNav activeTab="brewing" />}
         </div>
     );
 };

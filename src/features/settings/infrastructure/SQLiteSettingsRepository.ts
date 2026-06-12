@@ -16,6 +16,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['app_unit', unit, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserName(): Promise<string> {
@@ -43,6 +44,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_name', name, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserExperienceLevel(): Promise<string> {
@@ -56,6 +58,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_experience_level', level, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserTasteProfile(): Promise<string[]> {
@@ -74,6 +77,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_taste_profile', json, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserBrewingGoal(): Promise<string> {
@@ -87,6 +91,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_brewing_goal', goal, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserDailyCups(): Promise<string> {
@@ -100,6 +105,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_daily_cups', cups, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserPreferredMethods(): Promise<string[]> {
@@ -118,6 +124,7 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_preferred_methods', json, now]
         );
+        await dbService.saveToLocalStore();
     }
 
     async getUserPreferredDrinks(): Promise<string[]> {
@@ -136,6 +143,35 @@ export class SQLiteSettingsRepository {
             `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
             ['user_preferred_drinks', json, now]
         );
+        await dbService.saveToLocalStore();
+    }
+
+    async getNotificationsEnabled(): Promise<boolean> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['notifications_enabled']);
+        return result.values?.[0]?.value !== 'false';
+    }
+
+    async setNotificationsEnabled(enabled: boolean): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['notifications_enabled', String(enabled), now]
+        );
+        await dbService.saveToLocalStore();
+    }
+
+    async getTimerFeedbackEnabled(): Promise<boolean> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['timer_feedback_enabled']);
+        return result.values?.[0]?.value !== 'false';
+    }
+
+    async setTimerFeedbackEnabled(enabled: boolean): Promise<void> {
+        const now = new Date().toISOString();
+        await this.db.run(
+            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
+            ['timer_feedback_enabled', String(enabled), now]
+        );
+        await dbService.saveToLocalStore();
     }
 
     async clearUserData(): Promise<void> {
@@ -157,5 +193,6 @@ export class SQLiteSettingsRepository {
         // If we allowed editing non-custom recipes, we'd need a way to reset them.
         // Given the schema, we might want to delete ANY recipe that isn't in the seed list?
         // Safer: Just delete custom ones. The seed function uses INSERT OR REPLACE so it will fix built-ins on restart.
+        await dbService.saveToLocalStore();
     }
 }

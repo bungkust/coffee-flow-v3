@@ -1,24 +1,26 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Icon } from '../components/Icons';
 import { brewService } from '../core/services';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { Modal } from '../components/Modal';
+import type { Recipe } from '../shared/domain/entities';
+import { formatDuration, sumStepDuration } from '../shared/utils/brewMath';
 
 export const RecipeListPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const methodFilter = searchParams.get('method');
 
-    const [recipes, setRecipes] = useState<any[]>([]);
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeChip, setActiveChip] = useState('All');
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [recipeToDelete, setRecipeToDelete] = useState<any>(null);
+    const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
 
-    const fetchRecipes = async () => {
+    const fetchRecipes = useCallback(async () => {
         try {
             setLoading(true);
             let data = await brewService.getAllRecipes();
@@ -31,23 +33,26 @@ export const RecipeListPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [methodFilter]);
 
     useEffect(() => {
         fetchRecipes();
-    }, [methodFilter]);
+    }, [fetchRecipes]);
 
     const filteredRecipes = useMemo(() => {
         return recipes.filter(r => {
             const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesChip = activeChip === 'All' ||
                 (activeChip === 'Personal' && r.is_custom) ||
-                (activeChip === 'Community' && !r.is_custom);
+                (activeChip === 'Community' && !r.is_custom) ||
+                (activeChip === 'Favorites' && r.is_favorite) ||
+                (activeChip === 'Light Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('light'))) ||
+                (activeChip === 'Dark Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('dark')));
             return matchesSearch && matchesChip;
         });
     }, [recipes, searchQuery, activeChip]);
 
-    const handleSelectRecipe = (recipe: any) => {
+    const handleSelectRecipe = (recipe: Recipe) => {
         navigate(`/recipes/${recipe.id}`);
     };
 
@@ -83,7 +88,7 @@ export const RecipeListPage = () => {
     };
 
 
-    const handleDeleteClick = (e: React.MouseEvent, recipe: any) => {
+    const handleDeleteClick = (e: React.MouseEvent, recipe: Recipe) => {
         e.stopPropagation();
         setRecipeToDelete(recipe);
         setIsDeleteModalOpen(true);
@@ -102,7 +107,7 @@ export const RecipeListPage = () => {
         }
     };
 
-    const chips = ['All', 'Personal', 'Community', 'Light Roast', 'Dark Roast'];
+    const chips = ['All', 'Favorites', 'Personal', 'Community', 'Light Roast', 'Dark Roast'];
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-32">
@@ -221,7 +226,7 @@ export const RecipeListPage = () => {
                             </div>
 
                             <div className="flex gap-2 mt-3">
-                                <StatCard label="Time" value="3:30" />
+                                <StatCard label="Time" value={formatDuration(sumStepDuration(recipe.steps))} />
                                 <StatCard label="Ratio" value={recipe.ratio} />
                                 <StatCard label="Temp" value={`${recipe.temperature}°C`} />
                             </div>
@@ -237,7 +242,7 @@ export const RecipeListPage = () => {
 
             {/* Floating Add Button */}
             <button
-                onClick={() => navigate(`/recipes/new/edit?method=${methodFilter || 'V60'}`)}
+                onClick={() => navigate(`/recipes/new/edit?method=${methodFilter?.toUpperCase() || 'V60'}`)}
                 className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer"
             >
                 <Icon name="add" className="text-[32px]" />

@@ -1,132 +1,117 @@
 import { brewService } from '../services';
 import { dbService } from './sqlite';
-import type { Recipe } from '../../shared/domain/entities';
+import { BREWING_METHOD_SEEDS, RECIPE_SEEDS } from './recipeSeeds';
 
 export const seedInitialData = async () => {
-    // Check if recipes exist
-    const recipes = await brewService.getAllRecipes();
-    if (recipes.length === 0) {
-        console.log('Seeding initial recipes and methods...');
+    const db = dbService.getDb();
 
-        const now = "2026-01-30T10:30:00Z";
-        const db = dbService.getDb();
-
-        // 1. Ensure V60 method exists to satisfy foreign key constraint
+    for (const method of BREWING_METHOD_SEEDS) {
         await db.run(
-            `INSERT OR IGNORE INTO brewing_methods (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-            ['V60', 'V60 Pour Over', 'Iconic cone-shaped dripper.', now, now]
+            `INSERT OR IGNORE INTO brewing_methods (id, name, description, icon, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [method.id, method.name, method.description, method.icon, method.created_at, method.updated_at]
         );
-
-        const defaultRecipe: Recipe = {
-            id: "v60-even-extraction-flow",
-            method_id: "V60",
-            name: "Even Extraction Flow",
-            difficulty: "Intermediate",
-            style: "Balanced / Round",
-            description_short: "Balanced V60 recipe with controlled agitation for even extraction.",
-            description_detailed: "Even Extraction Flow reduces channeling by combining light stirring, steady pours, and settling phases, producing a round and consistent cup.",
-            philosophy: "Intentional agitation followed by rest promotes uniform extraction without harshness.",
-            best_for_tags: ["Arabica", "Light", "Medium", "Washed", "Honey"],
-            not_recommended_tags: ["Dark Roast", "100% Robusta"],
-            ratio: "1:16",
-            temperature: 93,
-            grind_size: "Medium-Fine",
-            total_water: 288,
-            is_custom: false, // Default recipe
-            is_favorite: false,
-            version: 1,
-            created_at: now,
-            updated_at: now,
-            steps: [
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 1,
-                    label: "Bloom",
-                    target_weight: 45,
-                    duration_seconds: 30,
-                    instruction: "Pour 45 ml evenly to fully saturate the coffee bed.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 2,
-                    label: "Stir",
-                    duration_seconds: 5,
-                    instruction: "Stir gently 2–3 times to ensure all grounds are evenly wetted.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 3,
-                    label: "Wait",
-                    duration_seconds: 15,
-                    instruction: "Allow the slurry to settle slightly before continuing.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 4,
-                    label: "Pour",
-                    target_weight: 165,
-                    duration_seconds: 35,
-                    instruction: "Pour steadily in slow circular motions to reach 165 ml.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 5,
-                    label: "Wait",
-                    duration_seconds: 15,
-                    instruction: "Let the water draw down slightly.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 6,
-                    label: "Pour",
-                    target_weight: 288,
-                    duration_seconds: 40,
-                    instruction: "Finish pouring to 288 ml with a steady flow.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 7,
-                    label: "Swirl",
-                    duration_seconds: 5,
-                    instruction: "Gently swirl the dripper to level the coffee bed.",
-                    created_at: now,
-                    updated_at: now
-                },
-                {
-                    id: crypto.randomUUID(),
-                    recipe_id: "v60-even-extraction-flow",
-                    step_order: 8,
-                    label: "Wait",
-                    duration_seconds: 45,
-                    instruction: "Allow the brew to finish naturally. Adjust grind size if total brew time is off target.",
-                    created_at: now,
-                    updated_at: now
-                }
-            ]
-        };
-
-        await brewService.saveRecipe(defaultRecipe);
-        console.log('Seeded Even Extraction Flow recipe.');
     }
+
+    const recipes = await brewService.getAllRecipes();
+    const existingRecipeIds = new Set(recipes.map(recipe => recipe.id));
+    const missingRecipes = RECIPE_SEEDS.filter(recipe => !existingRecipeIds.has(recipe.id));
+
+    if (missingRecipes.length > 0) {
+        console.log(`Seeding ${missingRecipes.length} missing recipes...`);
+        for (const recipe of missingRecipes) {
+            await brewService.saveRecipe(recipe);
+        }
+    }
+
+    await seedDrinks();
+    await dbService.saveToLocalStore();
+};
+
+const seedDrinks = async () => {
+    const db = dbService.getDb();
+    const existing = await db.query('SELECT COUNT(*) as count FROM drinks WHERE deleted_at IS NULL');
+    if ((existing.values?.[0]?.count || 0) > 0) return;
+
+    const now = new Date().toISOString();
+    const drinks = [
+        {
+            id: 'espresso',
+            name: 'Espresso',
+            category: 'hot',
+            ingredients: ['18g finely ground coffee', '36g espresso yield'],
+            instructions: ['Dose and tamp coffee evenly.', 'Pull a 25-30 second shot.', 'Serve immediately.']
+        },
+        {
+            id: 'cappuccino',
+            name: 'Cappuccino',
+            category: 'hot',
+            ingredients: ['1 espresso shot', '120ml steamed milk', 'Milk foam'],
+            instructions: ['Pull espresso.', 'Steam milk with dense foam.', 'Pour milk and finish with foam.']
+        },
+        {
+            id: 'latte',
+            name: 'Latte',
+            category: 'hot',
+            ingredients: ['1 espresso shot', '180ml steamed milk'],
+            instructions: ['Pull espresso.', 'Steam milk to silky texture.', 'Pour slowly into cup.']
+        },
+        {
+            id: 'flat_white',
+            name: 'Flat White',
+            category: 'hot',
+            ingredients: ['Double espresso', '150ml microfoam milk'],
+            instructions: ['Pull a double espresso.', 'Steam fine microfoam.', 'Pour with a thin foam layer.']
+        },
+        {
+            id: 'mocha',
+            name: 'Mocha',
+            category: 'hot',
+            ingredients: ['1 espresso shot', 'Chocolate', '150ml steamed milk'],
+            instructions: ['Mix chocolate with espresso.', 'Steam milk.', 'Pour and stir gently.']
+        },
+        {
+            id: 'cold_brew',
+            name: 'Cold Brew',
+            category: 'cold',
+            ingredients: ['80g coarse coffee', '800ml cold water'],
+            instructions: ['Combine coffee and water.', 'Steep 12 hours.', 'Filter and serve over ice.']
+        },
+        {
+            id: 'americano',
+            name: 'Americano',
+            category: 'hot',
+            ingredients: ['1 espresso shot', '120ml hot water'],
+            instructions: ['Add hot water to cup.', 'Pull espresso over water.', 'Serve.']
+        },
+        {
+            id: 'macchiato',
+            name: 'Macchiato',
+            category: 'hot',
+            ingredients: ['1 espresso shot', 'Small spoon of foam'],
+            instructions: ['Pull espresso.', 'Top with a small spoon of foam.']
+        }
+    ];
+
+    for (const drink of drinks) {
+        await db.run(
+            `INSERT OR IGNORE INTO drinks
+             (id, name, category, ingredients_json, instructions_json, version, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                drink.id,
+                drink.name,
+                drink.category,
+                JSON.stringify(drink.ingredients),
+                JSON.stringify(drink.instructions),
+                1,
+                now,
+                now
+            ]
+        );
+    }
+
+    await dbService.saveToLocalStore();
 };
 
 let isRemovingDummyItems = false;
@@ -153,4 +138,3 @@ export const removeDummyPantryItems = async () => {
         isRemovingDummyItems = false;
     }
 };
-

@@ -39,7 +39,7 @@ export const ENHANCED_SCHEMA = `
   -- 4. Recipe Steps
   CREATE TABLE IF NOT EXISTS recipe_steps (
     id TEXT PRIMARY KEY,
-    recipe_id TEXT NOT NULL,
+    recipe_id TEXT,
     step_order INTEGER NOT NULL,
     label TEXT NOT NULL,
     duration_seconds INTEGER NOT NULL,

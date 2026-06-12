@@ -66,4 +66,20 @@ export class SettingsService {
     async setUserPreferredDrinks(drinks: string[]): Promise<void> {
         return this.repo.setUserPreferredDrinks(drinks);
     }
+
+    async getNotificationsEnabled(): Promise<boolean> {
+        return this.repo.getNotificationsEnabled();
+    }
+
+    async setNotificationsEnabled(enabled: boolean): Promise<void> {
+        return this.repo.setNotificationsEnabled(enabled);
+    }
+
+    async getTimerFeedbackEnabled(): Promise<boolean> {
+        return this.repo.getTimerFeedbackEnabled();
+    }
+
+    async setTimerFeedbackEnabled(enabled: boolean): Promise<void> {
+        return this.repo.setTimerFeedbackEnabled(enabled);
+    }
 }

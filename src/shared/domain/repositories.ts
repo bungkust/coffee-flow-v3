@@ -1,4 +1,14 @@
-import type { Recipe, BrewLog, Drink, DrinkLog, EntityId } from './entities';
+import type {
+    Recipe,
+    BrewLog,
+    Drink,
+    DrinkLog,
+    EntityId,
+    BrewLogWithRecipe,
+    BrewStats,
+    DrinkLogWithDrink,
+    DrinkStats
+} from './entities';
 
 export interface IRecipeRepository {
     findAll(): Promise<Recipe[]>;
@@ -11,9 +21,12 @@ export interface IBrewLogRepository {
     findAll(): Promise<BrewLog[]>;
     findAllByRecipeId(recipeId: EntityId): Promise<BrewLog[]>;
     save(log: BrewLog): Promise<void>;
-    getStats(): Promise<any>;
-    getRecentWithRecipes(limit?: number): Promise<any[]>;
-    getRecentWithRecipesAll(): Promise<any[]>;
+    update(log: BrewLog): Promise<void>;
+    delete(id: EntityId): Promise<void>;
+    findByIdWithRecipe(id: EntityId): Promise<BrewLogWithRecipe | null>;
+    getStats(): Promise<BrewStats>;
+    getRecentWithRecipes(limit?: number): Promise<BrewLogWithRecipe[]>;
+    getRecentWithRecipesAll(): Promise<BrewLogWithRecipe[]>;
 }
 
 export interface IDrinkRepository {
@@ -27,6 +40,9 @@ export interface IDrinkLogRepository {
     findAll(): Promise<DrinkLog[]>;
     findAllByDrinkId(drinkId: EntityId): Promise<DrinkLog[]>;
     save(log: DrinkLog): Promise<void>;
-    getStats(): Promise<any>;
-    getRecentWithDrinks(): Promise<any[]>;
+    update(log: DrinkLog): Promise<void>;
+    delete(id: EntityId): Promise<void>;
+    findByIdWithDrink(id: EntityId): Promise<DrinkLogWithDrink | null>;
+    getStats(): Promise<DrinkStats>;
+    getRecentWithDrinks(): Promise<DrinkLogWithDrink[]>;
 }

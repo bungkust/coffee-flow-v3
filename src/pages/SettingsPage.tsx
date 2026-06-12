@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { BottomNav } from '../components/BottomNav';
 import { settingsService } from '../core/services';
 import { seedInitialData } from '../core/database/seeding';
 
@@ -10,25 +9,45 @@ import { Modal } from '../components/Modal';
 export const SettingsPage = () => {
     const navigate = useNavigate();
     const [appUnit, setAppUnit] = useState<'metric' | 'imperial'>('metric');
+    const [userId, setUserId] = useState('');
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [timerFeedbackEnabled, setTimerFeedbackEnabled] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => {
-        loadSettings();
+        Promise.all([
+            settingsService.getAppUnit(),
+            settingsService.getUserId(),
+            settingsService.getNotificationsEnabled(),
+            settingsService.getTimerFeedbackEnabled()
+        ])
+            .then(([unit, id, notifications, feedback]) => {
+                setAppUnit(unit);
+                setUserId(id);
+                setNotificationsEnabled(notifications);
+                setTimerFeedbackEnabled(feedback);
+            })
+            .catch((error) => {
+                console.error('Failed to load settings:', error);
+            });
     }, []);
-
-    const loadSettings = async () => {
-        try {
-            const unit = await settingsService.getAppUnit();
-            setAppUnit(unit);
-        } catch (error) {
-            console.error('Failed to load settings:', error);
-        }
-    };
 
     const handleToggleUnit = async () => {
         const newUnit = appUnit === 'metric' ? 'imperial' : 'metric';
         setAppUnit(newUnit);
         await settingsService.setAppUnit(newUnit);
+    };
+
+    const handleToggleNotifications = async () => {
+        const next = !notificationsEnabled;
+        setNotificationsEnabled(next);
+        await settingsService.setNotificationsEnabled(next);
+    };
+
+    const handleToggleTimerFeedback = async () => {
+        const next = !timerFeedbackEnabled;
+        setTimerFeedbackEnabled(next);
+        await settingsService.setTimerFeedbackEnabled(next);
     };
 
     const confirmDeleteData = async () => {
@@ -61,7 +80,7 @@ export const SettingsPage = () => {
 
             {/* Profile Section */}
             <section className="px-6 flex flex-col items-center">
-                <p className="text-xs font-semibold text-primary/80 my-8 uppercase tracking-wider">User ID: CF-102938</p>
+                <p className="text-xs font-semibold text-primary/80 my-8 uppercase tracking-wider">User ID: {userId || 'Not created yet'}</p>
             </section>
 
             {/* Settings Groups */}
@@ -103,8 +122,18 @@ export const SettingsPage = () => {
                                 <span className="font-medium text-sm text-neutral-text">Notifications</span>
                             </div>
                             <div className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" defaultChecked className="sr-only peer" />
+                                <input type="checkbox" checked={notificationsEnabled} onChange={handleToggleNotifications} className="sr-only peer" />
                                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <Icon name="volume_up" className="text-primary text-[22px]" />
+                                <span className="font-medium text-sm text-neutral-text">Timer Feedback</span>
+                            </div>
+                            <div className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked={timerFeedbackEnabled} onChange={handleToggleTimerFeedback} className="sr-only peer" />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                             </div>
                         </div>
                         <button
@@ -127,14 +156,14 @@ export const SettingsPage = () => {
                 <div>
                     <h3 className="px-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Support & Legal</h3>
                     <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                        <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => { window.location.href = 'mailto:support@coffeeflow.local?subject=CoffeeFlow%20Feedback'; }} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <Icon name="chat_bubble" className="text-primary text-[22px]" />
                                 <span className="font-medium text-sm text-neutral-text">Send Feedback</span>
                             </div>
                             <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
                         </button>
-                        <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => alert('Terms & Privacy: CoffeeFlow stores your coffee data locally on this device unless you export a backup.')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <Icon name="gavel" className="text-primary text-[22px]" />
                                 <span className="font-medium text-sm text-neutral-text">Terms & Privacy</span>
@@ -152,12 +181,10 @@ export const SettingsPage = () => {
                 </div>
 
                 {/* Log out Button */}
-                <button className="w-full py-4 text-gray-400 font-bold hover:text-red-500 transition-colors text-center text-sm">
-                    Log Out of CoffeeFlow
+                <button onClick={() => navigate('/welcome')} className="w-full py-4 text-gray-400 font-bold hover:text-red-500 transition-colors text-center text-sm">
+                    Back to Welcome
                 </button>
             </div>
-
-            <BottomNav activeTab="settings" />
 
             <Modal
                 isOpen={showDeleteModal}

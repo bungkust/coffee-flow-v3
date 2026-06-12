@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { brewService, drinkService } from '../core/services';
+import type { BrewLogWithRecipe, BrewStats, DrinkLogWithDrink, DrinkStats } from '../shared/domain/entities';
 
 type Tab = 'brews' | 'drinks';
+type JournalRow = BrewLogWithRecipe | DrinkLogWithDrink;
+type JournalStats = Partial<BrewStats & DrinkStats>;
 
 export const JournalPage = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<Tab>('brews');
-    const [logs, setLogs] = useState<any[]>([]);
-    const [stats, setStats] = useState<any>({});
+    const [searchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<Tab>((searchParams.get('tab') as Tab) || 'brews');
+    const [logs, setLogs] = useState<JournalRow[]>([]);
+    const [stats, setStats] = useState<JournalStats>({});
 
     useEffect(() => {
-        loadData();
-    }, [activeTab]);
-
-    const loadData = async () => {
+        const loadData = async () => {
         try {
             if (activeTab === 'brews') {
                 const [data, statistics] = await Promise.all([
@@ -36,7 +37,9 @@ export const JournalPage = () => {
         } catch (error) {
             console.error('Failed to load journal data:', error);
         }
-    };
+        };
+        loadData();
+    }, [activeTab]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -57,8 +60,8 @@ export const JournalPage = () => {
         return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     };
 
-    const groupedLogs = logs.reduce<Record<string, any[]>>((acc, log) => {
-        const dateGroup = formatDate(log.brewed_at || log.logged_at);
+    const groupedLogs = logs.reduce<Record<string, JournalRow[]>>((acc, log) => {
+        const dateGroup = formatDate(('brewed_at' in log ? log.brewed_at : log.logged_at));
         if (!acc[dateGroup]) acc[dateGroup] = [];
         acc[dateGroup].push(log);
         return acc;
@@ -123,7 +126,7 @@ export const JournalPage = () => {
                                     Total {activeTab === 'brews' ? 'Brews' : 'Drinks'}
                                 </p>
                                 <p className="text-3xl font-extrabold text-[#181411]">
-                                    {activeTab === 'brews' ? stats.weeklyBrews : stats.weeklyDrinks || 0}
+                                    {activeTab === 'brews' ? stats.monthlyBrews : stats.monthlyDrinks || 0}
                                 </p>
                             </div>
                             <div className="w-px bg-gray-300/50"></div>
@@ -151,8 +154,8 @@ export const JournalPage = () => {
                                 <span className="h-px flex-1 bg-[#f4f2f0]"></span>
                             </h3>
 
-                            {groupLogs.map((log: any) => (
-                                <div key={log.id} className="group relative mb-4 flex gap-4 rounded-xl bg-white p-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-[#f4f2f0] transition-all hover:border-primary/30 cursor-pointer">
+                            {groupLogs.map((log) => (
+                                <div key={String(log.id)} onClick={() => navigate(`/journal/${activeTab}/${log.id}`)} className="group relative mb-4 flex gap-4 rounded-xl bg-white p-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-[#f4f2f0] transition-all hover:border-primary/30 cursor-pointer">
                                     {/* Icon */}
                                     <div className="flex-shrink-0">
                                         <div className={`flex h-12 w-12 items-center justify-center rounded-full ${activeTab === 'brews' ? 'bg-primary/10 text-primary' : 'bg-[#EFEBE7] text-[#181411]'}`}>
@@ -167,14 +170,14 @@ export const JournalPage = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h4 className="font-bold text-[#181411]">
-                                                    {log.recipe_name || log.drink_name || 'Unknown'}
+                                                    {'recipe_name' in log ? log.recipe_name : log.drink_name}
                                                 </h4>
                                                 <p className="text-xs font-medium text-gray-500 mt-0.5">
-                                                    {activeTab === 'brews' ? log.method_id?.toUpperCase() : log.category}
+                                                    {'method_id' in log ? log.method_id.toUpperCase() : log.category}
                                                 </p>
                                             </div>
                                             <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-                                                {formatTime(log.brewed_at || log.logged_at)}
+                                                {formatTime('brewed_at' in log ? log.brewed_at : log.logged_at)}
                                             </span>
                                         </div>
                                         <div className="mt-2 flex items-center gap-1 text-primary">
@@ -183,7 +186,7 @@ export const JournalPage = () => {
                                                     key={star}
                                                     name="star"
                                                     className="text-[16px]"
-                                                    style={{ fontVariationSettings: log.rating >= star ? "'FILL' 1" : "'FILL' 0" }}
+                                                    style={{ fontVariationSettings: Number(log.rating || 0) >= star ? "'FILL' 1" : "'FILL' 0" }}
                                                 />
                                             ))}
                                         </div>
@@ -209,7 +212,7 @@ export const JournalPage = () => {
 
             {/* Floating Action Button */}
             <button
-                onClick={() => navigate(activeTab === 'brews' ? '/recipes' : '/playground')}
+                onClick={() => navigate(activeTab === 'brews' ? '/recipes' : '/drinks')}
                 className="absolute bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 hover:scale-105 transition-all"
             >
                 <Icon name="add" className="text-[28px]" />

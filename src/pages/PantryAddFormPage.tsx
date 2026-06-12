@@ -127,7 +127,7 @@ export const PantryAddFormPage = () => {
                 brand: brand || undefined,
                 tags_json: tags,
                 roast_date: roastDate ? new Date(roastDate).toISOString() : undefined,
-                quantity: quantity ? parseInt(quantity, 10) : undefined,
+                quantity: quantity.trim() ? Number(quantity) : undefined,
                 unit: info.isGear ? undefined : unit,
                 description: description || undefined,
                 icon: info.icon

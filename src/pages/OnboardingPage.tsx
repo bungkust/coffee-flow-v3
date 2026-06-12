@@ -53,7 +53,7 @@ export const OnboardingPage = () => {
                 if (existingName && existingName.trim().length > 0 && methods && methods.length === 6) {
                     navigate('/home', { replace: true });
                 }
-            } catch (e) {
+            } catch {
                 // Ignore
             }
         };

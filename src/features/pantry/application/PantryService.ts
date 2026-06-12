@@ -13,6 +13,10 @@ export class PantryService {
         return this.repository.findAll();
     }
 
+    async getPantryItem(id: EntityId): Promise<PantryItem | null> {
+        return this.repository.findById(id);
+    }
+
     async addPantryItem(
         name: string,
         category: PantryCategory,

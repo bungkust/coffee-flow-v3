@@ -1,5 +1,5 @@
 import type { IDrinkLogRepository } from '../../../shared/domain/repositories';
-import type { DrinkLog, EntityId } from '../../../shared/domain/entities';
+import type { DrinkLog, DrinkLogWithDrink, DrinkStats, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
 export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
@@ -31,11 +31,38 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
                 log.created_at || now
             ]
         );
+        await dbService.saveToLocalStore();
     }
 
-    async getStats(): Promise<any> {
+    async update(log: DrinkLog): Promise<void> {
+        await this.db.run(
+            `UPDATE drink_logs SET rating = ?, notes = ? WHERE id = ?`,
+            [log.rating, log.notes, log.id]
+        );
+        await dbService.saveToLocalStore();
+    }
+
+    async delete(id: EntityId): Promise<void> {
+        await this.db.run('DELETE FROM drink_logs WHERE id = ?', [id]);
+        await dbService.saveToLocalStore();
+    }
+
+    async findByIdWithDrink(id: EntityId): Promise<DrinkLogWithDrink | null> {
+        const result = await this.db.query(`
+            SELECT dl.*, d.name as drink_name, d.category
+            FROM drink_logs dl
+            JOIN drinks d ON dl.drink_id = d.id
+            WHERE dl.id = ?
+        `, [id]);
+        return result.values?.[0] || null;
+    }
+
+    async getStats(): Promise<DrinkStats> {
         const weeklyDrinks = await this.db.query(
             "SELECT COUNT(*) as count FROM drink_logs WHERE logged_at >= date('now', '-7 days')"
+        );
+        const monthlyDrinks = await this.db.query(
+            "SELECT COUNT(*) as count FROM drink_logs WHERE logged_at >= date('now', 'start of month')"
         );
         const avgRating = await this.db.query(
             "SELECT AVG(rating) as avg FROM drink_logs"
@@ -46,12 +73,13 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
 
         return {
             weeklyDrinks: weeklyDrinks.values?.[0].count || 0,
+            monthlyDrinks: monthlyDrinks.values?.[0].count || 0,
             avgRating: parseFloat((avgRating.values?.[0].avg || 0).toFixed(1)),
             uniqueDrinks: uniqueDrinks.values?.[0].count || 0
         };
     }
 
-    async getRecentWithDrinks(): Promise<any[]> {
+    async getRecentWithDrinks(): Promise<DrinkLogWithDrink[]> {
         const result = await this.db.query(`
             SELECT dl.*, d.name as drink_name, d.category 
             FROM drink_logs dl

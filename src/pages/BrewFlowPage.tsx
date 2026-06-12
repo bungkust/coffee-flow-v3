@@ -1,34 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
+import { settingsService } from '../core/services';
+import { formatDuration, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew } = useBrewStore();
+    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew } = useBrewStore();
 
-    // For calculating total elapsed time
-    const [totalElapsed, setTotalElapsed] = useState(0);
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
+    const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+
+    const playFeedback = useCallback((frequency: number, duration: number) => {
+        if (!feedbackEnabled) return;
+        try {
+            const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
+            const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+            if (!AudioContextCtor) return;
+            const context = new AudioContextCtor();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+
+            gain.gain.setValueAtTime(0.1, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + duration);
+
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+
+            oscillator.start();
+            oscillator.stop(context.currentTime + duration);
+        } catch (error) {
+            console.warn('Audio feedback failed', error);
+        }
+    }, [feedbackEnabled]);
 
     useEffect(() => {
         if (!activeRecipe) {
-            navigate('/brew-methods');
+            const restored = hydrateBrew();
+            if (!restored) navigate('/brew-methods');
             return;
         }
-    }, [activeRecipe, navigate]);
+    }, [activeRecipe, hydrateBrew, navigate]);
+
+    useEffect(() => {
+        settingsService.getTimerFeedbackEnabled()
+            .then(setFeedbackEnabled)
+            .catch(() => setFeedbackEnabled(true));
+    }, []);
 
     useEffect(() => {
         if (!engineState || !activeRecipe) return;
-
-        // Calculate total elapsed time
-        let elapsed = 0;
-        for (let i = 0; i < engineState.currentStepIndex; i++) {
-            elapsed += activeRecipe.steps[i].duration_seconds;
-        }
-        elapsed += (engineState.totalTime - engineState.remainingTime);
-        setTotalElapsed(elapsed);
 
         // Sound & Haptic Triggers
         if (engineState.isRunning) {
@@ -49,41 +75,18 @@ export const BrewFlowPage = () => {
                 playFeedback(330, 0.1); // Short low beep
             }
         }
-    }, [engineState, activeRecipe]);
-
-    // Simple Audio synthesis helper
-    const playFeedback = (frequency: number, duration: number) => {
-        try {
-            const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
-
-            gain.gain.setValueAtTime(0.1, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + duration);
-
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-
-            oscillator.start();
-            oscillator.stop(context.currentTime + duration);
-        } catch (e) {
-            console.warn('Audio feedback failed', e);
-        }
-    };
+    }, [engineState, activeRecipe, playFeedback]);
 
     if (!activeRecipe || !engineState) return null;
 
     const currentStep = activeRecipe.steps[engineState.currentStepIndex];
     if (!currentStep) return null;
 
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+    let totalElapsed = 0;
+    for (let i = 0; i < engineState.currentStepIndex; i++) {
+        totalElapsed += activeRecipe.steps[i].duration_seconds;
+    }
+    totalElapsed += (engineState.totalTime - engineState.remainingTime);
 
     const handleBack = () => {
         setIsStopModalOpen(true);
@@ -94,13 +97,16 @@ export const BrewFlowPage = () => {
         navigate('/brew-methods');
     };
 
-    // Calculate total water so far
-    const totalWaterSoFar = activeRecipe.steps
-        .slice(0, engineState.currentStepIndex + 1)
-        .reduce((sum, step) => sum + (step.target_weight || 0), 0);
-
     const totalWaterRecipe = activeRecipe.total_water || 0;
-    const progressPercent = (totalWaterSoFar / (totalWaterRecipe || 1)) * 100;
+    const currentTargetWeight = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+    const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
+    const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
+    const stepTitle = currentStep.target_weight
+        ? `Pour to ${currentStep.target_weight}g`
+        : currentStep.label;
+    const stepSubtitle = currentStep.target_weight && pourAmount > 0
+        ? `Add about ${pourAmount}g. ${currentStep.instruction || currentStep.label}`
+        : currentStep.instruction || currentStep.label;
 
     if (engineState.isCompleted) {
         return (
@@ -156,7 +162,7 @@ export const BrewFlowPage = () => {
                             </div>
                             <div>
                                 <h4 className="text-sm font-bold text-gray-400">{activeRecipe.steps[activeRecipe.steps.length - 1].label}</h4>
-                                <p className="text-xs text-gray-400">Completed at {formatTime(totalElapsed)}</p>
+                                <p className="text-xs text-gray-400">Completed at {formatDuration(totalElapsed)}</p>
                             </div>
                             <span className="ml-auto text-sm font-semibold text-gray-300">
                                 Done
@@ -211,13 +217,13 @@ export const BrewFlowPage = () => {
                             </span>
                         </div>
                         <div className="text-[80px] font-extrabold text-[#181411] leading-none tracking-tight tabular-nums mb-4 mt-2">
-                            {formatTime(engineState.remainingTime)}
+                            {formatDuration(engineState.remainingTime)}
                         </div>
                         <h2 className="text-2xl font-bold text-[#181411] mb-2">
-                            {currentStep.target_weight ? `Pour ${currentStep.target_weight}g of water` : 'Wait for drawdown'}
+                            {stepTitle}
                         </h2>
                         <p className="text-gray-500 mb-8 max-w-[240px]">
-                            {currentStep.label}
+                            {stepSubtitle}
                         </p>
 
                         {/* Water Progress */}
@@ -225,7 +231,7 @@ export const BrewFlowPage = () => {
                             <div className="flex justify-between items-end mb-2">
                                 <span className="text-sm font-semibold text-gray-400">Total Water</span>
                                 <span className="text-lg font-bold text-primary tabular-nums">
-                                    {totalWaterSoFar}g <span className="text-gray-400 font-normal text-sm">/ {activeRecipe.total_water}g</span>
+                                    {currentTargetWeight}g <span className="text-gray-400 font-normal text-sm">/ {activeRecipe.total_water}g</span>
                                 </span>
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
@@ -250,12 +256,12 @@ export const BrewFlowPage = () => {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold text-[#181411]">
-                                            {step.target_weight ? `Pour ${step.target_weight}g` : 'Wait for drawdown'}
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0 ? `Pour to ${step.target_weight}g` : step.label}
                                         </h4>
-                                        <p className="text-xs text-gray-500">{step.label}</p>
+                                        <p className="text-xs text-gray-500">{step.instruction || step.label}</p>
                                     </div>
                                     <span className="ml-auto text-sm font-semibold text-gray-400 tabular-nums">
-                                        {formatTime(step.duration_seconds)}
+                                        {formatDuration(step.duration_seconds)}
                                     </span>
                                 </div>
                             ))}

@@ -1,5 +1,5 @@
 import type { IRecipeRepository, IBrewLogRepository } from '../../../shared/domain/repositories';
-import type { Recipe, BrewLog, EntityId } from '../../../shared/domain/entities';
+import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, EntityId } from '../../../shared/domain/entities';
 import type { PantryService } from '../../pantry/application/PantryService';
 
 export class BrewService {
@@ -56,7 +56,7 @@ export class BrewService {
         await this.logRepo.save(log);
 
         // Deduct bean stock
-        if (beanId && coffeeConsumed) {
+        if (beanId && coffeeConsumed && Number.isFinite(coffeeConsumed) && coffeeConsumed > 0) {
             await this.pantryService.deductStock(beanId, coffeeConsumed);
         }
 
@@ -66,16 +66,28 @@ export class BrewService {
         }
     }
 
-    async getDashboardStats() {
+    async getDashboardStats(): Promise<BrewStats> {
         return this.logRepo.getStats();
     }
 
-    async getRecentBrews(limit?: number) {
+    async getRecentBrews(limit?: number): Promise<BrewLogWithRecipe[]> {
         return this.logRepo.getRecentWithRecipes(limit);
     }
 
-    async getAllLogs() {
+    async getAllLogs(): Promise<BrewLogWithRecipe[]> {
         return this.logRepo.getRecentWithRecipesAll();
+    }
+
+    async getLog(id: EntityId): Promise<BrewLogWithRecipe | null> {
+        return this.logRepo.findByIdWithRecipe(id);
+    }
+
+    async updateLog(log: BrewLog): Promise<void> {
+        await this.logRepo.update(log);
+    }
+
+    async deleteLog(id: EntityId): Promise<void> {
+        await this.logRepo.delete(id);
     }
 
     async deleteRecipe(id: EntityId): Promise<void> {

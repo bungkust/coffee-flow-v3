@@ -5,6 +5,9 @@ import { Dropdown } from '../components/Dropdown';
 import { brewService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 import { BottomNav } from '../components/BottomNav';
+import { parseRatio } from '../shared/utils/brewMath';
+
+type RecipeDifficulty = NonNullable<Recipe['difficulty']>;
 
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -14,6 +17,7 @@ export const RecipeEditPage = () => {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -57,9 +61,40 @@ export const RecipeEditPage = () => {
 
     const handleSave = async () => {
         if (!recipe) return;
+        if (!recipe.name.trim()) {
+            setError('Recipe name is required.');
+            return;
+        }
+        if (!parseRatio(recipe.ratio)) {
+            setError('Use a valid ratio, for example 1:15.');
+            return;
+        }
+        if (!recipe.total_water || recipe.total_water <= 0) {
+            setError('Total water must be greater than 0.');
+            return;
+        }
+        if (recipe.steps.length === 0 || recipe.steps.some(step => !step.label.trim() || step.duration_seconds <= 0)) {
+            setError('Every step needs a label and duration greater than 0.');
+            return;
+        }
+        const targets = recipe.steps
+            .map(step => step.target_weight)
+            .filter((target): target is number => typeof target === 'number' && target > 0);
+        if (targets.some(target => recipe.total_water && target > recipe.total_water)) {
+            setError('Step target cannot be higher than total water.');
+            return;
+        }
+        if (targets.some((target, index) => index > 0 && target <= targets[index - 1])) {
+            setError('Step targets must be cumulative and increase over time.');
+            return;
+        }
         setSaving(true);
+        setError('');
         try {
-            await brewService.saveRecipe(recipe);
+            await brewService.saveRecipe({
+                ...recipe,
+                steps: recipe.steps.map((step, index) => ({ ...step, step_order: index + 1 }))
+            });
             navigate(`/recipes/${recipe.id}`);
         } catch (err) {
             console.error('Error saving recipe:', err);
@@ -81,10 +116,10 @@ export const RecipeEditPage = () => {
         const newStep: BrewStep = {
             id: crypto.randomUUID(),
             recipe_id: recipe.id,
-            step_order: recipe.steps.length,
+            step_order: recipe.steps.length + 1,
             label: 'New Step',
             duration_seconds: 30,
-            target_weight: 0,
+            target_weight: undefined,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
@@ -94,7 +129,7 @@ export const RecipeEditPage = () => {
     const removeStep = (index: number) => {
         if (!recipe) return;
         const newSteps = recipe.steps.filter((_, i) => i !== index)
-            .map((step, i) => ({ ...step, step_order: i }));
+            .map((step, i) => ({ ...step, step_order: i + 1 }));
         setRecipe({ ...recipe, steps: newSteps });
     };
 
@@ -131,6 +166,11 @@ export const RecipeEditPage = () => {
             </div>
 
             <div className="px-6 py-6 space-y-8">
+                {error && (
+                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                        {error}
+                    </div>
+                )}
                 {/* Basic Info */}
                 <section className="space-y-4">
                     <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Basic Information</h2>
@@ -178,7 +218,7 @@ export const RecipeEditPage = () => {
                                         { value: 'Intermediate', label: 'Intermediate' },
                                         { value: 'Advanced', label: 'Advanced' }
                                     ]}
-                                    onChange={(val) => setRecipe({ ...recipe, difficulty: val as any })}
+                                    onChange={(val) => setRecipe({ ...recipe, difficulty: val as RecipeDifficulty })}
                                     placeholder="Select"
                                 />
                             </div>

@@ -15,7 +15,7 @@ export const WelcomePage = () => {
                 if (name && name.trim().length > 0 && methods && methods.length === 6) {
                     navigate('/home', { replace: true });
                 }
-            } catch (e) {
+            } catch {
                 // Ignore
             }
         };
@@ -68,15 +68,15 @@ export const WelcomePage = () => {
                     <Icon name="arrow_forward" className="text-xl" />
                 </button>
 
-                <button className="w-full bg-transparent border-2 border-coffee-brown/30 hover:border-coffee-brown/60 text-coffee-brown font-semibold text-base py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
+                <button onClick={() => navigate('/settings/backup')} className="w-full bg-transparent border-2 border-coffee-brown/30 hover:border-coffee-brown/60 text-coffee-brown font-semibold text-base py-3.5 px-6 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
                     <Icon name="cloud_sync" className="text-xl" />
                     <span>Restore Backup Data</span>
                 </button>
 
                 <div className="pt-2 flex justify-center gap-4 text-[10px] text-gray-400 uppercase tracking-wider">
-                    <a href="#" className="hover:text-primary no-underline text-inherit">Terms</a>
+                    <button onClick={() => alert('Terms: CoffeeFlow is a local-first brewing companion.')} className="hover:text-primary text-inherit">Terms</button>
                     <span>•</span>
-                    <a href="#" className="hover:text-primary no-underline text-inherit">Privacy</a>
+                    <button onClick={() => alert('Privacy: CoffeeFlow stores data locally unless you export a backup.')} className="hover:text-primary text-inherit">Privacy</button>
                 </div>
             </div>
         </div>

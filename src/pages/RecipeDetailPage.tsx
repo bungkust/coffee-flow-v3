@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
+import { calculateCoffeeDose, formatDuration, formatWeight, sumStepDuration } from '../shared/utils/brewMath';
 
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -50,26 +51,17 @@ export const RecipeDetailPage = () => {
     }
 
 
-    // Re-calculate easier
-    let runningTotal = 0;
     const stepsWithRunningTotal = recipe.steps.map(step => {
-        const prevTotal = runningTotal;
-        if (step.target_weight) {
-            runningTotal = step.target_weight;
-        }
         return {
             ...step,
-            prevTotal,
-            isPour: !!step.target_weight
+            isPour: typeof step.target_weight === 'number' && step.target_weight > 0
         };
     });
 
-    const totalTime = recipe.steps.reduce((acc, step) => acc + step.duration_seconds, 0);
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
+    const totalTime = sumStepDuration(recipe.steps);
+    const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
+    const bestForTags = recipe.best_for_tags || [];
+    const notRecommendedTags = recipe.not_recommended_tags || [];
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-28 font-display text-neutral-text">
@@ -148,7 +140,7 @@ export const RecipeDetailPage = () => {
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                             <span className="text-sm font-bold text-neutral-text">
-                                {Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'))}g
+                                {formatWeight(coffeeDose)}
                             </span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Coffee</span>
                         </div>
@@ -171,22 +163,22 @@ export const RecipeDetailPage = () => {
                         </div>
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="timer" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{formatTime(totalTime)}</span>
+                            <span className="text-sm font-bold text-neutral-text">{formatDuration(totalTime)}</span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Target Time</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Tags Card (Conditional) */}
-                {(recipe.best_for_tags?.length > 0 || recipe.not_recommended_tags?.length > 0) && (
+                {(bestForTags.length > 0 || notRecommendedTags.length > 0) && (
                     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        {recipe.best_for_tags?.length > 0 && (
+                        {bestForTags.length > 0 && (
                             <div>
                                 <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <Icon name="check_circle" className="text-[14px]" /> Best For
                                 </h2>
                                 <div className="flex flex-wrap gap-2">
-                                    {recipe.best_for_tags.map(tag => (
+                                    {bestForTags.map(tag => (
                                         <span key={tag} className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
                                             {tag}
                                         </span>
@@ -194,13 +186,13 @@ export const RecipeDetailPage = () => {
                                 </div>
                             </div>
                         )}
-                        {recipe.not_recommended_tags?.length > 0 && (
+                        {notRecommendedTags.length > 0 && (
                             <div>
                                 <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                     <Icon name="cancel" className="text-[14px]" /> Not Recommended
                                 </h2>
                                 <div className="flex flex-wrap gap-2">
-                                    {recipe.not_recommended_tags.map(tag => (
+                                    {notRecommendedTags.map(tag => (
                                         <span key={tag} className="px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-100">
                                             {tag}
                                         </span>
@@ -237,7 +229,7 @@ export const RecipeDetailPage = () => {
                                         </span>
                                         {step.isPour && step.target_weight && (
                                             <span className="text-xs font-bold text-gray-400 mt-1 bg-gray-50 px-1.5 py-0.5 rounded-md">
-                                                {step.target_weight}g
+                                                to {step.target_weight}g
                                             </span>
                                         )}
                                     </div>
@@ -252,7 +244,7 @@ export const RecipeDetailPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-neutral-text">Enjoy!</h3>
-                                <p className="text-sm text-gray-500 mt-0.5 font-medium">Total Brew Time: ~{formatTime(totalTime)}</p>
+                                <p className="text-sm text-gray-500 mt-0.5 font-medium">Total Brew Time: ~{formatDuration(totalTime)}</p>
                             </div>
                         </div>
                     </div>

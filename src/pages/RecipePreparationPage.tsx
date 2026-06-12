@@ -6,6 +6,7 @@ import type { Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
+import { calculateCoffeeDose, formatWeight } from '../shared/utils/brewMath';
 
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -80,8 +81,8 @@ export const RecipePreparationPage = () => {
     }
 
     const handleProceedToBrew = () => {
-        if (recipe) {
-            const coffeeWeight = Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'));
+        if (recipe && isReady) {
+            const coffeeWeight = calculateCoffeeDose(recipe.total_water, recipe.ratio);
             startBrew(recipe, selectedBeanId, selectedFilterId, coffeeWeight);
             navigate('/brew-flow');
         }
@@ -92,6 +93,7 @@ export const RecipePreparationPage = () => {
     };
 
     const isReady = checklist.coffee && checklist.water && checklist.filter && checklist.scale;
+    const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl pb-32 font-display text-[#181411]">
@@ -121,7 +123,7 @@ export const RecipePreparationPage = () => {
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                         <span className="text-sm font-bold text-[#181411]">
-                            {Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'))}g
+                            {formatWeight(coffeeDose)}
                         </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Coffee</span>
                     </div>
@@ -162,7 +164,7 @@ export const RecipePreparationPage = () => {
                             <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
                                 <span className="text-sm font-medium text-gray-500">No beans available</span>
                                 <button
-                                    onClick={() => navigate('/pantry')}
+                                    onClick={() => navigate('/pantry/add/beans')}
                                     className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
                                 >
                                     Add Beans
@@ -192,7 +194,7 @@ export const RecipePreparationPage = () => {
                             <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
                                 <span className="text-sm font-medium text-gray-500">No filters available</span>
                                 <button
-                                    onClick={() => navigate('/pantry')}
+                                    onClick={() => navigate('/pantry/add/filter')}
                                     className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
                                 >
                                     Add Filters
@@ -211,7 +213,7 @@ export const RecipePreparationPage = () => {
                 </h2>
                 <div className="space-y-3">
                     <CheckItem
-                        label={`Weigh ${Math.round((recipe.total_water || 0) / parseFloat(recipe.ratio.split(':')[1] || '15'))}g coffee & Grind (${recipe.grind_size || 'Medium'})`}
+                        label={`Weigh ${formatWeight(coffeeDose)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
                         checked={checklist.coffee}
                         onToggle={() => toggleCheck('coffee')}
                     />
@@ -237,6 +239,7 @@ export const RecipePreparationPage = () => {
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-20">
                 <button
                     onClick={handleProceedToBrew}
+                    disabled={!isReady}
                     className={`w-full py-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer font-bold ${isReady ? 'bg-primary text-white shadow-primary/30' : 'bg-gray-100 text-gray-400 grayscale cursor-not-allowed'
                         }`}
                 >

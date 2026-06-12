@@ -260,8 +260,8 @@ export const PlaygroundPage = () => {
                             <h4 className="font-bold text-slate-900 mb-1">Delete Recipe?</h4>
                             <p className="text-sm text-stone-500 mb-4">This action cannot be undone.</p>
                             <div className="flex gap-2">
-                                <button className="flex-1 py-2 rounded-lg bg-stone-100 text-stone-600 text-sm font-semibold border-none cursor-pointer">Cancel</button>
-                                <button className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold border-none cursor-pointer">Delete</button>
+                                <button onClick={() => alert('Preview cancelled.')} className="flex-1 py-2 rounded-lg bg-stone-100 text-stone-600 text-sm font-semibold border-none cursor-pointer">Cancel</button>
+                                <button onClick={() => alert('Preview delete action.')} className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold border-none cursor-pointer">Delete</button>
                             </div>
                         </div>
                     </div>

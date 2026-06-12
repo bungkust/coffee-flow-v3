@@ -96,12 +96,13 @@ export class BrewEngine {
     private notify(): void {
         const currentStep = this.steps[this.currentStepIndex];
         if (!currentStep) return;
+        const totalTime = Math.max(1, currentStep.duration_seconds || 0);
 
         const state: BrewEngineState = {
             currentStepIndex: this.currentStepIndex,
             remainingTime: this.remainingTime,
             totalTime: currentStep.duration_seconds,
-            progress: 1 - (this.remainingTime / currentStep.duration_seconds),
+            progress: Math.min(1, Math.max(0, 1 - (this.remainingTime / totalTime))),
             isRunning: this.isRunning,
             isCompleted: this.isCompleted
         };

@@ -14,6 +14,8 @@ export const PantryPage = () => {
     const [items, setItems] = useState<PantryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedBean, setSelectedBean] = useState<PantryItem | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const getStockPercent = (item: PantryItem) => Math.min(100, Math.max(0, item.quantity ?? item.remaining_stock ?? 0));
 
     useEffect(() => {
         loadData();
@@ -31,14 +33,20 @@ export const PantryPage = () => {
         }
     };
 
-    const supplies = items.filter(i => ['beans', 'milk', 'syrup', 'filter', 'other'].includes(i.category));
-    const gear = items.filter(i => ['dripper', 'grinder', 'kettle', 'scale', 'accessory'].includes(i.category));
+    const filteredItems = items.filter(item => {
+        const text = `${item.name} ${item.brand || ''} ${item.description || ''} ${(item.tags_json || []).join(' ')}`.toLowerCase();
+        return text.includes(searchQuery.toLowerCase());
+    });
+
+    const supplies = filteredItems.filter(i => ['beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient'].includes(i.category));
+    const gear = filteredItems.filter(i => ['machine', 'dripper', 'french_press', 'aeropress', 'grinder', 'kettle', 'scale', 'accessory'].includes(i.category));
 
     // Grouping helpers
     const beans = supplies.filter(i => i.category === 'beans');
     const essentials = supplies.filter(i => i.category !== 'beans');
 
     const drippers = gear.filter(i => i.category === 'dripper');
+    const brewers = gear.filter(i => ['machine', 'french_press', 'aeropress', 'scale', 'accessory'].includes(i.category));
     const grinders = gear.filter(i => i.category === 'grinder');
     const kettles = gear.filter(i => i.category === 'kettle');
 
@@ -69,6 +77,8 @@ export const PantryPage = () => {
                         className="w-full bg-white text-neutral-text placeholder-gray-400 rounded-xl py-2.5 pl-10 pr-4 border-none shadow-sm focus:ring-2 focus:ring-primary/50 text-sm font-medium"
                         placeholder="Search inventory..."
                         type="text"
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
                     />
                 </div>
                 {/* Toggle Switch */}
@@ -140,11 +150,11 @@ export const PantryPage = () => {
                                                 <div className="mt-4">
                                                     <div className="flex justify-between items-end mb-1.5">
                                                         <span className="text-xs font-semibold text-gray-500">Remaining Stock</span>
-                                                        <span className="text-xs font-bold text-primary">{item.quantity ? `${item.quantity}${item.unit}` : `${item.remaining_stock}%`}</span>
+                                                        <span className="text-xs font-bold text-primary">{item.quantity !== undefined && item.quantity !== null ? `${item.quantity}${item.unit || ''}` : `${item.remaining_stock ?? 0}%`}</span>
                                                     </div>
-                                                    {(!item.quantity || item.unit === '%') && (
+                                                    {((item.quantity === undefined || item.quantity === null) || item.unit === '%') && (
                                                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                            <div className="bg-primary h-full rounded-full" style={{ width: `${item.quantity || item.remaining_stock}%` }}></div>
+                                                            <div className="bg-primary h-full rounded-full" style={{ width: `${getStockPercent(item)}%` }}></div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -162,7 +172,7 @@ export const PantryPage = () => {
                                     </h2>
                                     <div className="rounded-xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-50">
                                         {essentials.map(item => (
-                                            <div key={item.id} className="p-4 flex items-center justify-between">
+                                            <div key={item.id} onClick={() => setSelectedBean(item)} className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                                         <Icon name={item.icon || 'inventory_2'} className="text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }} />
@@ -180,11 +190,11 @@ export const PantryPage = () => {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <span className={`text-xs font-bold ${item.is_low_stock ? 'text-red-500' : 'text-gray-600'}`}>
-                                                        {item.quantity ? `${item.quantity}${item.unit}` : `${item.remaining_stock}%`}
+                                                        {item.quantity !== undefined && item.quantity !== null ? `${item.quantity}${item.unit || ''}` : `${item.remaining_stock ?? 0}%`}
                                                     </span>
-                                                    {(!item.quantity || item.unit === '%') && (
+                                                    {((item.quantity === undefined || item.quantity === null) || item.unit === '%') && (
                                                         <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                            <div className={`${item.is_low_stock ? 'bg-red-500' : 'bg-primary'} h-full rounded-full`} style={{ width: `${item.quantity || item.remaining_stock}%` }}></div>
+                                                            <div className={`${item.is_low_stock ? 'bg-red-500' : 'bg-primary'} h-full rounded-full`} style={{ width: `${getStockPercent(item)}%` }}></div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -263,6 +273,24 @@ export const PantryPage = () => {
                                     </div>
                                 </div>
                             )}
+                            {brewers.length > 0 && (
+                                <div>
+                                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2 pl-1">
+                                        <Icon name="build" className="text-[16px]" /> Other Gear
+                                    </h2>
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4">
+                                        {brewers.map(item => (
+                                            <div key={item.id} onClick={() => setSelectedBean(item)} className="py-4 flex items-center justify-between border-b last:border-0 border-gray-50 cursor-pointer hover:bg-gray-50">
+                                                <div>
+                                                    <p className="font-bold text-sm text-neutral-text">{item.name}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight mt-0.5">{item.category.replace('_', ' ')}</p>
+                                                </div>
+                                                <Icon name="chevron_right" className="text-gray-300" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </section>
                     )
                 )}
@@ -279,7 +307,7 @@ export const PantryPage = () => {
             {/* Bottom Navigation */}
             <BottomNav activeTab="pantry" />
 
-            {/* Bean Details Modal */}
+            {/* Item Details Modal */}
             {selectedBean && (
                 <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white w-full max-w-md rounded-t-3xl pt-8 pb-10 px-6 shadow-2xl animate-in slide-in-from-bottom-full duration-300">
@@ -334,7 +362,7 @@ export const PantryPage = () => {
                                     <Icon name="scale" className="text-primary mb-2 text-[20px]" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Stock Left</span>
                                     <span className="text-sm font-bold text-[#181411]">
-                                        {selectedBean.quantity ? `${selectedBean.quantity}${selectedBean.unit}` : `${selectedBean.remaining_stock}%`}
+                                        {selectedBean.quantity !== undefined && selectedBean.quantity !== null ? `${selectedBean.quantity}${selectedBean.unit || ''}` : `${selectedBean.remaining_stock ?? 0}%`}
                                     </span>
                                 </div>
                             </div>
@@ -342,9 +370,19 @@ export const PantryPage = () => {
 
                         <button
                             className="w-full mt-8 bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-[0.98]"
-                            onClick={() => setSelectedBean(null)}
+                            onClick={() => navigate(`/pantry/${selectedBean.id}/edit`)}
                         >
-                            Got It
+                            Edit Item
+                        </button>
+                        <button
+                            className="w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-2xl transition-all"
+                            onClick={async () => {
+                                await pantryService.deletePantryItem(selectedBean.id);
+                                setSelectedBean(null);
+                                loadData();
+                            }}
+                        >
+                            Delete Item
                         </button>
                     </div>
                 </div>

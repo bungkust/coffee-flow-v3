@@ -61,6 +61,19 @@ export interface BrewLog {
     created_at: string;
 }
 
+export interface BrewLogWithRecipe extends BrewLog {
+    recipe_name: string;
+    method_id: string;
+    ratio: string;
+}
+
+export interface BrewStats {
+    weeklyBrews: number;
+    monthlyBrews: number;
+    avgRating: number;
+    beansCount: number;
+}
+
 export type DrinkCategory = 'hot' | 'cold';
 
 export interface Drink {
@@ -82,6 +95,18 @@ export interface DrinkLog {
     notes?: string;
     logged_at: string;
     created_at: string;
+}
+
+export interface DrinkLogWithDrink extends DrinkLog {
+    drink_name: string;
+    category: DrinkCategory;
+}
+
+export interface DrinkStats {
+    weeklyDrinks: number;
+    monthlyDrinks: number;
+    avgRating: number;
+    uniqueDrinks: number;
 }
 
 export interface AppSetting {
