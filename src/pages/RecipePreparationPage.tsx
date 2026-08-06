@@ -6,7 +6,7 @@ import type { Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
-import { calculateCoffeeDose, formatWeight } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatWeight, parseRatio } from '../shared/utils/brewMath';
 
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -25,6 +25,25 @@ export const RecipePreparationPage = () => {
         filter: false,
         scale: false
     });
+    const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
+
+    useEffect(() => {
+        if (recipe) {
+            const initialDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
+            setAdjustedCoffeeDose(initialDose || 15);
+        }
+    }, [recipe]);
+
+    const initialCoffeeDose = recipe ? (calculateCoffeeDose(recipe.total_water, recipe.ratio) || 15) : 15;
+    const ratioMultiplier = recipe ? (parseRatio(recipe.ratio) || 16) : 16;
+    const adjustedWaterVolume = adjustedCoffeeDose * ratioMultiplier;
+
+    const handleAdjustDose = (delta: number) => {
+        setAdjustedCoffeeDose(prev => {
+            const next = prev + delta * 0.5;
+            return Math.round(Math.max(5, Math.min(100, next)) * 10) / 10;
+        });
+    };
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -80,10 +99,29 @@ export const RecipePreparationPage = () => {
         );
     }
 
+
+
     const handleProceedToBrew = () => {
         if (recipe && isReady) {
-            const coffeeWeight = calculateCoffeeDose(recipe.total_water, recipe.ratio);
-            startBrew(recipe, selectedBeanId, selectedFilterId, coffeeWeight);
+            const scaleFactor = initialCoffeeDose > 0 ? (adjustedCoffeeDose / initialCoffeeDose) : 1;
+            const scaledTotalWater = Math.round((recipe.total_water || 300) * scaleFactor);
+            const scaledSteps = recipe.steps.map(step => {
+                if (typeof step.target_weight === 'number' && step.target_weight > 0) {
+                    return {
+                        ...step,
+                        target_weight: Math.round(step.target_weight * scaleFactor)
+                    };
+                }
+                return step;
+            });
+
+            const scaledRecipe: Recipe = {
+                ...recipe,
+                total_water: scaledTotalWater,
+                steps: scaledSteps
+            };
+
+            startBrew(scaledRecipe, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
             navigate('/brew-flow');
         }
     };
@@ -93,7 +131,6 @@ export const RecipePreparationPage = () => {
     };
 
     const isReady = checklist.coffee && checklist.water && checklist.filter && checklist.scale;
-    const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl pb-32 font-display text-[#181411]">
@@ -123,13 +160,13 @@ export const RecipePreparationPage = () => {
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                         <span className="text-sm font-bold text-[#181411]">
-                            {formatWeight(coffeeDose)}
+                            {formatWeight(adjustedCoffeeDose)}
                         </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Coffee</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="water_drop" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{recipe.total_water}ml</span>
+                        <span className="text-sm font-bold text-[#181411]">{Math.round(adjustedWaterVolume)}ml</span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Water</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
@@ -141,6 +178,43 @@ export const RecipePreparationPage = () => {
                         <Icon name="grain" className="text-primary mb-1 text-[20px]" />
                         <span className="text-sm font-bold text-[#181411]">{recipe.grind_size || 'Coarse'}</span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Grind</span>
+                    </div>
+                </div>
+
+                {/* Dose Adjuster Card */}
+                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4 mb-6">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Adjust Brew Dose</span>
+                        <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">Ratio {recipe.ratio}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 py-2">
+                        <button
+                            onClick={() => handleAdjustDose(-1)}
+                            className="w-12 h-12 rounded-full border border-gray-200 hover:border-primary/20 hover:bg-primary/5 text-gray-500 hover:text-primary transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+                        >
+                            -
+                        </button>
+                        <div className="flex flex-col items-center flex-1">
+                            <span className="text-3xl font-extrabold text-[#181411] tracking-tight tabular-nums">{adjustedCoffeeDose.toFixed(1)}g</span>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Coffee Target</span>
+                        </div>
+                        <button
+                            onClick={() => handleAdjustDose(1)}
+                            className="w-12 h-12 rounded-full border border-gray-200 hover:border-primary/20 hover:bg-primary/5 text-gray-500 hover:text-primary transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <div className="h-px bg-gray-100"></div>
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 block mb-0.5">Scaled Water</span>
+                            <span className="text-base font-extrabold text-[#181411] tabular-nums">{Math.round(adjustedWaterVolume)}ml</span>
+                        </div>
+                        <div>
+                            <span className="text-xs font-semibold text-gray-400 block mb-0.5">Scale Ratio</span>
+                            <span className="text-base font-extrabold text-[#181411] tabular-nums">{Math.round((adjustedCoffeeDose / initialCoffeeDose) * 100)}%</span>
+                        </div>
                     </div>
                 </div>
 
@@ -213,12 +287,12 @@ export const RecipePreparationPage = () => {
                 </h2>
                 <div className="space-y-3">
                     <CheckItem
-                        label={`Weigh ${formatWeight(coffeeDose)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
+                        label={`Weigh ${formatWeight(adjustedCoffeeDose)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
                         checked={checklist.coffee}
                         onToggle={() => toggleCheck('coffee')}
                     />
                     <CheckItem
-                        label={`Heat ${recipe.total_water}ml water to ${recipe.temperature}°C`}
+                        label={`Heat ${Math.round(adjustedWaterVolume)}ml water to ${recipe.temperature}°C`}
                         checked={checklist.water}
                         onToggle={() => toggleCheck('water')}
                     />

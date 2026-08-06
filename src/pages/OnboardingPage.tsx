@@ -356,7 +356,7 @@ export const OnboardingPage = () => {
                         </button>
                     </div>
 
-                    <div className="flex-1 flex flex-col pt-2 px-6 pb-24 overflow-y-auto scrollbar-hide">
+                    <div className="flex-1 flex flex-col pt-2 px-6 pb-8 z-10 w-full max-w-md mx-auto overflow-y-auto scrollbar-hide">
                         <div className="mb-6 text-center space-y-2">
                             <p className="text-xs font-bold text-primary tracking-widest uppercase">Step 3 — Beans</p>
                             <h1 className="text-2xl font-bold text-neutral-text dark:text-white leading-tight">
@@ -599,7 +599,8 @@ export const OnboardingPage = () => {
                             </div>
                         </div>
 
-                        <div className="fixed bottom-0 w-full bg-cream/90 dark:bg-background-dark/90 backdrop-blur-md border-t border-black/5 dark:border-white/5 p-6 z-30 max-w-md mx-auto left-0 right-0">
+                        <div className="flex-grow"></div>
+                        <div className="w-full pt-12">
                             <button
                                 onClick={handleNext}
                                 className="w-full bg-coffee-brown hover:bg-[#3d312a] dark:bg-primary dark:hover:bg-primary-dark text-white font-bold text-lg py-4 px-6 rounded-2xl shadow-lg shadow-coffee-brown/20 dark:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"

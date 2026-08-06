@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Dropdown } from '../components/Dropdown';
 import { brewService } from '../core/services';
@@ -13,6 +13,8 @@ export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const location = useLocation();
+    const prefill = (location.state as { prefill?: Partial<Recipe> } | null)?.prefill;
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -24,28 +26,60 @@ export const RecipeEditPage = () => {
             if (!id) return;
             try {
                 if (id === 'new') {
-                    const method = searchParams.get('method') || 'V60';
+                    const method = (searchParams.get('method') || 'V60').toLowerCase();
                     const newId = crypto.randomUUID();
                     const now = new Date().toISOString();
 
-                    // Always initialize with a blank template
-                    setRecipe({
-                        id: newId,
-                        method_id: method,
-                        name: '',
-                        ratio: '',
-                        temperature: undefined,
-                        grind_size: '',
-                        total_water: undefined,
-                        is_custom: true,
-                        is_favorite: false,
-                        version: 1,
-                        created_at: now,
-                        updated_at: now,
-                        steps: [
-                            { id: crypto.randomUUID(), recipe_id: newId, step_order: 1, label: '', duration_seconds: 0, target_weight: undefined, created_at: now, updated_at: now }
-                        ]
-                    });
+                    if (prefill) {
+                        // Pre-fill from import — recipe is NOT saved yet
+                        setRecipe({
+                            id: newId,
+                            method_id: prefill.method_id || method,
+                            name: prefill.name || '',
+                            ratio: prefill.ratio || '',
+                            temperature: prefill.temperature,
+                            grind_size: prefill.grind_size || '',
+                            difficulty: prefill.difficulty || 'Intermediate',
+                            total_water: prefill.total_water,
+                            description_short: prefill.description_short || '',
+                            description_detailed: prefill.description_detailed || '',
+                            philosophy: prefill.philosophy || '',
+                            best_for_tags: prefill.best_for_tags || [],
+                            not_recommended_tags: prefill.not_recommended_tags || [],
+                            is_custom: true,
+                            is_favorite: false,
+                            version: 1,
+                            created_at: now,
+                            updated_at: now,
+                            steps: (prefill.steps || []).map((step, idx) => ({
+                                ...step,
+                                id: crypto.randomUUID(),
+                                recipe_id: newId,
+                                step_order: idx + 1,
+                                created_at: now,
+                                updated_at: now,
+                            }))
+                        });
+                    } else {
+                        // Blank template for manual creation
+                        setRecipe({
+                            id: newId,
+                            method_id: method,
+                            name: '',
+                            ratio: '',
+                            temperature: undefined,
+                            grind_size: '',
+                            total_water: undefined,
+                            is_custom: true,
+                            is_favorite: false,
+                            version: 1,
+                            created_at: now,
+                            updated_at: now,
+                            steps: [
+                                { id: crypto.randomUUID(), recipe_id: newId, step_order: 1, label: '', duration_seconds: 0, target_weight: undefined, created_at: now, updated_at: now }
+                            ]
+                        });
+                    }
                 } else {
                     const data = await brewService.getRecipe(id);
                     setRecipe(data);
@@ -57,6 +91,7 @@ export const RecipeEditPage = () => {
             }
         };
         fetchRecipe();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, searchParams]);
 
     const handleSave = async () => {
@@ -154,12 +189,14 @@ export const RecipeEditPage = () => {
                     >
                         <Icon name="arrow_back" className="text-[24px]" />
                     </button>
-                    <span className="text-lg font-bold text-[#181411]">Edit Recipe</span>
+                    <span className="text-lg font-bold text-[#181411]">
+                        {id === 'new' ? 'Create Recipe' : 'Edit Recipe'}
+                    </span>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="text-primary font-bold px-4 py-2 hover:bg-primary/5 rounded-xl transition-all"
+                    className="text-primary font-bold px-4 py-2 hover:bg-primary/5 rounded-xl transition-all cursor-pointer"
                 >
                     {saving ? 'Saving...' : 'Save'}
                 </button>

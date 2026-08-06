@@ -7,6 +7,8 @@ import { Modal } from '../components/Modal';
 import type { Recipe } from '../shared/domain/entities';
 import { formatDuration, sumStepDuration } from '../shared/utils/brewMath';
 
+import { SmartImportModal, type ImportableRecipe } from '../components/SmartImportModal';
+
 export const RecipeListPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -19,6 +21,9 @@ export const RecipeListPage = () => {
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+    const [restoredQueue, setRestoredQueue] = useState<ImportableRecipe[]>([]);
 
     const fetchRecipes = useCallback(async () => {
         try {
@@ -37,6 +42,20 @@ export const RecipeListPage = () => {
 
     useEffect(() => {
         fetchRecipes();
+
+        // Restore pending import queue if returning from RecipeEditPage
+        const rawQueue = sessionStorage.getItem('coffee_flow_import_queue');
+        if (rawQueue) {
+            try {
+                const queue = JSON.parse(rawQueue) as ImportableRecipe[];
+                if (Array.isArray(queue) && queue.length > 0) {
+                    setRestoredQueue(queue);
+                    setIsImportModalOpen(true);
+                }
+            } catch {
+                sessionStorage.removeItem('coffee_flow_import_queue');
+            }
+        }
     }, [fetchRecipes]);
 
     const filteredRecipes = useMemo(() => {
@@ -63,9 +82,10 @@ export const RecipeListPage = () => {
 
     const handleClone = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
+        e.preventDefault();
         try {
             await brewService.cloneRecipe(id);
-            setActiveMenuId(null);
+            setTimeout(() => setActiveMenuId(null), 50);
             fetchRecipes();
         } catch (err) {
             console.error('Failed to clone recipe:', err);
@@ -90,9 +110,10 @@ export const RecipeListPage = () => {
 
     const handleDeleteClick = (e: React.MouseEvent, recipe: Recipe) => {
         e.stopPropagation();
+        e.preventDefault();
         setRecipeToDelete(recipe);
         setIsDeleteModalOpen(true);
-        setActiveMenuId(null);
+        setTimeout(() => setActiveMenuId(null), 50);
     };
 
     const confirmDelete = async () => {
@@ -193,19 +214,34 @@ export const RecipeListPage = () => {
                                             <>
                                                 <div
                                                     className="fixed inset-0 z-20"
-                                                    onClick={() => setActiveMenuId(null)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        setActiveMenuId(null);
+                                                    }}
                                                 />
-                                                <div className="absolute right-0 top-10 w-36 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 animate-in fade-in zoom-in-95 duration-200">
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                    }}
+                                                    className="absolute right-0 top-10 w-36 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 animate-in fade-in zoom-in-95 duration-200"
+                                                >
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); navigate(`/recipes/${recipe.id}/edit`); }}
-                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            setTimeout(() => setActiveMenuId(null), 50);
+                                                            navigate(`/recipes/${recipe.id}/edit`);
+                                                        }}
+                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors cursor-pointer"
                                                     >
                                                         <Icon name="edit" className="text-[18px] text-gray-400" />
                                                         Edit
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleClone(e, recipe.id)}
-                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors cursor-pointer"
                                                     >
                                                         <Icon name="content_copy" className="text-[18px] text-gray-400" />
                                                         Clone
@@ -213,7 +249,7 @@ export const RecipeListPage = () => {
                                                     <div className="h-[1px] bg-gray-50 my-1" />
                                                     <button
                                                         onClick={(e) => handleDeleteClick(e, recipe)}
-                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors cursor-pointer"
                                                     >
                                                         <Icon name="delete" className="text-[18px]" />
                                                         Delete
@@ -240,15 +276,105 @@ export const RecipeListPage = () => {
                 )}
             </div>
 
-            {/* Floating Add Button */}
-            <button
-                onClick={() => navigate(`/recipes/new/edit?method=${methodFilter?.toUpperCase() || 'V60'}`)}
-                className="fixed bottom-28 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg shadow-primary/40 flex items-center justify-center hover:bg-primary-dark transition-colors active:scale-90 border-[3px] border-white cursor-pointer"
-            >
-                <Icon name="add" className="text-[32px]" />
-            </button>
+            {/* Backdrop overlay when FAB menu is open */}
+            {isFabMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 animate-in fade-in duration-150"
+                    onClick={() => setIsFabMenuOpen(false)}
+                />
+            )}
+
+            {/* Floating Speed Dial FAB */}
+            <div className="fixed bottom-28 right-6 z-40 flex flex-col items-end gap-3">
+                {isFabMenuOpen && (
+                    <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
+                        <button
+                            onClick={() => {
+                                setIsFabMenuOpen(false);
+                                setIsImportModalOpen(true);
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-primary rounded-2xl shadow-xl border border-primary/10 text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Icon name="auto_awesome" className="text-[18px] text-primary" />
+                            <span>Import Recipe</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setIsFabMenuOpen(false);
+                                navigate(`/recipes/new/edit?method=${methodFilter?.toUpperCase() || 'V60'}`);
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Icon name="edit" className="text-[18px] text-gray-500" />
+                            <span>New Recipe</span>
+                        </button>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
+                    className={`w-14 h-14 rounded-full text-white shadow-lg shadow-primary/40 flex items-center justify-center transition-all duration-300 active:scale-90 border-[3px] border-white cursor-pointer ${isFabMenuOpen ? 'bg-gray-800 rotate-45' : 'bg-primary hover:bg-primary-dark'
+                        }`}
+                >
+                    <Icon name="add" className="text-[32px]" />
+                </button>
+            </div>
 
             <BottomNav activeTab="brewing" />
+
+            <SmartImportModal
+                isOpen={isImportModalOpen}
+                initialParsedRecipes={restoredQueue}
+                onClose={() => {
+                    setIsImportModalOpen(false);
+                    setRestoredQueue([]);
+                    sessionStorage.removeItem('coffee_flow_import_queue');
+                }}
+                onImport={(importedData) => {
+                    setIsImportModalOpen(false);
+                    navigate(`/recipes/new/edit?method=${(importedData.method_id || methodFilter || 'V60').toUpperCase()}`, {
+                        state: { prefill: importedData }
+                    });
+                }}
+                onSaveDirect={async (importedData) => {
+                    const id = crypto.randomUUID();
+                    const now = new Date().toISOString();
+                    const steps = (importedData.steps || []).map((s, i) => ({
+                        ...s,
+                        id: s.id || crypto.randomUUID(),
+                        recipe_id: id,
+                        step_order: i + 1,
+                        created_at: s.created_at || now,
+                        updated_at: s.updated_at || now,
+                    }));
+                    const fullRecipe = {
+                        id,
+                        name: importedData.name || 'Imported Recipe',
+                        method_id: importedData.method_id || 'v60',
+                        ratio: importedData.ratio || '1:15',
+                        temperature: importedData.temperature ?? 93,
+                        grind_size: importedData.grind_size || 'Medium',
+                        difficulty: importedData.difficulty || 'Intermediate',
+                        total_water: importedData.total_water ?? 225,
+                        description_short: importedData.description_short || '',
+                        description_detailed: importedData.description_detailed || '',
+                        philosophy: importedData.philosophy || '',
+                        best_for_tags: importedData.best_for_tags || [],
+                        not_recommended_tags: importedData.not_recommended_tags || [],
+                        steps,
+                        is_custom: true,
+                        is_favorite: false,
+                        version: 1,
+                        created_at: now,
+                        updated_at: now,
+                    };
+                    await brewService.saveRecipe(fullRecipe);
+                    setIsImportModalOpen(false);
+                    fetchRecipes();
+                    navigate(`/recipes/${id}`);
+                }}
+            />
 
             <Modal
                 isOpen={isDeleteModalOpen}

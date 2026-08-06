@@ -66,9 +66,9 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
 
     async findByIdWithRecipe(id: EntityId): Promise<BrewLogWithRecipe | null> {
         const result = await this.db.query(`
-            SELECT b.*, r.name as recipe_name, r.method_id, r.ratio
+            SELECT b.*, COALESCE(r.name, 'Deleted Recipe') as recipe_name, COALESCE(r.method_id, 'unknown') as method_id, COALESCE(r.ratio, '1:15') as ratio
             FROM brew_logs b
-            JOIN recipes r ON b.recipe_id = r.id
+            LEFT JOIN recipes r ON b.recipe_id = r.id
             WHERE b.id = ?
         `, [id]);
         return result.values?.[0] || null;
@@ -98,20 +98,20 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
 
     async getRecentWithRecipes(limit: number = 5): Promise<BrewLogWithRecipe[]> {
         const result = await this.db.query(`
-            SELECT b.*, r.name as recipe_name, r.method_id, r.ratio 
+            SELECT b.*, COALESCE(r.name, 'Deleted Recipe') as recipe_name, COALESCE(r.method_id, 'unknown') as method_id, COALESCE(r.ratio, '1:15') as ratio 
             FROM brew_logs b
-            JOIN recipes r ON b.recipe_id = r.id
+            LEFT JOIN recipes r ON b.recipe_id = r.id
             ORDER BY b.brewed_at DESC
-            LIMIT ?
-        `, [limit]);
+            LIMIT ${Number(limit) || 5}
+        `);
         return result.values || [];
     }
 
     async getRecentWithRecipesAll(): Promise<BrewLogWithRecipe[]> {
         const result = await this.db.query(`
-            SELECT b.*, r.name as recipe_name, r.method_id, r.ratio 
+            SELECT b.*, COALESCE(r.name, 'Deleted Recipe') as recipe_name, COALESCE(r.method_id, 'unknown') as method_id, COALESCE(r.ratio, '1:15') as ratio 
             FROM brew_logs b
-            JOIN recipes r ON b.recipe_id = r.id
+            LEFT JOIN recipes r ON b.recipe_id = r.id
             ORDER BY b.brewed_at DESC
         `);
         return result.values || [];

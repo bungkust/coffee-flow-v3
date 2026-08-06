@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
-import { calculateCoffeeDose, formatDuration, formatWeight, sumStepDuration } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatDuration, formatWeight, sumStepDuration, getPourAmount } from '../shared/utils/brewMath';
 
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -229,7 +229,7 @@ export const RecipeDetailPage = () => {
                                         </span>
                                         {step.isPour && step.target_weight && (
                                             <span className="text-xs font-bold text-gray-400 mt-1 bg-gray-50 px-1.5 py-0.5 rounded-md">
-                                                to {step.target_weight}g
+                                                +{getPourAmount(recipe.steps, index)}g (Target: {step.target_weight}g)
                                             </span>
                                         )}
                                     </div>

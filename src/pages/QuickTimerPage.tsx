@@ -25,6 +25,53 @@ export const QuickTimerPage = () => {
         return () => window.clearInterval(timer);
     }, [running]);
 
+    // Screen Wake Lock API to prevent screen from sleeping during active timer
+    useEffect(() => {
+        let wakeLock: WakeLockSentinel | null = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator && !wakeLock) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock acquired');
+                }
+            } catch (err) {
+                console.warn('Screen Wake Lock request failed:', err);
+            }
+        };
+
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                try {
+                    await wakeLock.release();
+                    console.log('Screen Wake Lock released');
+                } catch (err) {
+                    console.warn('Screen Wake Lock release failed:', err);
+                }
+                wakeLock = null;
+            }
+        };
+
+        if (running && remaining > 0) {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && running && remaining > 0) {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            releaseWakeLock();
+        };
+    }, [running, remaining]);
+
     const handlePrimaryAction = () => {
         if (remaining === 0) {
             setRemaining(seconds);

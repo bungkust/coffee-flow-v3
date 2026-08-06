@@ -53,6 +53,53 @@ export const BrewFlowPage = () => {
             .catch(() => setFeedbackEnabled(true));
     }, []);
 
+    // Screen Wake Lock API to prevent screen from sleeping during active brewing
+    useEffect(() => {
+        let wakeLock: WakeLockSentinel | null = null;
+
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator && !wakeLock) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Screen Wake Lock acquired');
+                }
+            } catch (err) {
+                console.warn('Screen Wake Lock request failed:', err);
+            }
+        };
+
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                try {
+                    await wakeLock.release();
+                    console.log('Screen Wake Lock released');
+                } catch (err) {
+                    console.warn('Screen Wake Lock release failed:', err);
+                }
+                wakeLock = null;
+            }
+        };
+
+        if (engineState?.isRunning && !engineState?.isCompleted) {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && engineState?.isRunning && !engineState?.isCompleted) {
+                requestWakeLock();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            releaseWakeLock();
+        };
+    }, [engineState?.isRunning, engineState?.isCompleted]);
+
     useEffect(() => {
         if (!engineState || !activeRecipe) return;
 
@@ -101,11 +148,11 @@ export const BrewFlowPage = () => {
     const currentTargetWeight = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
     const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
-    const stepTitle = currentStep.target_weight
-        ? `Pour to ${currentStep.target_weight}g`
+    const stepTitle = currentStep.target_weight && pourAmount > 0
+        ? `Pour +${pourAmount}g`
         : currentStep.label;
     const stepSubtitle = currentStep.target_weight && pourAmount > 0
-        ? `Add about ${pourAmount}g. ${currentStep.instruction || currentStep.label}`
+        ? `Target: ${currentStep.target_weight}g on scale — ${currentStep.instruction || currentStep.label}`
         : currentStep.instruction || currentStep.label;
 
     if (engineState.isCompleted) {
@@ -256,9 +303,15 @@ export const BrewFlowPage = () => {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold text-[#181411]">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0 ? `Pour to ${step.target_weight}g` : step.label}
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0 
+                                                ? `Pour +${getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1)}g` 
+                                                : step.label}
                                         </h4>
-                                        <p className="text-xs text-gray-500">{step.instruction || step.label}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0 
+                                                ? `Target: ${step.target_weight}g on scale — ${step.instruction || step.label}` 
+                                                : step.instruction || step.label}
+                                        </p>
                                     </div>
                                     <span className="ml-auto text-sm font-semibold text-gray-400 tabular-nums">
                                         {formatDuration(step.duration_seconds)}
