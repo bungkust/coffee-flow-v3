@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Icon } from '../components/Icons';
+import { Icon, SplashLogoIcon } from '../components/Icons';
 import { brewService } from '../core/services';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
@@ -270,7 +270,7 @@ export const RecipeListPage = () => {
                     ))
                 ) : (
                     <div className="bg-white p-12 rounded-2xl border border-dashed border-gray-200 text-center flex flex-col items-center justify-center">
-                        <Icon name="coffee" className="text-5xl text-gray-200 mb-3" />
+                        <SplashLogoIcon className="w-12 h-12 text-gray-200 mb-3" />
                         <p className="text-sm text-gray-400 font-medium">No recipes found matching your criteria.</p>
                     </div>
                 )}
@@ -295,7 +295,7 @@ export const RecipeListPage = () => {
                             }}
                             className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-primary rounded-2xl shadow-xl border border-primary/10 text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all cursor-pointer"
                         >
-                            <Icon name="auto_awesome" className="text-[18px] text-primary" />
+                            <SplashLogoIcon className="w-4 h-4 text-primary" />
                             <span>Import Recipe</span>
                         </button>
 

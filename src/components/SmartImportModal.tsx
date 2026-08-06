@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Icon } from './Icons';
+import { Icon, SplashLogoIcon } from './Icons';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 
 export interface ImportableRecipe extends Partial<Recipe> {
@@ -459,8 +459,8 @@ export const SmartImportModal: React.FC<SmartImportModalProps> = ({
                 {/* Header */}
                 <div className="bg-primary text-white px-5 pt-5 pb-4 flex items-start justify-between shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                            <Icon name="auto_awesome" className="text-[20px]" />
+                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
+                            <SplashLogoIcon className="w-5 h-5" />
                         </div>
                         <div>
                             <h2 className="text-base font-bold leading-tight">Import Recipe</h2>
@@ -563,8 +563,8 @@ export const SmartImportModal: React.FC<SmartImportModalProps> = ({
                         <div className="p-5 space-y-3">
                             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                                        <Icon name="auto_awesome" className="text-[18px] text-amber-700" />
+                                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+                                        <SplashLogoIcon className="w-4 h-4" />
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-amber-900">
@@ -798,7 +798,7 @@ export const SmartImportModal: React.FC<SmartImportModalProps> = ({
                                 onClick={handleExtract}
                                 className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/30 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                                <Icon name="auto_awesome" className="text-[16px]" />
+                                <SplashLogoIcon className="w-4 h-4" />
                                 Extract Recipe
                             </button>
                         </>
