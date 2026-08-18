@@ -3,34 +3,26 @@ import { twMerge } from 'tailwind-merge';
 
 interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     active?: boolean;
-    variant?: 'primary' | 'secondary' | 'outline';
+    variant?: 'primary' | 'secondary' | 'outline' | 'filter' | 'assist';
+    icon?: ReactNode;
     children: ReactNode;
 }
 
-export const Chip = ({ className, children, active, variant = 'outline', ...props }: ChipProps) => {
-    const variants = {
-        primary: 'bg-primary text-white shadow-sm',
-        secondary: 'bg-secondary text-primary border border-secondary hover:bg-secondary/80',
-        outline: 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50',
-    };
-
-    // If active is explicitly true, use primary variant styles, typically.
-    // Or we can rely on proper variant usage.
-    // Based on HTML:
-    // Active: bg-primary text-white
-    // Secondary: bg-secondary text-primary
-    // Default: bg-white border border-gray-300
-
+export const Chip = ({ className, children, active, variant = 'outline', icon, ...props }: ChipProps) => {
     return (
         <button
             className={twMerge(
-                "text-sm font-semibold px-4 py-2 rounded-full transition-colors",
-                active ? variants.primary : variants[variant],
+                "inline-flex items-center justify-center gap-2 h-8 px-4 text-xs font-semibold rounded-full transition-all duration-200 ease-md-standard select-none cursor-pointer active:scale-95 disabled:opacity-38 disabled:pointer-events-none",
+                active
+                    ? "bg-md-secondary-container text-md-on-secondary-container shadow-sm border-none"
+                    : "bg-md-surface-container-low border border-md-outline/40 text-md-on-surface-variant hover:bg-md-surface-container-high hover:border-md-outline",
                 className
             )}
             {...props}
         >
+            {icon}
             {children}
         </button>
     );
 };
+

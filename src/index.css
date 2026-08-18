@@ -2,11 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Material Design 3 Light Theme Tokens (Coffee Roast Palette) */
+  --md-sys-color-primary: #6F4E37;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #F3EBE3;
+  --md-sys-color-on-primary-container: #29180C;
+
+  --md-sys-color-secondary: #6B5C52;
+  --md-sys-color-on-secondary: #FFFFFF;
+  --md-sys-color-secondary-container: #F4ECE6;
+  --md-sys-color-on-secondary-container: #251A12;
+
+  --md-sys-color-tertiary: #7D5800;
+  --md-sys-color-on-tertiary: #FFFFFF;
+  --md-sys-color-tertiary-container: #FFDF9E;
+  --md-sys-color-on-tertiary-container: #261A00;
+
+  --md-sys-color-surface: #FAF8F5;
+  --md-sys-color-on-surface: #1F1B18;
+  --md-sys-color-on-surface-variant: #4E453E;
+
+  --md-sys-color-surface-dim: #E5E1DC;
+  --md-sys-color-surface-bright: #FAF8F5;
+
+  --md-sys-color-surface-container-lowest: #FFFFFF;
+  --md-sys-color-surface-container-low: #F5F2EE;
+  --md-sys-color-surface-container: #EFECE7;
+  --md-sys-color-surface-container-high: #E9E6E1;
+  --md-sys-color-surface-container-highest: #E3E0DC;
+
+  --md-sys-color-outline: #80756C;
+  --md-sys-color-outline-variant: #D2C4B8;
+
+  --md-sys-color-error: #BA1A1A;
+  --md-sys-color-error-container: #FFDAD6;
+  --md-sys-color-on-error: #FFFFFF;
+  --md-sys-color-on-error-container: #410002;
+}
+
+.dark {
+  /* Material Design 3 Dark Theme Tokens */
+  --md-sys-color-primary: #DCBEA9;
+  --md-sys-color-on-primary: #3E2A1C;
+  --md-sys-color-primary-container: #563C29;
+  --md-sys-color-on-primary-container: #F3EBE3;
+
+  --md-sys-color-secondary: #D7C3B5;
+  --md-sys-color-on-secondary: #3B2E26;
+  --md-sys-color-secondary-container: #52443B;
+  --md-sys-color-on-secondary-container: #F4ECE6;
+
+  --md-sys-color-tertiary: #F3BE49;
+  --md-sys-color-on-tertiary: #422D00;
+  --md-sys-color-tertiary-container: #5F4000;
+  --md-sys-color-on-tertiary-container: #FFDF9E;
+
+  --md-sys-color-surface: #171310;
+  --md-sys-color-on-surface: #ECE0DA;
+  --md-sys-color-on-surface-variant: #D2C4B8;
+
+  --md-sys-color-surface-dim: #171310;
+  --md-sys-color-surface-bright: #3E3834;
+
+  --md-sys-color-surface-container-lowest: #110E0C;
+  --md-sys-color-surface-container-low: #1F1B18;
+  --md-sys-color-surface-container: #24201C;
+  --md-sys-color-surface-container-high: #2E2A26;
+  --md-sys-color-surface-container-highest: #3A3530;
+
+  --md-sys-color-outline: #9C8F84;
+  --md-sys-color-outline-variant: #4E453E;
+
+  --md-sys-color-error: #FFB4AB;
+  --md-sys-color-error-container: #93000A;
+  --md-sys-color-on-error: #690005;
+  --md-sys-color-on-error-container: #FFDAD6;
+}
+
 @layer base {
   body {
-    @apply bg-background-light text-neutral-text font-sans antialiased;
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
+
+/* MD3 Typescales */
+.typescale-display-large { font-size: 57px; line-height: 64px; font-weight: 700; letter-spacing: -0.25px; }
+.typescale-display-medium { font-size: 45px; line-height: 52px; font-weight: 700; }
+.typescale-display-small { font-size: 36px; line-height: 44px; font-weight: 600; }
+
+.typescale-headline-large { font-size: 32px; line-height: 40px; font-weight: 700; }
+.typescale-headline-medium { font-size: 28px; line-height: 36px; font-weight: 600; }
+.typescale-headline-small { font-size: 24px; line-height: 32px; font-weight: 600; }
+
+.typescale-title-large { font-size: 22px; line-height: 28px; font-weight: 600; }
+.typescale-title-medium { font-size: 16px; line-height: 24px; font-weight: 600; letter-spacing: 0.15px; }
+.typescale-title-small { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0.1px; }
+
+.typescale-body-large { font-size: 16px; line-height: 24px; font-weight: 400; letter-spacing: 0.5px; }
+.typescale-body-medium { font-size: 14px; line-height: 20px; font-weight: 400; letter-spacing: 0.25px; }
+.typescale-body-small { font-size: 12px; line-height: 16px; font-weight: 400; letter-spacing: 0.4px; }
+
+.typescale-label-large { font-size: 14px; line-height: 20px; font-weight: 600; letter-spacing: 0.1px; }
+.typescale-label-medium { font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.5px; }
+.typescale-label-small { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.5px; }
 
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
@@ -25,27 +127,13 @@
 }
 
 @keyframes pulse-gold {
-
-  0%,
-  100% {
-    opacity: 0.8;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
 }
 
 @keyframes progress {
-  0% {
-    width: 0%;
-  }
-
-  100% {
-    width: 100%;
-  }
+  0% { width: 0%; }
+  100% { width: 100%; }
 }
 
 .logo-container {
@@ -55,3 +143,4 @@
 .progress-bar-fill {
   animation: progress 2.5s ease-out forwards;
 }
+

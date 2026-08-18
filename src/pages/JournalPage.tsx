@@ -68,46 +68,47 @@ export const JournalPage = () => {
     }, {});
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl font-display text-[#181411]">
+        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Header */}
-            <div className="sticky top-0 z-20 bg-background-light/95 backdrop-blur-md pt-12 pb-0 border-b border-gray-100">
-                <div className="flex items-center justify-between px-4 mb-2">
+            <header className="sticky top-0 z-20 bg-md-surface/95 backdrop-blur-md pt-10 pb-0 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between px-5 mb-2">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            aria-label="Go back"
                         >
-                            <Icon name="arrow_back" className="text-[24px]" />
+                            <Icon name="arrow_back" className="text-2xl" />
                         </button>
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">
                             Activity Journal
                         </h1>
                     </div>
                 </div>
-                {/* Toggle Switch */}
-                <div className="px-4 pb-4 pt-1">
-                    <div className="flex h-10 w-full items-center justify-center rounded-lg bg-gray-50 p-1">
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-md py-1.5 transition-all">
+                {/* Segmented Button / Toggle Switch */}
+                <div className="px-5 pb-3 pt-1">
+                    <div className="flex h-10 w-full items-center justify-center rounded-full bg-md-surface-container-high p-1">
+                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
                             <input
                                 checked={activeTab === 'brews'}
                                 onChange={() => setActiveTab('brews')}
                                 className="peer sr-only" name="journal-filter" type="radio" value="brews"
                             />
-                            <span className="z-10 text-sm font-semibold text-gray-500 peer-checked:text-primary transition-colors">Brews</span>
-                            <div className="absolute inset-0 z-0 scale-95 rounded-md bg-white shadow-sm opacity-0 peer-checked:opacity-100 peer-checked:scale-100 transition-all duration-200"></div>
+                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Brews</span>
+                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
                         </label>
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-md py-1.5 transition-all">
+                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
                             <input
                                 checked={activeTab === 'drinks'}
                                 onChange={() => setActiveTab('drinks')}
                                 className="peer sr-only" name="journal-filter" type="radio" value="drinks"
                             />
-                            <span className="z-10 text-sm font-semibold text-gray-500 peer-checked:text-primary transition-colors">Drinks</span>
-                            <div className="absolute inset-0 z-0 scale-95 rounded-md bg-white shadow-sm opacity-0 peer-checked:opacity-100 peer-checked:scale-100 transition-all duration-200"></div>
+                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Drinks</span>
+                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
                         </label>
                     </div>
                 </div>
-            </div>
+            </header>
 
             {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto pb-24 scrollbar-hide">

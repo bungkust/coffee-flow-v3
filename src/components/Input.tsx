@@ -9,6 +9,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     icon?: string;
     rightElement?: ReactNode;
     active?: boolean;
+    helperText?: string;
 }
 
 export const Input = ({
@@ -18,46 +19,52 @@ export const Input = ({
     icon,
     rightElement,
     active,
+    helperText,
     ...props
 }: InputProps) => {
     return (
         <div className="space-y-1.5 w-full">
             {label && (
-                <label className={clsx("text-sm font-semibold", error ? "text-red-600" : (active ? "text-primary" : "text-neutral-text"))}>
+                <label className={clsx(
+                    "typescale-label-medium transition-colors duration-200 block",
+                    error ? "text-md-error" : (active ? "text-md-primary font-semibold" : "text-md-on-surface-variant")
+                )}>
                     {label}
                 </label>
             )}
             <div className="relative">
                 {icon && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <Icon name={icon} className="text-[20px]" />
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-md-on-surface-variant">
+                        <Icon name={icon} className="text-xl" />
                     </div>
                 )}
                 <input
                     className={twMerge(
-                        "w-full rounded-lg px-4 py-3 text-neutral-text transition-all focus:outline-none",
-                        "bg-white",
-                        // Base border and focus states
-                        !error && !active && "border border-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-transparent",
-                        // Active State (Visual)
-                        active && "border-2 border-primary ring-0 outline-none shadow-[0_0_0_4px_rgba(184,102,20,0.1)]",
-                        // Error State
-                        error && "border border-red-500 text-red-900 focus:ring-2 focus:ring-red-200",
-                        icon ? "pl-10" : "",
+                        "w-full rounded-sm px-4 py-3 text-md-on-surface bg-md-surface-container-lowest transition-all duration-200 ease-md-standard focus:outline-none placeholder:text-md-outline/60 typescale-body-large",
+                        !error && !active && "border border-md-outline focus:border-2 focus:border-md-primary",
+                        active && "border-2 border-md-primary ring-2 ring-md-primary/15",
+                        error && "border-2 border-md-error text-md-error focus:ring-2 focus:ring-md-error/20",
+                        icon ? "pl-11" : "",
+                        rightElement ? "pr-12" : "",
                         className
                     )}
                     {...props}
                 />
                 {rightElement && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-md-on-surface-variant">
                         {rightElement}
                     </div>
                 )}
-                {error && (
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-xl">error</span>
+                {error && !rightElement && (
+                    <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-md-error text-xl">error</span>
                 )}
             </div>
-            {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+            {(error || helperText) && (
+                <p className={clsx("typescale-body-small mt-1 px-1", error ? "text-md-error font-medium" : "text-md-on-surface-variant")}>
+                    {error || helperText}
+                </p>
+            )}
         </div>
     );
 };
+

@@ -59,55 +59,55 @@ export const PantryPage = () => {
     }
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl font-display text-neutral-text pb-32">
+        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-2 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">
                             My Pantry
                         </h1>
                     </div>
                 </div>
-                <div className="relative mb-2">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                        <Icon name="search" className="text-[20px]" />
+                <div className="relative mb-3">
+                    <span className="absolute inset-y-0 left-3.5 flex items-center text-md-on-surface-variant">
+                        <Icon name="search" className="text-xl" />
                     </span>
                     <input
-                        className="w-full bg-white text-neutral-text placeholder-gray-400 rounded-xl py-2.5 pl-10 pr-4 border-none shadow-sm focus:ring-2 focus:ring-primary/50 text-sm font-medium"
+                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-outline/60 rounded-full py-3 pl-11 pr-4 border-none shadow-none focus:outline-none focus:ring-2 focus:ring-md-primary typescale-body-large transition-all"
                         placeholder="Search inventory..."
                         type="text"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                     />
                 </div>
-                {/* Toggle Switch */}
-                <div className="pt-2 pb-4">
-                    <div className="flex h-10 w-full items-center justify-center rounded-lg bg-gray-50 p-1">
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-md py-1.5 transition-all">
+                {/* Segmented Button / Toggle */}
+                <div className="pb-3">
+                    <div className="flex h-10 w-full items-center justify-center rounded-full bg-md-surface-container-high p-1">
+                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
                             <input
                                 checked={activeTab === 'supplies'}
                                 onChange={() => setActiveTab('supplies')}
                                 className="peer sr-only" name="pantry-filter" type="radio" value="supplies"
                             />
-                            <span className="z-10 text-sm font-semibold text-gray-500 peer-checked:text-primary transition-colors">Supplies</span>
-                            <div className="absolute inset-0 z-0 scale-95 rounded-md bg-white shadow-sm opacity-0 peer-checked:opacity-100 peer-checked:scale-100 transition-all duration-200"></div>
+                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Supplies</span>
+                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
                         </label>
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-md py-1.5 transition-all">
+                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
                             <input
                                 checked={activeTab === 'gear'}
                                 onChange={() => setActiveTab('gear')}
                                 className="peer sr-only" name="pantry-filter" type="radio" value="gear"
                             />
-                            <span className="z-10 text-sm font-semibold text-gray-500 peer-checked:text-primary transition-colors">Gear</span>
-                            <div className="absolute inset-0 z-0 scale-95 rounded-md bg-white shadow-sm opacity-0 peer-checked:opacity-100 peer-checked:scale-100 transition-all duration-200"></div>
+                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Gear</span>
+                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
                         </label>
                     </div>
                 </div>
-            </div>
+            </header>
 
             {/* Inventory List */}
-            <main className="flex-1 px-4 pt-2 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
+            <main className="flex-1 px-5 pt-3 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
                 {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-6 opacity-60">
                         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">

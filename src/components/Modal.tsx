@@ -1,5 +1,6 @@
 import { Icon } from './Icons';
 import { type ReactNode } from 'react';
+import { Button } from './Button';
 
 type ModalSize = 'sm' | 'md' | 'lg';
 
@@ -29,10 +30,10 @@ export const Modal = ({
     if (!isOpen) return null;
 
     const typeConfig = {
-        warning: { icon: 'warning', color: 'text-yellow-500', bg: 'bg-yellow-50' },
-        error: { icon: 'error', color: 'text-red-500', bg: 'bg-red-50' },
-        info: { icon: 'info', color: 'text-primary', bg: 'bg-primary-light' },
-        success: { icon: 'check_circle', color: 'text-green-500', bg: 'bg-green-50' }
+        warning: { icon: 'warning', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-950' },
+        error: { icon: 'error', color: 'text-md-error', bg: 'bg-md-error-container' },
+        info: { icon: 'info', color: 'text-md-primary', bg: 'bg-md-primary-container' },
+        success: { icon: 'check_circle', color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-950' }
     };
 
     const sizeConfig = {
@@ -47,37 +48,39 @@ export const Modal = ({
     const isForm = typeof message !== 'string';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className={`bg-white w-full ${widthClass} rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200`}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/50 backdrop-blur-xs transition-opacity duration-200">
+            <div className={`bg-md-surface-container-high text-md-on-surface w-full ${widthClass} rounded-xl p-6 shadow-md-3 border border-md-outline-variant/30`}>
                 <div className={isForm ? 'text-left' : 'flex flex-col items-center text-center'}>
                     {!isForm && (
-                        <div className={`w-14 h-14 rounded-full ${config.bg} flex items-center justify-center mb-4 ${isForm ? 'mx-auto' : ''}`}>
-                            <Icon name={config.icon} className={`text-[32px] ${config.color}`} style={{ fontVariationSettings: "'FILL' 1" }} />
+                        <div className={`w-12 h-12 rounded-full ${config.bg} flex items-center justify-center mb-4 ${isForm ? 'mx-auto' : ''}`}>
+                            <Icon name={config.icon} className={`text-2xl ${config.color}`} style={{ fontVariationSettings: "'FILL' 1" }} />
                         </div>
                     )}
-                    <h3 className={`text-xl font-bold text-[#181411] mb-2 ${isForm ? 'text-left' : 'text-center'}`}>{title}</h3>
+                    <h3 className={`typescale-headline-small text-md-on-surface mb-2 ${isForm ? 'text-left' : 'text-center'}`}>{title}</h3>
                     {typeof message === 'string' ? (
-                        <p className="text-sm text-gray-500 mb-8 leading-relaxed">{message}</p>
+                        <p className="typescale-body-medium text-md-on-surface-variant mb-6 leading-relaxed">{message}</p>
                     ) : (
-                        <div className="mb-8">{message}</div>
+                        <div className="mb-6">{message}</div>
                     )}
 
-                    <div className="flex flex-col w-full gap-3">
-                        <button
+                    <div className="flex items-center justify-end w-full gap-2 pt-2">
+                        {cancelText && (
+                            <Button
+                                variant="text"
+                                onClick={onClose}
+                            >
+                                {cancelText}
+                            </Button>
+                        )}
+                        <Button
+                            variant="filled"
                             onClick={() => {
                                 onConfirm?.();
                                 onClose();
                             }}
-                            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl transition-all active:scale-[0.98]"
                         >
                             {confirmText}
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="w-full bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold py-4 rounded-xl transition-all active:scale-[0.98]"
-                        >
-                            {cancelText}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

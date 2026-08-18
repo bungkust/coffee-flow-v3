@@ -56,47 +56,45 @@ export const Dropdown: React.FC<DropdownProps> = ({
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             {label && (
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
-                    {icon && <Icon name={icon} className="text-[16px]" />}
-                    {label} {required && <span className="text-red-400">*</span>}
+                <label className="block typescale-label-medium text-md-on-surface-variant mb-1.5 flex items-center gap-2">
+                    {icon && <Icon name={icon} className="text-base" />}
+                    {label} {required && <span className="text-md-error">*</span>}
                 </label>
             )}
 
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full text-left px-4 border focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium transition-all flex items-center justify-between ${buttonClassName?.includes('py-') || buttonClassName?.includes('p-') ? '' : 'py-3'
-                    } ${buttonClassName?.includes('rounded-') ? '' : 'rounded-xl'
-                    } ${isOpen
-                        ? 'border-primary ring-2 ring-primary/20 bg-white dark:bg-[#2C241B]'
-                        : 'bg-white dark:bg-[#2C241B] border-gray-200 dark:border-gray-700 hover:border-primary/30'
-                    } ${buttonClassName}`}
+                className={`w-full text-left px-4 py-3 border border-md-outline bg-md-surface-container-lowest text-md-on-surface typescale-body-large rounded-sm focus:outline-none focus:border-2 focus:border-md-primary transition-all duration-200 flex items-center justify-between ${
+                    isOpen ? 'border-2 border-md-primary ring-2 ring-md-primary/15' : 'hover:border-md-outline'
+                } ${buttonClassName}`}
             >
-                <span className={selectedOption ? 'text-neutral-text dark:text-white' : 'text-gray-400'}>
+                <span className={selectedOption ? 'text-md-on-surface' : 'text-md-outline/60'}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
                 <Icon
                     name="arrow_drop_down"
-                    className={`text-xl text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    className={`text-2xl text-md-on-surface-variant transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                 />
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-[#2C241B] rounded-xl shadow-xl border border-gray-100 dark:border-white/5 max-h-60 overflow-y-auto scrollbar-hide animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute z-50 w-full mt-1.5 bg-md-surface-container-high rounded-sm shadow-md-2 border border-md-outline-variant/30 max-h-60 overflow-y-auto scrollbar-hide animate-in fade-in duration-150">
                     <div className="p-1">
                         {options.map((option) => (
                             <button
                                 key={option.value}
                                 disabled={option.disabled}
                                 onClick={() => !option.disabled && handleSelect(option.value)}
-                                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${option.value === value
-                                    ? 'bg-primary/5 text-primary'
-                                    : 'text-neutral-text dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5'
-                                    } ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full text-left px-4 py-3 rounded-xs typescale-body-medium transition-colors flex items-center justify-between ${
+                                    option.value === value
+                                        ? 'bg-md-secondary-container text-md-on-secondary-container font-semibold'
+                                        : 'text-md-on-surface hover:bg-md-surface-container-highest'
+                                } ${option.disabled ? 'opacity-38 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 {option.label}
                                 {option.value === value && (
-                                    <Icon name="check" className="text-primary text-[18px]" />
+                                    <Icon name="check" className="text-md-primary text-lg" />
                                 )}
                             </button>
                         ))}
@@ -106,3 +104,4 @@ export const Dropdown: React.FC<DropdownProps> = ({
         </div>
     );
 };
+

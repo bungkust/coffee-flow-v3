@@ -109,7 +109,6 @@ export const RecipeListPage = () => {
         }
     };
 
-
     const handleDeleteClick = (e: React.MouseEvent, recipe: Recipe) => {
         e.stopPropagation();
         e.preventDefault();
@@ -133,46 +132,48 @@ export const RecipeListPage = () => {
     const chips = ['All', 'Favorites', 'Personal', 'Community', 'Light Roast', 'Dark Roast'];
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-32">
+        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            aria-label="Go back"
                         >
-                            <Icon name="arrow_back" className="text-[24px]" />
+                            <Icon name="arrow_back" className="text-2xl" />
                         </button>
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight capitalize">
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface capitalize truncate">
                             {methodFilter ? `${methodFilter} Recipes` : 'Recipes'}
                         </h1>
                     </div>
                 </div>
-                <div className="relative mb-2">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                        <Icon name="search" className="text-[20px]" />
+                <div className="relative mb-1">
+                    <span className="absolute inset-y-0 left-3.5 flex items-center text-md-on-surface-variant">
+                        <Icon name="search" className="text-xl" />
                     </span>
                     <input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white text-neutral-text placeholder-gray-400 rounded-xl py-2.5 pl-10 pr-4 border-none shadow-sm focus:ring-2 focus:ring-primary/50 text-sm font-medium"
+                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-outline/60 rounded-full py-3 pl-11 pr-4 border-none shadow-none focus:outline-none focus:ring-2 focus:ring-md-primary typescale-body-large transition-all"
                         placeholder={`Search ${methodFilter || ''} recipes...`}
                         type="text"
                     />
                 </div>
-            </div>
+            </header>
 
             {/* Filter Chips */}
-            <div className="px-4 py-3 flex gap-2 overflow-x-auto hide-scrollbar">
+            <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
                 {chips.map(chip => (
                     <button
                         key={chip}
                         onClick={() => setActiveChip(chip)}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold shadow-sm whitespace-nowrap transition-colors cursor-pointer ${activeChip === chip
-                            ? 'bg-primary text-white'
-                            : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/50 hover:text-primary'
-                            }`}
+                        className={`h-8 px-4 rounded-full typescale-label-medium whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                            activeChip === chip
+                                ? 'bg-md-secondary-container text-md-on-secondary-container font-semibold shadow-sm'
+                                : 'bg-md-surface-container-low text-md-on-surface-variant border border-md-outline-variant/40 hover:bg-md-surface-container-high'
+                        }`}
                     >
                         {chip}
                     </button>
@@ -180,44 +181,46 @@ export const RecipeListPage = () => {
             </div>
 
             {/* Recipe List */}
-            <div className="flex-1 px-4 pt-2 pb-24 flex flex-col gap-3">
+            <main className="flex-1 px-5 pt-2 pb-24 flex flex-col gap-3">
                 {loading ? (
                     [1, 2, 3].map(i => (
-                        <div key={i} className="h-40 bg-white rounded-xl animate-pulse shadow-sm border border-gray-100"></div>
+                        <div key={i} className="h-36 bg-md-surface-container-low rounded-xl animate-pulse border border-md-outline-variant/20"></div>
                     ))
                 ) : filteredRecipes.length > 0 ? (
                     filteredRecipes.map(recipe => (
                         <div
                             key={recipe.id}
                             onClick={() => handleSelectRecipe(recipe)}
-                            className={`group relative p-4 rounded-xl shadow-sm border transition-all cursor-pointer ${
+                            className={`group relative p-4 rounded-xl shadow-md-1 border transition-all duration-200 cursor-pointer ${
                                 recipe.is_favorite
-                                    ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/20'
-                                    : 'bg-white border-gray-100 hover:border-primary/30'
+                                    ? 'bg-md-primary-container/20 border-md-primary/40'
+                                    : 'bg-md-surface-container-low border-md-outline-variant/30 hover:bg-md-surface-container-high'
                             }`}
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <div>
-                                    <h3 className="font-bold text-neutral-text text-base mb-0.5">{recipe.name}</h3>
-                                    <p className="text-xs text-gray-500 font-medium">Synced from {recipe.method_id}</p>
+                                    <h3 className="typescale-title-medium font-bold text-md-on-surface mb-0.5">{recipe.name}</h3>
+                                    <p className="typescale-body-small text-md-on-surface-variant font-medium">Synced from {recipe.method_id}</p>
                                 </div>
                                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                                     <button
                                         onClick={(e) => handleToggleFavorite(e, recipe.id)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-accent-light transition-colors cursor-pointer"
+                                        className="size-9 flex items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                                        aria-label="Favorite recipe"
                                     >
                                         <Icon
                                             name="bookmark"
-                                            className={`text-[20px] ${recipe.is_favorite ? 'text-primary' : 'text-gray-400'}`}
+                                            className={`text-xl ${recipe.is_favorite ? 'text-md-primary' : 'text-md-outline'}`}
                                             style={{ fontVariationSettings: recipe.is_favorite ? "'FILL' 1" : "'FILL' 0" }}
                                         />
                                     </button>
                                     <div className="relative">
                                         <button
                                             onClick={(e) => handleKebabClick(e, recipe.id)}
-                                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors cursor-pointer"
+                                            className="size-9 flex items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                                            aria-label="More options"
                                         >
-                                            <Icon name="more_vert" className="text-[20px]" />
+                                            <Icon name="more_vert" className="text-xl" />
                                         </button>
 
                                         {activeMenuId === recipe.id && (
@@ -235,7 +238,7 @@ export const RecipeListPage = () => {
                                                         e.stopPropagation();
                                                         e.preventDefault();
                                                     }}
-                                                    className="absolute right-0 top-10 w-36 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 animate-in fade-in zoom-in-95 duration-200"
+                                                    className="absolute right-0 top-10 w-36 bg-md-surface-container-high text-md-on-surface rounded-md shadow-md-3 border border-md-outline-variant/30 py-1.5 z-30 animate-in fade-in duration-150"
                                                 >
                                                     <button
                                                         onClick={(e) => {
@@ -244,10 +247,11 @@ export const RecipeListPage = () => {
                                                             setTimeout(() => setActiveMenuId(null), 50);
                                                             navigate(`/recipes/${recipe.id}/edit`);
                                                         }}
-                                                        className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors cursor-pointer"
+                                                        className="w-full px-4 py-2.5 text-left typescale-body-medium font-semibold text-md-on-surface hover:bg-md-surface-container-highest flex items-center gap-2 transition-colors cursor-pointer"
                                                     >
-                                                        <Icon name="edit" className="text-[18px] text-gray-400" />
+                                                        <Icon name="edit" className="text-lg text-md-on-surface-variant" />
                                                         Edit
+
                                                     </button>
                                                     <button
                                                         onClick={(e) => handleClone(e, recipe.id)}
@@ -284,7 +288,7 @@ export const RecipeListPage = () => {
                         <p className="text-sm text-gray-400 font-medium">No recipes found matching your criteria.</p>
                     </div>
                 )}
-            </div>
+            </main>
 
             {/* Backdrop overlay when FAB menu is open */}
             {isFabMenuOpen && (
@@ -401,8 +405,8 @@ export const RecipeListPage = () => {
 };
 
 const StatCard = ({ label, value }: { label: string, value: string }) => (
-    <div className="flex-1 bg-accent-light/40 rounded-lg py-1.5 px-2 text-center border border-primary/10">
-        <span className="block text-[10px] text-gray-500 uppercase tracking-wide font-bold">{label}</span>
-        <span className="block text-xs font-bold text-primary">{value}</span>
+    <div className="flex-1 bg-md-surface-container-high rounded-md py-1.5 px-2 text-center border border-md-outline-variant/20">
+        <span className="block typescale-label-small text-md-on-surface-variant font-bold uppercase tracking-wide">{label}</span>
+        <span className="block typescale-label-large font-bold text-md-primary">{value}</span>
     </div>
 );

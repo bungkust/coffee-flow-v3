@@ -123,88 +123,104 @@ export const SettingsPage = () => {
     };
 
     return (
-        <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-24 font-display text-neutral-text">
+        <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
-                            Settings
-                        </h1>
-                    </div>
-                </div>
-            </div>
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20 flex items-center gap-3">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                    aria-label="Go back"
+                >
+                    <Icon name="arrow_back" className="text-2xl" />
+                </button>
+                <h1 className="typescale-headline-small font-bold text-md-on-surface">
+                    Settings
+                </h1>
+            </header>
 
             {/* Profile Section */}
-            <section className="px-6 flex flex-col items-center">
-                <p className="text-xs font-semibold text-primary/80 my-8 uppercase tracking-wider">User ID: {userId || 'Not created yet'}</p>
+            <section className="px-5 flex flex-col items-center">
+                <span className="typescale-label-medium text-md-primary font-semibold my-6 uppercase tracking-wider bg-md-primary-container px-3 py-1 rounded-full">
+                    User ID: {userId || 'Not created yet'}
+                </span>
             </section>
 
             {/* Settings Groups */}
-            <div className="px-4 space-y-6">
+            <div className="px-5 space-y-6">
                 {/* Data Management */}
                 <div>
-                    <h3 className="px-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Data Management</h3>
-                    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                    <h3 className="px-1 mb-2.5 typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Data Management</h3>
+                    <div className="bg-md-surface-container-low rounded-xl overflow-hidden border border-md-outline-variant/30 shadow-md-1">
                         <button
                             onClick={() => navigate('/settings/backup')}
-                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+                            className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer"
                         >
                             <div className="flex items-center gap-3">
-                                <Icon name="cloud_upload" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Backup & Restore</span>
+                                <Icon name="cloud_upload" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Backup & Restore</span>
                             </div>
-                            <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
+                            <Icon name="chevron_right" className="text-md-on-surface-variant text-xl" />
                         </button>
                         <button
                             onClick={() => setShowDeleteModal(true)}
-                            className="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors group"
+                            className="w-full flex items-center justify-between p-4 hover:bg-md-error-container/30 transition-colors group cursor-pointer"
                         >
                             <div className="flex items-center gap-3">
-                                <Icon name="delete_forever" className="text-red-500 text-[22px] group-hover:scale-110 transition-transform" />
-                                <span className="font-medium text-sm text-red-500">Delete Data</span>
+                                <Icon name="delete_forever" className="text-md-error text-xl group-hover:scale-110 transition-transform" />
+                                <span className="typescale-body-large font-semibold text-md-error">Delete Data</span>
                             </div>
-                            <Icon name="chevron_right" className="text-red-300 text-[20px]" />
+                            <Icon name="chevron_right" className="text-md-error/60 text-xl" />
                         </button>
                     </div>
                 </div>
 
                 {/* Preferences */}
                 <div>
-                    <h3 className="px-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Preferences</h3>
-                    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <h3 className="px-1 mb-2.5 typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Preferences</h3>
+                    <div className="bg-md-surface-container-low rounded-xl overflow-hidden border border-md-outline-variant/30 shadow-md-1">
+                        <div className="flex items-center justify-between p-4 border-b border-md-outline-variant/20">
                             <div className="flex items-center gap-3">
-                                <Icon name="notifications" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Notifications</span>
+                                <Icon name="notifications" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Notifications</span>
                             </div>
-                            <div className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={notificationsEnabled} onChange={handleToggleNotifications} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            </div>
+                            <button
+                                onClick={handleToggleNotifications}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 cursor-pointer ${
+                                    notificationsEnabled ? 'bg-md-primary' : 'bg-md-surface-container-highest'
+                                }`}
+                            >
+                                <div className={`size-4 rounded-full bg-white transition-transform duration-200 ${
+                                    notificationsEnabled ? 'translate-x-6' : 'translate-x-0'
+                                }`} />
+                            </button>
                         </div>
-                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                        <div className="flex items-center justify-between p-4 border-b border-md-outline-variant/20">
                             <div className="flex items-center gap-3">
-                                <Icon name="volume_up" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Timer Feedback</span>
+                                <Icon name="vibration" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Timer Feedback</span>
                             </div>
-                            <div className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={timerFeedbackEnabled} onChange={handleToggleTimerFeedback} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            </div>
+                            <button
+                                onClick={handleToggleTimerFeedback}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 cursor-pointer ${
+                                    timerFeedbackEnabled ? 'bg-md-primary' : 'bg-md-surface-container-highest'
+                                }`}
+                            >
+                                <div className={`size-4 rounded-full bg-white transition-transform duration-200 ${
+                                    timerFeedbackEnabled ? 'translate-x-6' : 'translate-x-0'
+                                }`} />
+                            </button>
                         </div>
                         <button
                             onClick={handleToggleUnit}
-                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                            className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors cursor-pointer"
                         >
                             <div className="flex items-center gap-3">
-                                <Icon name="straighten" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">App Units</span>
+                                <Icon name="straighten" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">App Units</span>
                             </div>
                             <div className="flex items-center gap-1">
-                                <span className="text-sm font-semibold text-gray-500 capitalize">{appUnit}</span>
-                                <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
+                                <span className="typescale-body-medium font-semibold text-md-on-surface-variant capitalize">{appUnit}</span>
+                                <Icon name="chevron_right" className="text-md-on-surface-variant text-xl" />
                             </div>
                         </button>
                     </div>
@@ -212,41 +228,41 @@ export const SettingsPage = () => {
 
                 {/* Support & Legal */}
                 <div>
-                    <h3 className="px-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Support & Legal</h3>
-                    <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                        <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                    <h3 className="px-1 mb-2.5 typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Support & Legal</h3>
+                    <div className="bg-md-surface-container-low rounded-xl overflow-hidden border border-md-outline-variant/30 shadow-md-1">
+                        <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
                             <div className="flex items-center gap-3">
-                                <Icon name="chat_bubble" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Send Feedback</span>
+                                <Icon name="chat_bubble" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Send Feedback</span>
                             </div>
-                            <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
+                            <Icon name="chevron_right" className="text-md-on-surface-variant text-xl" />
                         </button>
-                        <button onClick={() => window.open(GOOGLE_TERMS_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => window.open(GOOGLE_TERMS_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
                             <div className="flex items-center gap-3">
-                                <Icon name="gavel" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Terms of Use</span>
+                                <Icon name="gavel" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Terms of Use</span>
                             </div>
-                            <Icon name="open_in_new" className="text-gray-400 text-[20px]" />
+                            <Icon name="open_in_new" className="text-md-on-surface-variant text-xl" />
                         </button>
-                        <button onClick={() => window.open(GOOGLE_PRIVACY_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => window.open(GOOGLE_PRIVACY_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
                             <div className="flex items-center gap-3">
-                                <Icon name="shield" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Privacy Policy</span>
+                                <Icon name="shield" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">Privacy Policy</span>
                             </div>
-                            <Icon name="open_in_new" className="text-gray-400 text-[20px]" />
+                            <Icon name="open_in_new" className="text-md-on-surface-variant text-xl" />
                         </button>
                         <div className="flex items-center justify-between p-4">
                             <div className="flex items-center gap-3">
-                                <Icon name="info" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">About CoffeeFlow</span>
+                                <Icon name="info" className="text-md-primary text-xl" />
+                                <span className="typescale-body-large font-medium text-md-on-surface">About CoffeeFlow</span>
                             </div>
-                            <span className="text-sm font-bold text-primary/80">v1.2.0</span>
+                            <span className="typescale-label-large font-bold text-md-primary">v1.2.0</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Log out Button */}
-                <button onClick={() => navigate('/home')} className="w-full py-4 text-gray-400 font-bold hover:text-red-500 transition-colors text-center text-sm">
+                {/* Back to Home Button */}
+                <button onClick={() => navigate('/home')} className="w-full py-4 text-md-on-surface-variant hover:text-md-primary font-semibold transition-colors text-center typescale-label-large cursor-pointer">
                     Back to Home
                 </button>
             </div>

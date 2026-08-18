@@ -7,8 +7,8 @@ interface BottomNavProps {
 
 export const BottomNav = ({ activeTab }: BottomNavProps) => {
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 max-w-md mx-auto">
-            <div className="flex justify-between items-center px-6 pb-6 pt-3">
+        <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-50 bg-md-surface-container border-t border-md-outline-variant/30 max-w-md mx-auto h-20 shadow-md-2">
+            <div className="flex justify-around items-center h-full px-2">
                 <NavItem
                     to="/home"
                     icon="home"
@@ -34,7 +34,7 @@ export const BottomNav = ({ activeTab }: BottomNavProps) => {
                     active={activeTab === 'journal'}
                 />
             </div>
-        </div>
+        </nav>
     );
 };
 
@@ -48,15 +48,28 @@ interface NavItemProps {
 const NavItem = ({ to, icon, label, active }: NavItemProps) => (
     <Link
         to={to}
-        className={`flex flex-1 flex-col items-center justify-end gap-1 ${active ? 'text-primary' : 'text-gray-400 hover:text-gray-600'} transition-colors group`}
+        className="flex flex-1 flex-col items-center justify-center gap-1 group py-2 text-center"
     >
-        <div className="flex h-7 items-center justify-center transition-transform group-active:scale-90">
+        <div
+            className={`flex h-8 w-16 items-center justify-center rounded-full transition-all duration-300 ease-md-standard ${
+                active
+                    ? 'bg-md-secondary-container text-md-on-secondary-container shadow-sm scale-105'
+                    : 'text-md-on-surface-variant group-hover:bg-md-surface-container-highest/50'
+            }`}
+        >
             <Icon
                 name={icon}
-                className="text-[26px]"
+                className="text-2xl"
                 style={active ? { fontVariationSettings: "'FILL' 1" } : {}}
             />
         </div>
-        <p className="text-[10px] font-bold leading-normal tracking-[0.015em] uppercase">{label}</p>
+        <span
+            className={`typescale-label-medium transition-colors duration-200 ${
+                active ? 'text-md-on-surface font-semibold' : 'text-md-on-surface-variant'
+            }`}
+        >
+            {label}
+        </span>
     </Link>
 );
+
