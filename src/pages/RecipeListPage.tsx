@@ -59,16 +59,18 @@ export const RecipeListPage = () => {
     }, [fetchRecipes]);
 
     const filteredRecipes = useMemo(() => {
-        return recipes.filter(r => {
-            const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesChip = activeChip === 'All' ||
-                (activeChip === 'Personal' && r.is_custom) ||
-                (activeChip === 'Community' && !r.is_custom) ||
-                (activeChip === 'Favorites' && r.is_favorite) ||
-                (activeChip === 'Light Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('light'))) ||
-                (activeChip === 'Dark Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('dark')));
-            return matchesSearch && matchesChip;
-        });
+        return recipes
+            .filter(r => {
+                const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesChip = activeChip === 'All' ||
+                    (activeChip === 'Personal' && r.is_custom) ||
+                    (activeChip === 'Community' && !r.is_custom) ||
+                    (activeChip === 'Favorites' && r.is_favorite) ||
+                    (activeChip === 'Light Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('light'))) ||
+                    (activeChip === 'Dark Roast' && (r.best_for_tags || []).some(tag => tag.toLowerCase().includes('dark')));
+                return matchesSearch && matchesChip;
+            })
+            .sort((a, b) => (b.is_favorite === a.is_favorite ? 0 : b.is_favorite ? 1 : -1));
     }, [recipes, searchQuery, activeChip]);
 
     const handleSelectRecipe = (recipe: Recipe) => {
@@ -188,7 +190,11 @@ export const RecipeListPage = () => {
                         <div
                             key={recipe.id}
                             onClick={() => handleSelectRecipe(recipe)}
-                            className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-primary/30 active:scale-[0.99] transition-all relative cursor-pointer"
+                            className={`group relative p-4 rounded-xl shadow-sm border transition-all cursor-pointer ${
+                                recipe.is_favorite
+                                    ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/20'
+                                    : 'bg-white border-gray-100 hover:border-primary/30'
+                            }`}
                         >
                             <div className="flex justify-between items-start mb-2">
                                 <div>
@@ -198,9 +204,13 @@ export const RecipeListPage = () => {
                                 <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                                     <button
                                         onClick={(e) => handleToggleFavorite(e, recipe.id)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-accent-light text-primary transition-colors cursor-pointer"
+                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-accent-light transition-colors cursor-pointer"
                                     >
-                                        <Icon name="bookmark" className="text-[20px]" style={{ fontVariationSettings: recipe.is_favorite ? "'FILL' 1" : "'FILL' 0" }} />
+                                        <Icon
+                                            name="bookmark"
+                                            className={`text-[20px] ${recipe.is_favorite ? 'text-primary' : 'text-gray-400'}`}
+                                            style={{ fontVariationSettings: recipe.is_favorite ? "'FILL' 1" : "'FILL' 0" }}
+                                        />
                                     </button>
                                     <div className="relative">
                                         <button
@@ -381,7 +391,7 @@ export const RecipeListPage = () => {
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
                 title="Delete Recipe?"
-                message={`Are you sure you want to delete "${recipeToDelete?.name}"? This action cannot be undone.`}
+                message={`Are you sure you want to delete "${recipeToDelete?.name}"? This will hide the recipe from your list, but your existing brew logs and history will be kept.`}
                 confirmText="Delete"
                 cancelText="Cancel"
                 type="error"

@@ -1,4 +1,7 @@
-export type EntityId = string;
+export type EntityId = string; // TODO: migrate to branded type: string & { readonly __brand: unique symbol }
+
+// Helper for future migration:
+// export function toEntityId(id: string): EntityId { return id as EntityId; }
 
 export interface BrewingMethod {
     id: EntityId;
@@ -35,8 +38,8 @@ export interface Recipe {
     description_short?: string;
     description_detailed?: string;
     philosophy?: string;
-    best_for_tags?: string[]; // JSON array in DB
-    not_recommended_tags?: string[]; // JSON array in DB
+    best_for_tags?: string[];
+    not_recommended_tags?: string[];
     is_custom: boolean;
     is_favorite?: boolean;
     version: number;
@@ -50,7 +53,7 @@ export interface BrewLog {
     id: EntityId;
     recipe_id: EntityId;
     bean_id?: string;
-    rating?: number; // 1-5
+    rating?: number;
     notes?: string;
     sweetness?: number;
     acidity?: number;
@@ -82,6 +85,7 @@ export interface Drink {
     category: DrinkCategory;
     ingredients_json: string;
     instructions_json: string;
+    image_url?: string;
     version: number;
     created_at: string;
     updated_at: string;

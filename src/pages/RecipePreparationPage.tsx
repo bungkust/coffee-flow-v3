@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { brewService, pantryService } from '../core/services';
+import { brewService, pantryService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
-import { calculateCoffeeDose, formatWeight, parseRatio } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, getPourAmount, type UnitSystem } from '../shared/utils/brewMath';
 
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -26,6 +26,7 @@ export const RecipePreparationPage = () => {
         scale: false
     });
     const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
+    const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
 
     useEffect(() => {
         if (recipe) {
@@ -38,12 +39,18 @@ export const RecipePreparationPage = () => {
     const ratioMultiplier = recipe ? (parseRatio(recipe.ratio) || 16) : 16;
     const adjustedWaterVolume = adjustedCoffeeDose * ratioMultiplier;
 
+    const currentScaledRecipe = recipe ? scaleRecipe(recipe, adjustedCoffeeDose) : null;
+
     const handleAdjustDose = (delta: number) => {
         setAdjustedCoffeeDose(prev => {
             const next = prev + delta * 0.5;
             return Math.round(Math.max(5, Math.min(100, next)) * 10) / 10;
         });
     };
+
+    useEffect(() => {
+        settingsService.getAppUnit().then(setUnitSystem);
+    }, []);
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -99,29 +106,9 @@ export const RecipePreparationPage = () => {
         );
     }
 
-
-
     const handleProceedToBrew = () => {
-        if (recipe && isReady) {
-            const scaleFactor = initialCoffeeDose > 0 ? (adjustedCoffeeDose / initialCoffeeDose) : 1;
-            const scaledTotalWater = Math.round((recipe.total_water || 300) * scaleFactor);
-            const scaledSteps = recipe.steps.map(step => {
-                if (typeof step.target_weight === 'number' && step.target_weight > 0) {
-                    return {
-                        ...step,
-                        target_weight: Math.round(step.target_weight * scaleFactor)
-                    };
-                }
-                return step;
-            });
-
-            const scaledRecipe: Recipe = {
-                ...recipe,
-                total_water: scaledTotalWater,
-                steps: scaledSteps
-            };
-
-            startBrew(scaledRecipe, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
+        if (currentScaledRecipe && isReady) {
+            startBrew(currentScaledRecipe, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
             navigate('/brew-flow');
         }
     };
@@ -130,7 +117,9 @@ export const RecipePreparationPage = () => {
         setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const isReady = checklist.coffee && checklist.water && checklist.filter && checklist.scale;
+    const isReady = checklist.coffee && checklist.water && checklist.filter && checklist.scale
+        && (beans.length === 0 || selectedBeanId !== '')
+        && (filters.length === 0 || selectedFilterId !== '');
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl pb-32 font-display text-[#181411]">
@@ -160,13 +149,13 @@ export const RecipePreparationPage = () => {
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                         <span className="text-sm font-bold text-[#181411]">
-                            {formatWeight(adjustedCoffeeDose)}
+                            {formatWeight(adjustedCoffeeDose, unitSystem)}
                         </span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Coffee</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
                         <Icon name="water_drop" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{Math.round(adjustedWaterVolume)}ml</span>
+                        <span className="text-sm font-bold text-[#181411]">{formatVolume(adjustedWaterVolume, unitSystem)}</span>
                         <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Water</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
@@ -217,6 +206,50 @@ export const RecipePreparationPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Scaled Steps Preview */}
+                {currentScaledRecipe && currentScaledRecipe.steps.length > 0 && (
+                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3 mb-6">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <Icon name="format_list_numbered" className="text-primary text-[16px]" />
+                                Scaled Brew Steps
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                {formatVolume(currentScaledRecipe.total_water || 0, unitSystem)} Total Water
+                            </span>
+                        </div>
+                        <div className="space-y-2 mt-1">
+                            {currentScaledRecipe.steps.map((step, idx) => {
+                                const pour = getPourAmount(currentScaledRecipe.steps, idx);
+                                return (
+                                    <div key={step.id || idx} className="p-3 rounded-lg bg-gray-50/70 border border-gray-100/80 flex flex-col gap-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-[#181411]">
+                                                {idx + 1}. {step.label}
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                {typeof step.target_weight === 'number' && step.target_weight > 0 && (
+                                                    <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                                                        +{formatWeight(pour, unitSystem)} (Target: {formatWeight(step.target_weight, unitSystem)})
+                                                    </span>
+                                                )}
+                                                <span className="text-xs font-semibold text-gray-400">
+                                                    {step.duration_seconds}s
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {step.instruction && (
+                                            <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
+                                                {step.instruction}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Bean Selection */}
                 <div className="mb-4">
@@ -287,12 +320,12 @@ export const RecipePreparationPage = () => {
                 </h2>
                 <div className="space-y-3">
                     <CheckItem
-                        label={`Weigh ${formatWeight(adjustedCoffeeDose)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
+                        label={`Weigh ${formatWeight(adjustedCoffeeDose, unitSystem)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
                         checked={checklist.coffee}
                         onToggle={() => toggleCheck('coffee')}
                     />
                     <CheckItem
-                        label={`Heat ${Math.round(adjustedWaterVolume)}ml water to ${recipe.temperature}°C`}
+                        label={`Heat ${formatVolume(adjustedWaterVolume, unitSystem)} water to ${recipe.temperature}°C`}
                         checked={checklist.water}
                         onToggle={() => toggleCheck('water')}
                     />
@@ -338,3 +371,4 @@ const CheckItem = ({ label, checked, onToggle }: { label: string, checked: boole
         <span className={`text-sm font-bold ${checked ? 'text-primary' : 'text-[#181411]'}`}>{label}</span>
     </button>
 );
+

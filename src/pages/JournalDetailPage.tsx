@@ -67,11 +67,14 @@ export const JournalDetailPage = () => {
             </div>
             <main className="flex-1 space-y-8 px-6 py-8">
                 <div className="flex justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <button key={star} onClick={() => setRating(star)}>
-                            <Icon name="star" className={`text-[40px] ${rating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: rating >= star ? "'FILL' 1" : "'FILL' 0" }} />
-                        </button>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((star) => {
+                        const displayRating = Math.min(5, Math.max(0, rating));
+                        return (
+                            <button key={star} onClick={() => setRating(star)}>
+                                <Icon name="star" className={`text-[40px] ${displayRating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }} />
+                            </button>
+                        );
+                    })}
                 </div>
                 <label className="block">
                     <span className="mb-3 block text-lg font-bold">Notes</span>

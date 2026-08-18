@@ -2,6 +2,39 @@ import type { IDrinkLogRepository } from '../../../shared/domain/repositories';
 import type { DrinkLog, DrinkLogWithDrink, DrinkStats, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
+interface DrinkLogRow {
+    id: string;
+    drink_id: string;
+    rating: number | null;
+    notes: string | null;
+    logged_at: string;
+    created_at: string;
+}
+
+interface DrinkLogWithDrinkRow extends DrinkLogRow {
+    drink_name: string;
+    category: string;
+}
+
+function toDomainDrinkLog(row: DrinkLogRow): DrinkLog {
+    return {
+        id: row.id,
+        drink_id: row.drink_id,
+        rating: row.rating ?? undefined,
+        notes: row.notes ?? undefined,
+        logged_at: row.logged_at,
+        created_at: row.created_at,
+    };
+}
+
+function toDomainDrinkLogWithDrink(row: DrinkLogWithDrinkRow): DrinkLogWithDrink {
+    return {
+        ...toDomainDrinkLog(row),
+        drink_name: row.drink_name,
+        category: row.category as DrinkLogWithDrink['category'],
+    };
+}
+
 export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
     private get db() {
         return dbService.getDb();
@@ -9,12 +42,12 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
 
     async findAll(): Promise<DrinkLog[]> {
         const result = await this.db.query('SELECT * FROM drink_logs ORDER BY logged_at DESC');
-        return result.values || [];
+        return (result.values || []).map(toDomainDrinkLog);
     }
 
     async findAllByDrinkId(drinkId: EntityId): Promise<DrinkLog[]> {
         const result = await this.db.query('SELECT * FROM drink_logs WHERE drink_id = ? ORDER BY logged_at DESC', [drinkId]);
-        return result.values || [];
+        return (result.values || []).map(toDomainDrinkLog);
     }
 
     async save(log: DrinkLog): Promise<void> {
@@ -25,8 +58,8 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
             [
                 log.id,
                 log.drink_id,
-                log.rating,
-                log.notes,
+                log.rating ?? null,
+                log.notes ?? null,
                 log.logged_at,
                 log.created_at || now
             ]
@@ -37,7 +70,7 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
     async update(log: DrinkLog): Promise<void> {
         await this.db.run(
             `UPDATE drink_logs SET rating = ?, notes = ? WHERE id = ?`,
-            [log.rating, log.notes, log.id]
+            [log.rating ?? null, log.notes ?? null, log.id]
         );
         await dbService.saveToLocalStore();
     }
@@ -54,7 +87,8 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
             JOIN drinks d ON dl.drink_id = d.id
             WHERE dl.id = ?
         `, [id]);
-        return result.values?.[0] || null;
+        const row = result.values?.[0] as DrinkLogWithDrinkRow | undefined;
+        return row ? toDomainDrinkLogWithDrink(row) : null;
     }
 
     async getStats(): Promise<DrinkStats> {
@@ -86,6 +120,6 @@ export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
             JOIN drinks d ON dl.drink_id = d.id
             ORDER BY dl.logged_at DESC
         `);
-        return result.values || [];
+        return (result.values || []).map(toDomainDrinkLogWithDrink);
     }
 }

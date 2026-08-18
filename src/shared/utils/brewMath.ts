@@ -1,4 +1,9 @@
-import type { BrewStep } from '../domain/entities';
+import type { BrewStep, Recipe } from '../domain/entities';
+
+export type UnitSystem = 'metric' | 'imperial';
+
+const GRAMS_PER_OZ = 28.3495;
+const ML_PER_FL_OZ = 29.5735;
 
 export const roundTo = (value: number, decimals = 1): number => {
     const factor = 10 ** decimals;
@@ -19,9 +24,28 @@ export const calculateCoffeeDose = (totalWater?: number, ratio?: string): number
     return roundTo(totalWater / ratioMultiplier, 1);
 };
 
-export const formatWeight = (grams: number): string => {
-    if (!Number.isFinite(grams)) return '0g';
-    return Number.isInteger(grams) ? `${grams}g` : `${grams.toFixed(1)}g`;
+export const convertWeight = (grams: number, toUnit: UnitSystem): number => {
+    return toUnit === 'imperial' ? grams / GRAMS_PER_OZ : grams;
+};
+
+export const convertVolume = (ml: number, toUnit: UnitSystem): number => {
+    return toUnit === 'imperial' ? ml / ML_PER_FL_OZ : ml;
+};
+
+export const formatWeight = (grams: number, unit: UnitSystem = 'metric'): string => {
+    if (!Number.isFinite(grams)) return unit === 'metric' ? '0g' : '0oz';
+    const value = convertWeight(grams, unit);
+    const rounded = roundTo(value, unit === 'metric' ? 1 : 2);
+    const suffix = unit === 'metric' ? 'g' : 'oz';
+    return Number.isInteger(rounded) ? `${rounded}${suffix}` : `${rounded.toFixed(unit === 'metric' ? 1 : 2)}${suffix}`;
+};
+
+export const formatVolume = (ml: number, unit: UnitSystem = 'metric'): string => {
+    if (!Number.isFinite(ml)) return unit === 'metric' ? '0ml' : '0fl oz';
+    const value = convertVolume(ml, unit);
+    const rounded = roundTo(value, unit === 'metric' ? 0 : 1);
+    const suffix = unit === 'metric' ? 'ml' : 'fl oz';
+    return Number.isInteger(rounded) ? `${rounded}${suffix}` : `${rounded.toFixed(unit === 'metric' ? 0 : 1)}${suffix}`;
 };
 
 export const formatDuration = (seconds: number): string => {
@@ -56,10 +80,51 @@ export const getCurrentTargetWeight = (steps: BrewStep[], currentStepIndex: numb
 };
 
 export const getPourAmount = (steps: BrewStep[], currentStepIndex: number): number => (
-    Math.max(0, getCurrentTargetWeight(steps, currentStepIndex) - getPreviousTargetWeight(steps, currentStepIndex))
+    roundTo(Math.max(0, getCurrentTargetWeight(steps, currentStepIndex) - getPreviousTargetWeight(steps, currentStepIndex)), 1)
 );
 
 export const getWaterProgressPercent = (currentTargetWeight: number, totalWater?: number): number => {
     if (!totalWater || totalWater <= 0) return 0;
     return Math.min(100, Math.max(0, (currentTargetWeight / totalWater) * 100));
 };
+
+export const scaleInstructionText = (instruction: string | undefined, scaleFactor: number): string => {
+    if (!instruction) return '';
+    if (scaleFactor === 1 || !Number.isFinite(scaleFactor) || scaleFactor <= 0) return instruction;
+
+    return instruction.replace(/\b(\d+(?:\.\d+)?)\s*(g|ml)\b/gi, (match, numStr, unit) => {
+        const val = parseFloat(numStr);
+        if (isNaN(val)) return match;
+        const scaledVal = roundTo(val * scaleFactor, 1);
+        const formatted = Number.isInteger(scaledVal) ? scaledVal.toString() : scaledVal.toFixed(1);
+        return `${formatted}${unit}`;
+    });
+};
+
+export const scaleRecipe = (recipe: Recipe, targetDose: number): Recipe => {
+    const initialDose = calculateCoffeeDose(recipe.total_water, recipe.ratio) || 15;
+    if (initialDose <= 0 || targetDose <= 0) return recipe;
+
+    const scaleFactor = targetDose / initialDose;
+    const scaledTotalWater = roundTo((recipe.total_water || 0) * scaleFactor, 1);
+
+    const scaledSteps: BrewStep[] = recipe.steps.map(step => {
+        const scaledTarget = (typeof step.target_weight === 'number' && step.target_weight > 0)
+            ? roundTo(step.target_weight * scaleFactor, 1)
+            : step.target_weight;
+        const scaledInstruction = scaleInstructionText(step.instruction, scaleFactor);
+
+        return {
+            ...step,
+            target_weight: scaledTarget,
+            instruction: scaledInstruction
+        };
+    });
+
+    return {
+        ...recipe,
+        total_water: scaledTotalWater,
+        steps: scaledSteps
+    };
+};
+

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource/material-symbols-outlined/400.css'
 import './index.css'
 import App from './App.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { dbService } from './core/database/sqlite';
 import { seedInitialData } from './core/database/seeding';
 import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
@@ -31,7 +32,9 @@ const bootstrapDb = async () => {
     // 2. Safely mount React now that the DB is fully ready and Stencil component is attached
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </StrictMode>
     );
 

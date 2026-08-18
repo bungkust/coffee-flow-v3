@@ -1,6 +1,7 @@
 import type { IRecipeRepository, IBrewLogRepository } from '../../../shared/domain/repositories';
-import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, EntityId } from '../../../shared/domain/entities';
+import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, BrewingMethod, EntityId } from '../../../shared/domain/entities';
 import type { PantryService } from '../../pantry/application/PantryService';
+import { dbService } from '../../../core/database/sqlite';
 
 export class BrewService {
     private recipeRepo: IRecipeRepository;
@@ -15,6 +16,14 @@ export class BrewService {
         this.recipeRepo = recipeRepo;
         this.logRepo = logRepo;
         this.pantryService = pantryService;
+    }
+
+    async getAllMethods(): Promise<BrewingMethod[]> {
+        const db = dbService.getDb();
+        const result = await db.query(
+            'SELECT id, name, description, icon, created_at, updated_at, deleted_at FROM brewing_methods WHERE deleted_at IS NULL ORDER BY name'
+        );
+        return (result.values || []) as BrewingMethod[];
     }
 
     async getAllRecipes(): Promise<Recipe[]> {

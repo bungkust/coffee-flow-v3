@@ -409,8 +409,9 @@ export const RecipeEditPage = () => {
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Target (g)</label>
                                                 <input
                                                     type="number"
+                                                    step="any"
                                                     value={step.target_weight || ''}
-                                                    onChange={(e) => updateStep(index, { target_weight: parseInt(e.target.value) || undefined })}
+                                                    onChange={(e) => updateStep(index, { target_weight: parseFloat(e.target.value) || undefined })}
                                                     className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-sm font-bold"
                                                     placeholder="50"
                                                 />

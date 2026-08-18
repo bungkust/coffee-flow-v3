@@ -25,6 +25,6 @@ const pantryRepo = new SQLitePantryRepository();
 // Services
 export const pantryService = new PantryService(pantryRepo);
 export const brewService = new BrewService(recipeRepo, logRepo, pantryService);
-export const drinkService = new DrinkService(drinkRepo, drinkLogRepo);
+export const drinkService = new DrinkService(drinkRepo, drinkLogRepo, pantryService);
 export const backupService = new BackupService(backupRepo);
 export const settingsService = new SettingsService(settingsRepo);

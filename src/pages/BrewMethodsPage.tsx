@@ -1,46 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
-import { settingsService } from '../core/services';
+import { settingsService, brewService } from '../core/services';
+import type { BrewingMethod } from '../shared/domain/entities';
 
-const ALL_METHODS = [
-    { id: 'v60', name: 'V60', icon: 'filter_alt', image: '/assets/methods/v60.png', desc: 'Clean & Bright' },
-    { id: 'aeropress', name: 'AeroPress', icon: 'science', image: '/assets/methods/aeropress.png', desc: 'Versatile & Full' },
-    { id: 'french_press', name: 'French Press', icon: 'coffee_maker', image: '/assets/methods/french_press.png', desc: 'Rich & Bold' },
-    { id: 'chemex', name: 'Chemex', icon: 'hourglass_top', image: '/assets/methods/chemex.png', desc: 'Crisp & Floral' },
-    { id: 'espresso', name: 'Espresso', icon: 'coffee', image: '/assets/methods/espresso.png', desc: 'Intense & Creamy' },
-    { id: 'moka_pot', name: 'Moka Pot', icon: 'local_cafe', image: '/assets/methods/moka_pot.png', desc: 'Strong Classic' },
-    { id: 'siphon', name: 'Siphon', icon: 'science_off', image: '/assets/methods/siphon.png', desc: 'Theatrical Brew' },
-    { id: 'clever', name: 'Clever Dripper', icon: 'filter_list', image: '/assets/methods/clever.png', desc: 'Immersion & Drip' },
-    { id: 'cold_brew', name: 'Cold Brew', icon: 'ac_unit', image: '/assets/methods/cold_brew.png', desc: 'Smooth & Sweet' },
-    { id: 'kalita', name: 'Kalita Wave', icon: 'waves', image: '/assets/methods/kalita.png', desc: 'Consistent & Balanced' },
-];
+type MethodCard = BrewingMethod & { image: string };
+
+const toCard = (m: BrewingMethod): MethodCard => ({
+    ...m,
+    image: `/assets/methods/${m.id}.png`,
+});
 
 export const BrewMethodsPage = () => {
     const navigate = useNavigate();
-    const [availableMethods, setAvailableMethods] = useState<typeof ALL_METHODS>([]);
+    const [allMethods, setAllMethods] = useState<MethodCard[]>([]);
+    const [availableMethods, setAvailableMethods] = useState<MethodCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const fetchMethods = async () => {
             try {
-                const preferredMethods = await settingsService.getUserPreferredMethods();
+                const dbMethods = await brewService.getAllMethods();
+                const cards = dbMethods.map(toCard);
+                setAllMethods(cards);
 
-                // If the user has preferred methods saved, filter ALL_METHODS
-                if (preferredMethods && preferredMethods.length > 0) {
-                    const methodNames = new Set(preferredMethods);
-                    const filtered = ALL_METHODS.filter(method => methodNames.has(method.name));
-                    setAvailableMethods(filtered.length > 0 ? filtered : ALL_METHODS.slice(0, 6));
+                const preferredIds = await settingsService.getUserPreferredMethods();
+
+                if (preferredIds.length > 0) {
+                    const idSet = new Set(preferredIds);
+                    const filtered = cards.filter(m => idSet.has(m.id));
+                    setAvailableMethods(filtered.length > 0 ? filtered : cards.slice(0, 6));
                 } else {
-                    // Fallback to core methods if none are saved
-                    setAvailableMethods(ALL_METHODS.slice(0, 6));
+                    setAvailableMethods(cards.slice(0, 6));
                 }
             } catch (error) {
-                console.error("Failed to load preferred methods:", error);
-                setAvailableMethods(ALL_METHODS.slice(0, 6)); // Fallback
+                console.error("Failed to load brewing methods:", error);
+                setAvailableMethods([]);
             } finally {
                 setLoading(false);
             }
@@ -49,26 +48,32 @@ export const BrewMethodsPage = () => {
         fetchMethods();
     }, [isEditing]);
 
+    const filteredMethods = useMemo(() => {
+        if (!searchQuery.trim()) return isEditing ? allMethods : availableMethods;
+        const q = searchQuery.toLowerCase();
+        const source = isEditing ? allMethods : availableMethods;
+        return source.filter(m =>
+            m.name.toLowerCase().includes(q) ||
+            (m.description && m.description.toLowerCase().includes(q))
+        );
+    }, [searchQuery, isEditing, allMethods, availableMethods]);
+
     const handleEditToggle = () => {
         if (!isEditing) {
-            setSelectedEquipment(availableMethods.map(m => m.name));
+            setSelectedIds(availableMethods.map(m => m.id));
         }
         setIsEditing(!isEditing);
     };
 
-    const toggleEquipment = (item: string) => {
-        if (selectedEquipment.includes(item)) {
-            setSelectedEquipment(selectedEquipment.filter(i => i !== item));
-        } else {
-            if (selectedEquipment.length < 6) {
-                setSelectedEquipment([...selectedEquipment, item]);
-            }
-        }
+    const toggleMethod = (id: string) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
     };
 
     const handleSaveEquipment = async () => {
         try {
-            await settingsService.setUserPreferredMethods(selectedEquipment);
+            await settingsService.setUserPreferredMethods(selectedIds);
             setIsEditing(false);
         } catch (error) {
             console.error("Failed to save equipment", error);
@@ -99,6 +104,8 @@ export const BrewMethodsPage = () => {
                         className="w-full bg-white dark:bg-white/5 text-neutral-text dark:text-white placeholder-gray-400 rounded-xl py-3 pl-10 pr-4 border-none shadow-sm focus:ring-2 focus:ring-primary/50 text-sm font-medium transition-all"
                         placeholder="Search methods or recipes..."
                         type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
             </div>
@@ -108,16 +115,16 @@ export const BrewMethodsPage = () => {
                 <div className="flex-1 flex flex-col pt-6 px-5 pb-24 relative">
                     <div className="mb-6 text-center space-y-2">
                         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
-                            Select <span className="text-primary font-bold">exactly 6</span> items to show on your dashboard. ({selectedEquipment.length}/6)
+                            Select <span className="text-primary font-bold">exactly 6</span> items to show on your dashboard. ({selectedIds.length}/6)
                         </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 pb-20">
-                        {ALL_METHODS.map((item) => {
-                            const isSelected = selectedEquipment.includes(item.name);
+                        {filteredMethods.map((item) => {
+                            const isSelected = selectedIds.includes(item.id);
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => toggleEquipment(item.name)}
+                                    onClick={() => toggleMethod(item.id)}
                                     className={`group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all active:scale-[0.98] border ${isSelected
                                         ? 'bg-primary/5 border-primary/50 shadow-sm'
                                         : 'bg-white dark:bg-[#2C241B] border-gray-100 dark:border-white/5 shadow-sm hover:border-primary/30'
@@ -148,7 +155,7 @@ export const BrewMethodsPage = () => {
                     <div className="fixed bottom-0 w-full bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-black/5 dark:border-white/5 p-6 z-30 max-w-md mx-auto left-0 right-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] dark:shadow-none">
                         <button
                             onClick={handleSaveEquipment}
-                            disabled={selectedEquipment.length !== 6}
+                            disabled={selectedIds.length !== 6}
                             className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span>Save Changes</span>
@@ -172,7 +179,7 @@ export const BrewMethodsPage = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-4">
-                            {availableMethods.map((method) => (
+                            {filteredMethods.map((method) => (
                                 <button
                                     key={method.id}
                                     onClick={() => navigate(`/recipes?method=${method.id}`)}
@@ -182,22 +189,25 @@ export const BrewMethodsPage = () => {
                                         <img src={method.image} alt={method.name} className="w-full h-full object-cover p-1" />
                                     </div>
                                     <h3 className="font-bold text-lg mb-1">{method.name}</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">{method.desc}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">{method.description}</p>
                                 </button>
                             ))}
                         </div>
                     )}
 
-                    {availableMethods.length === 0 && !loading && (
+                    {filteredMethods.length === 0 && !loading && (
                         <div className="text-center py-10 px-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
                             <Icon name="coffee_maker" className="text-4xl text-gray-300 mb-3 mx-auto" />
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">No brewing equipment found in your pantry.</p>
-                            <button onClick={() => navigate('/pantry')} className="text-primary font-bold text-sm mt-2 hover:underline">
-                                Add Equipment
-                            </button>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                {searchQuery ? 'No methods match your search.' : 'No brewing equipment found in your pantry.'}
+                            </p>
+                            {!searchQuery && (
+                                <button onClick={() => navigate('/pantry')} className="text-primary font-bold text-sm mt-2 hover:underline">
+                                    Add Equipment
+                                </button>
+                            )}
                         </div>
                     )}
-
 
                     <div className="mt-8 mb-2">
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Other Tools</p>

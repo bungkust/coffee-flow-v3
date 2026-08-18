@@ -208,5 +208,57 @@ export const MIGRATIONS = [
       ALTER TABLE pantry_items ADD COLUMN unit TEXT;
       UPDATE pantry_items SET quantity = remaining_stock, unit = '%' WHERE remaining_stock IS NOT NULL;
     `
+  },
+  {
+    version: 9,
+    sql: `
+      -- Fix contradictory schema: recipe_id is NOT NULL but FK used ON DELETE SET NULL.
+      -- Since brew_logs.recipe_id cannot be NULL, use CASCADE so deleting a recipe
+      -- also removes its brew logs (historical data tied to the recipe).
+      -- Column order must match old table so SELECT * maps correctly.
+      CREATE TABLE IF NOT EXISTS brew_logs_new (
+        id TEXT PRIMARY KEY,
+        recipe_id TEXT NOT NULL,
+        rating INTEGER CHECK(rating BETWEEN 1 AND 5),
+        notes TEXT,
+        brewed_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        sweetness INTEGER,
+        acidity INTEGER,
+        body INTEGER,
+        bitterness INTEGER,
+        flavor_tags TEXT,
+        bean_id TEXT,
+        FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+      );
+      INSERT OR IGNORE INTO brew_logs_new (id, recipe_id, rating, notes, brewed_at, created_at, sweetness, acidity, body, bitterness, flavor_tags, bean_id)
+        SELECT id, recipe_id, rating, notes, brewed_at, created_at, sweetness, acidity, body, bitterness, flavor_tags, bean_id FROM brew_logs;
+      DROP TABLE brew_logs;
+      ALTER TABLE brew_logs_new RENAME TO brew_logs;
+      CREATE INDEX IF NOT EXISTS idx_brew_logs_date ON brew_logs(brewed_at);
+      CREATE INDEX IF NOT EXISTS idx_brew_logs_recipe ON brew_logs(recipe_id);
+    `
+  },
+  {
+    version: 10,
+    sql: `
+      -- Backfill best_for_tags for existing recipes that have NULL tags
+      UPDATE recipes SET best_for_tags = '["Light Roast", "Medium Roast", "Washed", "Honey", "Arabica"]' WHERE method_id = 'v60' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Medium Roast", "Natural", "Honey", "Sweet Profile"]' WHERE method_id = 'aeropress' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Medium Roast", "Chocolate", "Nutty", "Balanced"]' WHERE method_id = 'french_press' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Light Roast", "Medium Roast", "Washed", "Clean Cup"]' WHERE method_id = 'chemex' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Medium-Dark Roast", "Chocolate", "Nutty", "Milk Drinks"]' WHERE method_id = 'espresso' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Dark Roast", "Bold", "Traditional"]' WHERE method_id = 'moka_pot' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Medium Roast", "Low Acid", "Smooth"]' WHERE method_id = 'cold_brew' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Light Roast", "Medium Roast", "Balanced"]' WHERE method_id = 'kalita' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Medium Roast", "Easy", "Consistent"]' WHERE method_id = 'clever' AND (best_for_tags IS NULL OR best_for_tags = '');
+      UPDATE recipes SET best_for_tags = '["Light Roast", "Floral", "Aromatic"]' WHERE method_id = 'siphon' AND (best_for_tags IS NULL OR best_for_tags = '');
+    `
+  },
+  {
+    version: 11,
+    sql: `
+      ALTER TABLE drinks ADD COLUMN image_url TEXT;
+    `
   }
 ];

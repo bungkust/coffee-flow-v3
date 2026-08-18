@@ -181,14 +181,17 @@ export const JournalPage = () => {
                                             </span>
                                         </div>
                                         <div className="mt-2 flex items-center gap-1 text-primary">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <Icon
-                                                    key={star}
-                                                    name="star"
-                                                    className="text-[16px]"
-                                                    style={{ fontVariationSettings: Number(log.rating || 0) >= star ? "'FILL' 1" : "'FILL' 0" }}
-                                                />
-                                            ))}
+                                            {[1, 2, 3, 4, 5].map((star) => {
+                                                const displayRating = Math.min(5, Math.max(0, Number(log.rating) || 0));
+                                                return (
+                                                    <Icon
+                                                        key={star}
+                                                        name="star"
+                                                        className="text-[16px]"
+                                                        style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
+                                                    />
+                                                );
+                                            })}
                                         </div>
                                         {log.notes && (
                                             <p className="mt-2 text-sm text-gray-500/90 leading-relaxed line-clamp-2">

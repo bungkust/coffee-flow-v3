@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { brewService } from '../core/services';
+import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
-import { calculateCoffeeDose, formatDuration, formatWeight, sumStepDuration, getPourAmount } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, sumStepDuration, getPourAmount, type UnitSystem } from '../shared/utils/brewMath';
 
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -11,6 +11,7 @@ export const RecipeDetailPage = () => {
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
+    const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -25,6 +26,7 @@ export const RecipeDetailPage = () => {
             }
         };
         fetchRecipe();
+        settingsService.getAppUnit().then(setUnitSystem);
     }, [id]);
 
     if (loading) {
@@ -60,6 +62,7 @@ export const RecipeDetailPage = () => {
 
     const totalTime = sumStepDuration(recipe.steps);
     const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
+    const hasValidRatio = coffeeDose > 0;
     const bestForTags = recipe.best_for_tags || [];
     const notRecommendedTags = recipe.not_recommended_tags || [];
 
@@ -140,25 +143,25 @@ export const RecipeDetailPage = () => {
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
                             <span className="text-sm font-bold text-neutral-text">
-                                {formatWeight(coffeeDose)}
+                                {hasValidRatio ? formatWeight(coffeeDose, unitSystem) : '—'}
                             </span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Coffee</span>
                         </div>
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="water_drop" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.total_water}ml</span>
+                            <span className="text-sm font-bold text-neutral-text">{recipe.total_water ? formatVolume(recipe.total_water, unitSystem) : '—'}</span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Water</span>
                         </div>
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="thermostat" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.temperature}°C</span>
+                            <span className="text-sm font-bold text-neutral-text">{recipe.temperature ? `${recipe.temperature}°C` : '—'}</span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Temp</span>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
                             <Icon name="percent" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.ratio}</span>
+                            <span className="text-sm font-bold text-neutral-text">{recipe.ratio || '—'}</span>
                             <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Ratio</span>
                         </div>
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">

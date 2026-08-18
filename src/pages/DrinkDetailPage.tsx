@@ -64,12 +64,18 @@ export const DrinkDetailPage = () => {
                 <button onClick={() => navigate(-1)} className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100">
                     <Icon name="arrow_back" className="text-[24px]" />
                 </button>
-                <h1 className="text-xl font-bold">{drink.name}</h1>
+                <h1 className="text-xl font-bold flex-1">{drink.name}</h1>
+                <button
+                    onClick={() => navigate(`/drinks/${drink.id}/edit`)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100"
+                >
+                    <Icon name="edit" className="text-[24px]" />
+                </button>
             </div>
 
             <main className="space-y-4 px-4 py-4">
                 <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                    <img src={DRINK_IMAGES[drink.id] || DRINK_IMAGES.espresso} alt={drink.name} className="h-48 w-full object-cover" />
+                    <img src={drink.image_url || DRINK_IMAGES[drink.id] || DRINK_IMAGES.espresso} alt={drink.name} className="h-48 w-full object-cover" />
                     <div className="p-5">
                         <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-bold uppercase tracking-wider text-primary">{drink.category}</span>
                         <p className="mt-3 text-sm leading-relaxed text-gray-600">Prepare this drink step by step, then save the result into your journal.</p>

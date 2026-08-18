@@ -282,22 +282,22 @@ export const OnboardingPage = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-3 pb-20">
                             {[
-                                { name: 'V60', icon: 'filter_alt' },
-                                { name: 'AeroPress', icon: 'science' },
-                                { name: 'French Press', icon: 'coffee_maker' },
-                                { name: 'Chemex', icon: 'hourglass_top' },
-                                { name: 'Moka Pot', icon: 'local_cafe' },
-                                { name: 'Siphon', icon: 'science_off' },
-                                { name: 'Espresso', icon: 'coffee' },
-                                { name: 'Clever Dripper', icon: 'filter_list' },
-                                { name: 'Cold Brew', icon: 'ac_unit' },
-                                { name: 'Kalita Wave', icon: 'waves' }
+                                { id: 'v60', name: 'V60', icon: 'filter_alt' },
+                                { id: 'aeropress', name: 'AeroPress', icon: 'science' },
+                                { id: 'french_press', name: 'French Press', icon: 'coffee_maker' },
+                                { id: 'chemex', name: 'Chemex', icon: 'hourglass_top' },
+                                { id: 'moka_pot', name: 'Moka Pot', icon: 'local_cafe' },
+                                { id: 'siphon', name: 'Siphon', icon: 'science_off' },
+                                { id: 'espresso', name: 'Espresso', icon: 'coffee' },
+                                { id: 'clever', name: 'Clever Dripper', icon: 'filter_list' },
+                                { id: 'cold_brew', name: 'Cold Brew', icon: 'ac_unit' },
+                                { id: 'kalita', name: 'Kalita Wave', icon: 'waves' }
                             ].map((item) => {
-                                const isSelected = selectedEquipment.includes(item.name);
+                                const isSelected = selectedEquipment.includes(item.id);
                                 return (
                                     <button
-                                        key={item.name}
-                                        onClick={() => toggleEquipment(item.name)}
+                                        key={item.id}
+                                        onClick={() => toggleEquipment(item.id)}
                                         className={`group relative flex flex-col items-center justify-center p-4 rounded-xl transition-all active:scale-[0.98] border ${isSelected
                                             ? 'bg-primary/5 border-primary/50 shadow-sm'
                                             : 'bg-white dark:bg-[#2C241B] border-gray-100 dark:border-white/5 shadow-sm hover:border-primary/30'

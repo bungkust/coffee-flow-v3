@@ -77,7 +77,21 @@ class DatabaseService {
 
         for (const migration of MIGRATIONS) {
             if (migration.version > currentVersion) {
-                await this.db.execute(migration.sql);
+                // Execute migration statements with column guards for ADD COLUMN
+                const statements = migration.sql.split(';').filter(s => s.trim());
+                for (const stmt of statements) {
+                    const trimmed = stmt.trim();
+                    if (trimmed.toUpperCase().includes('ADD COLUMN')) {
+                        const match = trimmed.match(/ALTER TABLE (\w+) ADD COLUMN (\w+)/i);
+                        if (match) {
+                            const [, table, column] = match;
+                            const cols = await this.db.query(`PRAGMA table_info(${table})`);
+                            const exists = cols.values?.some((c: { name: string }) => c.name === column);
+                            if (exists) continue; // skip if column already exists
+                        }
+                    }
+                    await this.db.execute(trimmed);
+                }
                 await this.db.execute(`PRAGMA user_version = ${migration.version}`);
             }
         }

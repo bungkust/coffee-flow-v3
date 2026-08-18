@@ -14,6 +14,24 @@ const BACKUP_TABLES = [
     'pantry_items'
 ];
 
+interface BackupRow {
+    id: string;
+    created_at: string;
+    size_bytes: number;
+    location: string;
+    status: string;
+}
+
+function toDomainBackup(row: BackupRow): Backup {
+    return {
+        id: row.id,
+        created_at: row.created_at,
+        size_bytes: row.size_bytes,
+        location: row.location,
+        status: row.status as Backup['status'],
+    };
+}
+
 export class SQLiteBackupRepository {
     private get db() {
         return dbService.getDb();
@@ -21,7 +39,7 @@ export class SQLiteBackupRepository {
 
     async findAll(): Promise<Backup[]> {
         const result = await this.db.query('SELECT * FROM backups ORDER BY created_at DESC');
-        return result.values as Backup[] || [];
+        return (result.values || []).map(toDomainBackup);
     }
 
     async save(backup: Backup): Promise<void> {

@@ -1,20 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
 import { settingsService } from '../core/services';
-import { formatDuration, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent } from '../shared/utils/brewMath';
+import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, type UnitSystem } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew } = useBrewStore();
+    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
+    const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+    const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+
+    const feedbackEnabledRef = useRef(feedbackEnabled);
+    useEffect(() => {
+        feedbackEnabledRef.current = feedbackEnabled;
+    }, [feedbackEnabled]);
+
+    useEffect(() => {
+        settingsService.getAppUnit().then(setUnitSystem);
+    }, []);
 
     const playFeedback = useCallback((frequency: number, duration: number) => {
-        if (!feedbackEnabled) return;
+        if (!feedbackEnabledRef.current) return;
         try {
             const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
             const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
@@ -37,7 +48,7 @@ export const BrewFlowPage = () => {
         } catch (error) {
             console.warn('Audio feedback failed', error);
         }
-    }, [feedbackEnabled]);
+    }, []);
 
     useEffect(() => {
         if (!activeRecipe) {
@@ -61,7 +72,6 @@ export const BrewFlowPage = () => {
             try {
                 if ('wakeLock' in navigator && !wakeLock) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock acquired');
                 }
             } catch (err) {
                 console.warn('Screen Wake Lock request failed:', err);
@@ -72,7 +82,6 @@ export const BrewFlowPage = () => {
             if (wakeLock) {
                 try {
                     await wakeLock.release();
-                    console.log('Screen Wake Lock released');
                 } catch (err) {
                     console.warn('Screen Wake Lock release failed:', err);
                 }
@@ -103,23 +112,19 @@ export const BrewFlowPage = () => {
     useEffect(() => {
         if (!engineState || !activeRecipe) return;
 
-        // Sound & Haptic Triggers
         if (engineState.isRunning) {
-            // Trigger haptic and sound on step completion (remainingTime becomes 0)
             if (engineState.remainingTime === 0 && !engineState.isCompleted) {
-                playFeedback(440, 0.2); // Beep
+                playFeedback(440, 0.2);
                 if ('vibrate' in navigator) navigator.vibrate(200);
             }
 
-            // Trigger feedback on brew completion
             if (engineState.isCompleted) {
-                playFeedback(880, 0.5); // Higher pitch long beep
+                playFeedback(880, 0.5);
                 if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
             }
 
-            // Countdown beeps for last 3 seconds
             if (engineState.remainingTime > 0 && engineState.remainingTime <= 3) {
-                playFeedback(330, 0.1); // Short low beep
+                playFeedback(330, 0.1);
             }
         }
     }, [engineState, activeRecipe, playFeedback]);
@@ -144,15 +149,29 @@ export const BrewFlowPage = () => {
         navigate('/brew-methods');
     };
 
+    const handleSkipStep = () => {
+        if (engineState.currentStepIndex >= activeRecipe.steps.length - 1) {
+            // Last step — completing
+            skipStep();
+        } else {
+            setIsSkipModalOpen(true);
+        }
+    };
+
+    const confirmSkip = () => {
+        skipStep();
+        setIsSkipModalOpen(false);
+    };
+
     const totalWaterRecipe = activeRecipe.total_water || 0;
     const currentTargetWeight = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
     const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
     const stepTitle = currentStep.target_weight && pourAmount > 0
-        ? `Pour +${pourAmount}g`
+        ? `Pour +${formatWeight(pourAmount, unitSystem)}`
         : currentStep.label;
     const stepSubtitle = currentStep.target_weight && pourAmount > 0
-        ? `Target: ${currentStep.target_weight}g on scale — ${currentStep.instruction || currentStep.label}`
+        ? `Target: ${formatWeight(currentStep.target_weight, unitSystem)} on scale — ${currentStep.instruction || currentStep.label}`
         : currentStep.instruction || currentStep.label;
 
     if (engineState.isCompleted) {
@@ -187,7 +206,7 @@ export const BrewFlowPage = () => {
                                 <div className="flex justify-between items-end mb-2">
                                     <span className="text-sm font-semibold text-gray-500">Total Water</span>
                                     <span className="text-lg font-bold text-[#8B5E3C] tabular-nums">
-                                        {totalWaterRecipe}g <span className="text-gray-400 font-normal text-sm">/ {totalWaterRecipe}g</span>
+                                        {formatVolume(totalWaterRecipe, unitSystem)} <span className="text-gray-400 font-normal text-sm">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                     </span>
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
@@ -221,9 +240,7 @@ export const BrewFlowPage = () => {
                 {/* Bottom Controls for Done State */}
                 <div className="sticky bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-50 z-20 flex flex-col gap-4">
                     <button
-                        onClick={() => {
-                            navigate('/brew-log');
-                        }}
+                        onClick={() => navigate('/brew-log')}
                         className="w-full bg-[#8B5E3C] hover:bg-[#7A4D2F] text-white font-bold py-5 rounded-2xl shadow-lg shadow-[#8B5E3C]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"
                     >
                         <Icon name="assignment" style={{ fontVariationSettings: "'FILL' 1" }} />
@@ -278,7 +295,7 @@ export const BrewFlowPage = () => {
                             <div className="flex justify-between items-end mb-2">
                                 <span className="text-sm font-semibold text-gray-400">Total Water</span>
                                 <span className="text-lg font-bold text-primary tabular-nums">
-                                    {currentTargetWeight}g <span className="text-gray-400 font-normal text-sm">/ {activeRecipe.total_water}g</span>
+                                    {formatWeight(currentTargetWeight, unitSystem)} <span className="text-gray-400 font-normal text-sm">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                 </span>
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
@@ -303,13 +320,13 @@ export const BrewFlowPage = () => {
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold text-[#181411]">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0 
-                                                ? `Pour +${getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1)}g` 
-                                                : step.label}
+{typeof step.target_weight === 'number' && step.target_weight > 0
+                                                    ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
+                                                    : step.label}
                                         </h4>
                                         <p className="text-xs text-gray-500">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0 
-                                                ? `Target: ${step.target_weight}g on scale — ${step.instruction || step.label}` 
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0
+                                                ? `Target: ${formatWeight(step.target_weight)} on scale — ${step.instruction || step.label}`
                                                 : step.instruction || step.label}
                                         </p>
                                     </div>
@@ -344,6 +361,13 @@ export const BrewFlowPage = () => {
                                 Stop
                             </button>
                             <button
+                                onClick={handleSkipStep}
+                                className="flex-1 bg-gray-50 hover:bg-gray-100 text-[#181411] font-bold py-5 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg border border-gray-100"
+                            >
+                                <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                Skip
+                            </button>
+                            <button
                                 onClick={engineState.isRunning ? pauseBrew : resumeBrew}
                                 className="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"
                             >
@@ -363,6 +387,16 @@ export const BrewFlowPage = () => {
                 confirmText="Stop Brew"
                 cancelText="Keep Brewing"
                 type="warning"
+            />
+            <Modal
+                isOpen={isSkipModalOpen}
+                onClose={() => setIsSkipModalOpen(false)}
+                onConfirm={confirmSkip}
+                title="Skip this step?"
+                message={`Skip "${currentStep.label}" and move to the next step? The timer for this step will not be counted.`}
+                confirmText="Skip Step"
+                cancelText="Stay Here"
+                type="info"
             />
         </div>
     );

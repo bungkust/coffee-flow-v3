@@ -6,6 +6,17 @@ import { seedInitialData } from '../core/database/seeding';
 
 import { Modal } from '../components/Modal';
 
+// Google Form URLs
+// View form: https://docs.google.com/forms/d/1c0okral6Qh0uZZqWyp9NvhsXSqhpfsemkWGZB6HxYMs/viewform
+// Pre-filled URL params:
+// entry.1983030597 = Your Name
+// entry.912074794 = Email
+// entry.1950246015 = Category
+// entry.27032554 = Message
+const GOOGLE_TERMS_URL = 'https://policies.google.com/terms';
+const GOOGLE_PRIVACY_URL = 'https://policies.google.com/privacy';
+const GOOGLE_FORM_BASE_URL = 'https://docs.google.com/forms/d/1c0okral6Qh0uZZqWyp9NvhsXSqhpfsemkWGZB6HxYMs/viewform';
+
 export const SettingsPage = () => {
     const navigate = useNavigate();
     const [appUnit, setAppUnit] = useState<'metric' | 'imperial'>('metric');
@@ -13,6 +24,15 @@ export const SettingsPage = () => {
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [timerFeedbackEnabled, setTimerFeedbackEnabled] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackForm, setFeedbackForm] = useState({
+        name: '',
+        email: '',
+        category: 'bug',
+        message: ''
+    });
+    const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    const [feedbackSuccess, setFeedbackSuccess] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -61,6 +81,44 @@ export const SettingsPage = () => {
             console.error('Failed to delete data:', error);
             alert('Failed to delete data. Please try again.');
             setShowDeleteModal(false);
+        }
+    };
+
+    const handleFeedbackChange = (field: string, value: string) => {
+        setFeedbackForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleFeedbackSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setFeedbackSubmitting(true);
+        
+        try {
+            // Build pre-filled Google Form URL
+            const params = new URLSearchParams({
+                'entry.1983030597': feedbackForm.name,
+                'entry.912074794': feedbackForm.email,
+                'entry.1950246015': feedbackForm.category,
+                'entry.27032554': feedbackForm.message,
+            });
+            
+            const prefilledUrl = `${GOOGLE_FORM_BASE_URL}?usp=pp_url&${params.toString()}`;
+            
+            // Open in new tab for user to review & submit
+            window.open(prefilledUrl, '_blank');
+            
+            // Reset form immediately
+            setFeedbackForm({ name: '', email: '', category: 'bug', message: '' });
+            setShowFeedbackModal(false);
+            
+            // Show success toast
+            setFeedbackSuccess(true);
+            setTimeout(() => setFeedbackSuccess(false), 3000);
+            
+        } catch (error) {
+            console.error('Failed to open feedback form:', error);
+            alert('Failed to open feedback form. Please try again.');
+        } finally {
+            setFeedbackSubmitting(false);
         }
     };
 
@@ -156,19 +214,26 @@ export const SettingsPage = () => {
                 <div>
                     <h3 className="px-2 mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Support & Legal</h3>
                     <div className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                        <button onClick={() => { window.location.href = 'mailto:support@coffeeflow.local?subject=CoffeeFlow%20Feedback'; }} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => setShowFeedbackModal(true)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <Icon name="chat_bubble" className="text-primary text-[22px]" />
                                 <span className="font-medium text-sm text-neutral-text">Send Feedback</span>
                             </div>
                             <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
                         </button>
-                        <button onClick={() => alert('Terms & Privacy: CoffeeFlow stores your coffee data locally on this device unless you export a backup.')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <button onClick={() => window.open(GOOGLE_TERMS_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
                             <div className="flex items-center gap-3">
                                 <Icon name="gavel" className="text-primary text-[22px]" />
-                                <span className="font-medium text-sm text-neutral-text">Terms & Privacy</span>
+                                <span className="font-medium text-sm text-neutral-text">Terms of Use</span>
                             </div>
-                            <Icon name="chevron_right" className="text-gray-400 text-[20px]" />
+                            <Icon name="open_in_new" className="text-gray-400 text-[20px]" />
+                        </button>
+                        <button onClick={() => window.open(GOOGLE_PRIVACY_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <Icon name="shield" className="text-primary text-[22px]" />
+                                <span className="font-medium text-sm text-neutral-text">Privacy Policy</span>
+                            </div>
+                            <Icon name="open_in_new" className="text-gray-400 text-[20px]" />
                         </button>
                         <div className="flex items-center justify-between p-4">
                             <div className="flex items-center gap-3">
@@ -181,8 +246,8 @@ export const SettingsPage = () => {
                 </div>
 
                 {/* Log out Button */}
-                <button onClick={() => navigate('/welcome')} className="w-full py-4 text-gray-400 font-bold hover:text-red-500 transition-colors text-center text-sm">
-                    Back to Welcome
+                <button onClick={() => navigate('/home')} className="w-full py-4 text-gray-400 font-bold hover:text-red-500 transition-colors text-center text-sm">
+                    Back to Home
                 </button>
             </div>
 
@@ -196,6 +261,73 @@ export const SettingsPage = () => {
                 cancelText="Cancel"
                 type="error"
             />
+            {feedbackSuccess ? (
+                <Modal
+                    isOpen={showFeedbackModal}
+                    onClose={() => setShowFeedbackModal(false)}
+                    title="Feedback Sent!"
+                    message="Thank you for your feedback! We'll review it and get back to you if needed."
+                    confirmText="Done"
+                    type="success"
+                />
+            ) : (
+                <Modal
+                    isOpen={showFeedbackModal}
+                    onClose={() => setShowFeedbackModal(false)}
+                    title="Send Feedback"
+                    message={
+                        <form onSubmit={handleFeedbackSubmit} className="space-y-4 text-left">
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Your Name</label>
+                                <input
+                                    type="text"
+                                    value={feedbackForm.name}
+                                    onChange={(e) => handleFeedbackChange('name', e.target.value)}
+                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Email</label>
+                                <input
+                                    type="email"
+                                    value={feedbackForm.email}
+                                    onChange={(e) => handleFeedbackChange('email', e.target.value)}
+                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Category</label>
+                                <select
+                                    value={feedbackForm.category}
+                                    onChange={(e) => handleFeedbackChange('category', e.target.value)}
+                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                                >
+                                    <option value="bug">Bug Report</option>
+                                    <option value="feature">Feature Request</option>
+                                    <option value="improvement">Improvement</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Message</label>
+                                <textarea
+                                    value={feedbackForm.message}
+                                    onChange={(e) => handleFeedbackChange('message', e.target.value)}
+                                    rows={4}
+                                    className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                                    placeholder="Describe your feedback..."
+                                />
+                            </div>
+                        </form>
+                    }
+                    confirmText={feedbackSubmitting ? 'Sending...' : 'Send Feedback'}
+                    cancelText="Cancel"
+                    type="info"
+                    size="lg"
+                />
+            )}
         </div>
     );
 };

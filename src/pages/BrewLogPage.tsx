@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { brewService } from '../core/services';
 
+const PRESET_TAGS = ['Fruity', 'Nutty', 'Chocolatey', 'Floral', 'Spicy'];
+
 export const BrewLogPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew } = useBrewStore();
+    const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew, hydrateBrew } = useBrewStore();
 
     const [rating, setRating] = useState(4);
     const [notes, setNotes] = useState('');
@@ -17,14 +19,27 @@ export const BrewLogPage = () => {
         bitterness: 20
     });
     const [selectedTags, setSelectedTags] = useState<string[]>(['Fruity']);
+    const [customTagInput, setCustomTagInput] = useState('');
+
+    useEffect(() => {
+        if (!activeRecipe) {
+            const restored = hydrateBrew();
+            if (!restored) {
+                navigate('/home');
+            }
+        }
+    }, [activeRecipe, hydrateBrew, navigate]);
 
     if (!activeRecipe) {
-        // Fallback or navigate back
-        setTimeout(() => navigate('/home'), 0);
-        return null;
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            </div>
+        );
     }
 
-    const tags = ['Fruity', 'Nutty', 'Chocolatey', 'Floral', 'Spicy'];
+    const tags = PRESET_TAGS;
+    const customTags = selectedTags.filter(t => !PRESET_TAGS.includes(t));
 
     const handleToggleTag = (tag: string) => {
         if (selectedTags.includes(tag)) {
@@ -32,6 +47,14 @@ export const BrewLogPage = () => {
         } else {
             setSelectedTags([...selectedTags, tag]);
         }
+    };
+
+    const handleAddCustomTag = () => {
+        const trimmed = customTagInput.trim();
+        if (trimmed && !selectedTags.includes(trimmed)) {
+            setSelectedTags([...selectedTags, trimmed]);
+        }
+        setCustomTagInput('');
     };
 
     const getRatingLabel = (r: number) => {
@@ -104,8 +127,8 @@ export const BrewLogPage = () => {
                             >
                                 <Icon
                                     name="star"
-                                    className={`text-[42px] transition-transform group-active:scale-110 ${rating >= star ? 'text-primary' : 'text-gray-200'}`}
-                                    style={{ fontVariationSettings: rating >= star ? "'FILL' 1" : "'FILL' 0" }}
+                                    className={`text-[42px] transition-transform group-active:scale-110 ${Math.min(5, Math.max(0, rating)) >= star ? 'text-primary' : 'text-gray-200'}`}
+                                    style={{ fontVariationSettings: Math.min(5, Math.max(0, rating)) >= star ? "'FILL' 1" : "'FILL' 0" }}
                                 />
                             </button>
                         ))}
@@ -157,11 +180,32 @@ export const BrewLogPage = () => {
                                 {tag}
                             </button>
                         ))}
-                        <button onClick={() => {
-                            const customTag = window.prompt('Add flavor tag');
-                            if (customTag?.trim()) setSelectedTags([...selectedTags, customTag.trim()]);
-                        }} className="px-3 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-400 border border-gray-100 hover:bg-gray-100 transition-all flex items-center justify-center">
-                            <Icon name="add" className="text-[18px]" />
+                        {customTags.map(tag => (
+                            <button
+                                key={tag}
+                                onClick={() => handleToggleTag(tag)}
+                                className="px-4 py-2 rounded-xl text-sm font-medium transition-all border bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+                            >
+                                {tag}
+                                <span className="ml-1 text-primary/60">&times;</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                        <input
+                            type="text"
+                            value={customTagInput}
+                            onChange={(e) => setCustomTagInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomTag(); }}
+                            placeholder="Add custom tag..."
+                            className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                        />
+                        <button
+                            onClick={handleAddCustomTag}
+                            disabled={!customTagInput.trim()}
+                            className="rounded-xl bg-gray-100 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-40"
+                        >
+                            Add
                         </button>
                     </div>
                 </div>

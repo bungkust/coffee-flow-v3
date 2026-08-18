@@ -41,11 +41,14 @@ export const DrinkLogPage = () => {
             <main className="flex-1 px-6 py-8">
                 <div className="mb-10 flex flex-col items-center">
                     <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button key={star} onClick={() => setRating(star)}>
-                                <Icon name="star" className={`text-[42px] ${rating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: rating >= star ? "'FILL' 1" : "'FILL' 0" }} />
-                            </button>
-                        ))}
+                        {[1, 2, 3, 4, 5].map((star) => {
+                            const displayRating = Math.min(5, Math.max(0, rating));
+                            return (
+                                <button key={star} onClick={() => setRating(star)}>
+                                    <Icon name="star" className={`text-[42px] ${displayRating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }} />
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
                 <label className="block">

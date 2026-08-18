@@ -19,11 +19,20 @@ export class BrewEngine {
     private listeners: BrewEngineListener[] = [];
     private isRunning = false;
     private isCompleted = false;
+    private isTransitioning = false;
 
     constructor(steps: BrewStep[]) {
         this.steps = steps;
         if (steps.length > 0) {
             this.remainingTime = steps[0].duration_seconds;
+        }
+    }
+
+    restoreState(stepIndex: number, remainingTime: number): void {
+        if (stepIndex >= 0 && stepIndex < this.steps.length) {
+            this.currentStepIndex = stepIndex;
+            this.remainingTime = remainingTime;
+            this.notify();
         }
     }
 
@@ -56,6 +65,9 @@ export class BrewEngine {
     }
 
     nextStep(): void {
+        if (this.isTransitioning) return;
+        this.isTransitioning = true;
+
         if (this.currentStepIndex < this.steps.length - 1) {
             this.currentStepIndex++;
             this.remainingTime = this.steps[this.currentStepIndex].duration_seconds;
@@ -69,6 +81,7 @@ export class BrewEngine {
             this.isCompleted = true;
             this.notify();
         }
+        this.isTransitioning = false;
     }
 
     addListener(listener: BrewEngineListener): void {
@@ -87,7 +100,8 @@ export class BrewEngine {
             if (this.remainingTime > 0) {
                 this.remainingTime--;
                 this.notify();
-            } else {
+            } else if (!this.isTransitioning) {
+                // Only call nextStep if not already transitioning
                 this.nextStep();
             }
         }, 1000);

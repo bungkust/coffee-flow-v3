@@ -218,10 +218,10 @@ const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
                 duration = parseInt(minSecMatch[1], 10) * 60 + parseInt(minSecMatch[2], 10);
             }
 
-            const weightMatch = line.match(/(?:\+|target|to|till|\b)(\d{2,4})\s*(?:g|ml|gram)/i);
+            const weightMatch = line.match(/(?:\+|target|to|till|\b)(\d+(?:\.\d+)?)\s*(?:g|ml|gram)/i);
             let targetWeight: number | undefined = undefined;
             if (weightMatch) {
-                const val = parseInt(weightMatch[1], 10);
+                const val = parseFloat(weightMatch[1]);
                 if (line.includes('+')) {
                     cumulativeWeight += val;
                     targetWeight = cumulativeWeight;

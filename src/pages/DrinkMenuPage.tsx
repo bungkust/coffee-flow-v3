@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Icon } from '../components/Icons';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Icon, SplashLogoIcon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { drinkService, settingsService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
+import { SmartImportModal } from '../components/SmartImportModal';
+import type { ImportableRecipe } from '../components/SmartImportModal';
 
 const DRINK_IMAGES: Record<string, string> = {
     espresso: '/assets/drinks/espresso.png',
@@ -16,7 +18,7 @@ const DRINK_IMAGES: Record<string, string> = {
     macchiato: '/assets/drinks/espresso.png'
 };
 
-const getDrinkImage = (id: string) => DRINK_IMAGES[id] || '/assets/drinks/espresso.png';
+const getDrinkImage = (drink: { id: string; image_url?: string }) => drink.image_url || DRINK_IMAGES[drink.id] || '/assets/drinks/espresso.png';
 const parseList = (json: string): string[] => {
     try {
         return JSON.parse(json);
@@ -27,16 +29,21 @@ const parseList = (json: string): string[] => {
 
 export const DrinkMenuPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [allDrinks, setAllDrinks] = useState<Drink[]>([]);
     const [availableDrinks, setAvailableDrinks] = useState<Drink[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [restoredQueue, setRestoredQueue] = useState<ImportableRecipe[]>([]);
 
     useEffect(() => {
         const fetchDrinks = async () => {
             try {
+                setLoading(true);
                 const preferredDrinks = await settingsService.getUserPreferredDrinks();
                 const drinks = await drinkService.getAllDrinks();
                 setAllDrinks(drinks);
@@ -44,9 +51,9 @@ export const DrinkMenuPage = () => {
                 if (preferredDrinks && preferredDrinks.length > 0) {
                     const drinkIds = new Set(preferredDrinks);
                     const filtered = drinks.filter(drink => drinkIds.has(drink.id));
-                    setAvailableDrinks(filtered.length > 0 ? filtered : drinks.slice(0, 4));
+                    setAvailableDrinks(filtered.length > 0 ? filtered : drinks);
                 } else {
-                    setAvailableDrinks(drinks.slice(0, 4));
+                    setAvailableDrinks(drinks);
                 }
             } catch (error) {
                 console.error("Failed to load preferred drinks:", error);
@@ -54,9 +61,22 @@ export const DrinkMenuPage = () => {
                 setLoading(false);
             }
         };
-
         fetchDrinks();
-    }, [isEditing]);
+
+        // Restore pending import queue if returning from DrinkEditPage
+        const rawQueue = sessionStorage.getItem('coffee_flow_import_queue');
+        if (rawQueue) {
+            try {
+                const queue = JSON.parse(rawQueue) as ImportableRecipe[];
+                if (Array.isArray(queue) && queue.length > 0) {
+                    setRestoredQueue(queue);
+                    setIsImportModalOpen(true);
+                }
+            } catch {
+                sessionStorage.removeItem('coffee_flow_import_queue');
+            }
+        }
+    }, [isEditing, location.pathname]);
 
     const handleEditToggle = () => {
         if (!isEditing) {
@@ -149,7 +169,7 @@ export const DrinkMenuPage = () => {
                                         </div>
                                     )}
                                     <div className="w-16 h-16 rounded-xl bg-gray-50 dark:bg-white/5 flex items-center justify-center overflow-hidden mb-3 border border-gray-50 dark:border-white/5">
-                                        <img src={getDrinkImage(item.id)} alt={item.name} className="w-full h-full object-cover p-1" />
+                                        <img src={getDrinkImage(item)} alt={item.name} className="w-full h-full object-cover p-1" />
                                     </div>
                                     <span className={`font-bold text-sm text-center ${isSelected
                                         ? 'text-primary'
@@ -195,7 +215,7 @@ export const DrinkMenuPage = () => {
                                     className="group flex items-center p-3 rounded-2xl bg-white dark:bg-[#2C241B] border border-gray-100 dark:border-white/5 active:scale-[0.98] transition-all hover:border-primary/20 shadow-sm w-full text-left"
                                 >
                                     <div className="w-16 h-16 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-white/5 mr-4 transition-transform group-hover:scale-105">
-                                        <img src={getDrinkImage(drink.id)} alt={drink.name} className="w-full h-full object-cover p-1" />
+                                        <img src={getDrinkImage(drink)} alt={drink.name} className="w-full h-full object-cover p-1" />
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
@@ -227,7 +247,140 @@ export const DrinkMenuPage = () => {
                 </div>
             )}
 
-            {!isEditing && <BottomNav activeTab="brewing" />}
+            {/* Floating Speed Dial FAB */}
+            <div className="fixed bottom-28 right-6 z-40 flex flex-col items-end gap-3">
+                {isFabMenuOpen && (
+                    <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
+                        <button
+                            onClick={() => {
+                                setIsFabMenuOpen(false);
+                                setIsImportModalOpen(true);
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-primary rounded-2xl shadow-xl border border-primary/10 text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <SplashLogoIcon className="w-4 h-4 text-primary" />
+                            <span>Import Drink</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setIsFabMenuOpen(false);
+                                navigate('/drinks/new/edit');
+                            }}
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+                        >
+                            <Icon name="edit" className="text-[18px] text-gray-500" />
+                            <span>New Drink</span>
+                        </button>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
+                    className={`w-14 h-14 rounded-full text-white shadow-lg shadow-primary/40 flex items-center justify-center transition-all duration-300 active:scale-90 border-[3px] border-white cursor-pointer ${isFabMenuOpen ? 'bg-gray-800 rotate-45' : 'bg-primary hover:bg-primary-dark'
+                        }`}
+                >
+                    <Icon name="add" className="text-[32px]" />
+                </button>
+            </div>
+
+            <BottomNav activeTab="brewing" />
+
+            <SmartImportModal
+                isOpen={isImportModalOpen}
+                initialParsedRecipes={restoredQueue}
+                onClose={() => {
+                    setIsImportModalOpen(false);
+                    setRestoredQueue([]);
+                    sessionStorage.removeItem('coffee_flow_import_queue');
+                }}
+                onImport={(importedData) => {
+                    setIsImportModalOpen(false);
+                    // Transform Recipe-like data to Drink format
+                    const data = importedData as Record<string, unknown>;
+                    
+                    // Extract ingredients from steps or use ingredients_json if present
+                    let ingredients: string[] = [];
+                    let instructions: string[] = [];
+                    
+                    if (data.ingredients_json) {
+                        try {
+                            ingredients = JSON.parse((data.ingredients_json as string) || '[]');
+                        } catch { ingredients = []; }
+                    } else if (data.steps) {
+                        // Extract ingredients from steps (look for quantities in instructions)
+                        const steps = (data.steps as Array<Record<string, unknown>>) || [];
+                        ingredients = steps
+                            .flatMap((step: Record<string, unknown>) => {
+                                const instruction = (step.instruction as string) || '';
+                                // Extract quantities like "18g coffee", "120ml milk", "1 shot espresso"
+                                const matches = instruction.match(/(\d+(?:\.\d+)?)\s*(g|ml|shot|shots?)\s*(coffee|espresso|milk|water|syrup|cream|foam)/gi);
+                                return matches || [];
+                            })
+                            .filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+                    }
+                    
+                    if (data.instructions_json) {
+                        try {
+                            instructions = JSON.parse((data.instructions_json as string) || '[]');
+                        } catch { instructions = []; }
+                    } else if (data.steps) {
+                        // Extract instructions from steps
+                        const steps = (data.steps as Array<Record<string, unknown>>) || [];
+                        instructions = steps
+                            .map((step: Record<string, unknown>) => (step.instruction as string) || (step.label as string))
+                            .filter(Boolean);
+                    }
+                    
+                    // Determine category from method_id or name
+                    const methodId = (data.method_id as string) || '';
+                    const name = (data.name as string) || '';
+                    const isCold = methodId === 'cold_brew' || name.toLowerCase().includes('cold') || name.toLowerCase().includes('iced') || name.toLowerCase().includes('frapp');
+                    
+                    const prefillDrink = {
+                        name: (data.name as string) || 'Imported Drink',
+                        category: isCold ? 'cold' : 'hot',
+                        ingredients_json: JSON.stringify(ingredients.length > 0 ? ingredients : ['1 shot espresso', '120ml milk']),
+                        instructions_json: JSON.stringify(instructions.length > 0 ? instructions : ['Prepare ingredients', 'Mix and serve']),
+                        version: 1,
+                    };
+                    
+                    setIsImportModalOpen(false);
+                    navigate(`/drinks/new`, {
+                        state: { prefill: prefillDrink }
+                    });
+                }}
+                onSaveDirect={async (importedData) => {
+                    const id = crypto.randomUUID();
+                    const now = new Date().toISOString();
+                    try {
+                        const data = importedData as Record<string, unknown>;
+                        const parsedIngredients = JSON.parse((data.ingredients_json as string) || '[]');
+                        const parsedInstructions = JSON.parse((data.instructions_json as string) || '[]');
+                        await drinkService.saveDrink({
+                            id,
+                            name: (data.name as string) || 'Imported Drink',
+                            category: (data.category as string) === 'cold' ? 'cold' : 'hot',
+                            ingredients_json: JSON.stringify(parsedIngredients),
+                            instructions_json: JSON.stringify(parsedInstructions),
+                            version: 1,
+                            created_at: now,
+                            updated_at: now,
+                        });
+                    } catch {
+                        await drinkService.saveDrink({
+                            id,
+                            name: (importedData as Record<string, unknown>).name as string || 'Imported Drink',
+                            category: 'hot',
+                            ingredients_json: '[]',
+                            instructions_json: '[]',
+                            version: 1,
+                            created_at: now,
+                            updated_at: now,
+                        });
+                    }
+                }}
+            />
         </div>
     );
 };

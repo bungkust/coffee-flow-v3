@@ -36,10 +36,19 @@ const ROAST_LEVEL_OPTIONS = [
 ];
 import type { PantryCategory } from '../features/pantry/domain/entities';
 
+const VALID_CATEGORIES: PantryCategory[] = [
+    'beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient',
+    'machine', 'dripper', 'french_press', 'aeropress', 'grinder', 'kettle', 'scale', 'accessory'
+];
+
 export const PantryAddFormPage = () => {
     const { category } = useParams<{ category: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+
+    const validCategory = VALID_CATEGORIES.includes(category as PantryCategory)
+        ? (category as PantryCategory)
+        : 'beans';
 
     // Common Fields
     const [name, setName] = useState('');
@@ -48,10 +57,10 @@ export const PantryAddFormPage = () => {
     const [unit, setUnit] = useState<'g' | 'ml' | 'pcs'>('g');
 
     useEffect(() => {
-        if (category === 'milk' || category === 'syrup') setUnit('ml');
-        else if (category === 'filter') setUnit('pcs');
+        if (validCategory === 'milk' || validCategory === 'syrup') setUnit('ml');
+        else if (validCategory === 'filter') setUnit('pcs');
         else setUnit('g');
-    }, [category]);
+    }, [validCategory]);
 
     // Core Category Data Maps (to define dynamic ui)
     const categoryInfo: Record<string, { label: string, icon: string, isGear: boolean }> = {
@@ -91,6 +100,13 @@ export const PantryAddFormPage = () => {
 
     const handleSave = async () => {
         if (!name.trim()) return;
+        
+        // Require quantity for consumable items
+        const consumableCategories = ['beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient'];
+        if (consumableCategories.includes(validCategory) && !quantity.trim()) {
+            alert('Quantity is required for consumable items');
+            return;
+        }
 
         setLoading(true);
         try {
