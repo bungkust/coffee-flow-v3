@@ -16,7 +16,7 @@ export const Button = ({
     children,
     ...props
 }: ButtonProps) => {
-    const baseStyles = 'transition-all duration-200 ease-md-standard active:scale-[0.97] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-38 disabled:pointer-events-none select-none';
+    const baseStyles = 'transition-all duration-200 ease-md-standard active:scale-[0.97] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed disabled:shadow-none select-none';
 
     const variants: Record<ButtonVariant, string> = {
         filled: 'bg-md-primary text-md-on-primary hover:bg-md-primary/90 font-medium shadow-none',

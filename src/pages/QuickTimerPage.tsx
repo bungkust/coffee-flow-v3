@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
 import { formatDuration } from '../shared/utils/brewMath';
 
 export const QuickTimerPage = () => {
@@ -88,28 +89,56 @@ export const QuickTimerPage = () => {
     };
 
     return (
-        <div className="flex min-h-screen w-full max-w-md flex-col bg-white font-display text-neutral-text shadow-2xl mx-auto">
-            <div className="flex items-center gap-3 border-b border-gray-100 px-6 pb-4 pt-12">
-                <button onClick={() => navigate(-1)} className="-ml-2 flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-50">
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <h1 className="text-xl font-bold">Quick Timer</h1>
-            </div>
-            <main className="flex flex-1 flex-col items-center justify-center px-6">
-                <div className="text-[72px] font-extrabold tabular-nums">{formatDuration(remaining)}</div>
-                <div className="mt-8 grid w-full grid-cols-3 gap-3">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
+            {/* Header */}
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
+                    >
+                        <Icon name="arrow_back" className="text-2xl" />
+                    </button>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">Quick Timer</h1>
+                </div>
+            </header>
+
+            <main className="flex flex-1 flex-col items-center justify-center px-6 py-8">
+                <div className="typescale-display-large text-7xl font-extrabold tabular-nums tracking-tight text-md-primary mb-8 bg-md-surface-container-low px-8 py-6 rounded-3xl border border-md-outline-variant/30 shadow-md-1">
+                    {formatDuration(remaining)}
+                </div>
+
+                <div className="grid w-full grid-cols-3 gap-3">
                     {[120, 180, 240].map((preset) => (
-                        <button key={preset} onClick={() => setPreset(preset)} className={`rounded-xl py-3 text-sm font-bold ${seconds === preset ? 'bg-primary text-white' : 'bg-gray-50 text-gray-500'}`}>
+                        <button
+                            key={preset}
+                            onClick={() => setPreset(preset)}
+                            className={`rounded-2xl py-3.5 typescale-title-small font-bold transition-all cursor-pointer border ${
+                                seconds === preset
+                                    ? 'bg-md-secondary-container text-md-on-secondary-container border-md-primary shadow-sm'
+                                    : 'bg-md-surface-container-low text-md-on-surface-variant border-md-outline-variant/30 hover:bg-md-surface-container-high'
+                            }`}
+                        >
                             {formatDuration(preset)}
                         </button>
                     ))}
                 </div>
             </main>
-            <div className="border-t border-gray-100 p-6">
-                <button onClick={handlePrimaryAction} className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-white">
+
+            <div className="border-t border-md-outline-variant/20 p-5 space-y-3 bg-md-surface/95 backdrop-blur-md">
+                <Button
+                    variant="filled"
+                    size="lg"
+                    onClick={handlePrimaryAction}
+                    className="w-full"
+                >
                     {running ? 'Pause' : remaining === 0 ? 'Restart' : 'Start'}
-                </button>
-                <button onClick={() => { setRunning(false); setRemaining(seconds); }} className="mt-3 w-full rounded-2xl bg-gray-50 py-3 font-bold text-gray-500">
+                </Button>
+                <button
+                    onClick={() => { setRunning(false); setRemaining(seconds); }}
+                    className="w-full rounded-full py-3 typescale-label-large font-bold text-md-on-surface-variant bg-md-surface-container-high hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                >
                     Reset
                 </button>
             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
+import { Modal } from '../components/Modal';
 import { pantryService } from '../core/services';
 import { removeDummyPantryItems } from '../core/database/seeding';
 import type { PantryItem } from '../features/pantry/domain/entities';
@@ -15,6 +16,7 @@ export const PantryPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedBean, setSelectedBean] = useState<PantryItem | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const getStockPercent = (item: PantryItem) => Math.min(100, Math.max(0, item.quantity ?? item.remaining_stock ?? 0));
 
     useEffect(() => {
@@ -376,17 +378,32 @@ export const PantryPage = () => {
                         </button>
                         <button
                             className="w-full mt-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-2xl transition-all"
-                            onClick={async () => {
-                                await pantryService.deletePantryItem(selectedBean.id);
-                                setSelectedBean(null);
-                                loadData();
-                            }}
+                            onClick={() => setIsDeleteModalOpen(true)}
                         >
                             Delete Item
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* Delete Item Modal */}
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={async () => {
+                    if (selectedBean) {
+                        await pantryService.deletePantryItem(selectedBean.id);
+                        setSelectedBean(null);
+                        loadData();
+                    }
+                    setIsDeleteModalOpen(false);
+                }}
+                title="Delete Pantry Item?"
+                message={`Are you sure you want to delete "${selectedBean?.name}" from your pantry?`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="warning"
+            />
         </div>
     );
 };

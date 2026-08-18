@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
+import { BottomNav } from '../components/BottomNav';
 import { Dropdown } from '../components/Dropdown';
 import { brewService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
-import { BottomNav } from '../components/BottomNav';
-import { parseRatio } from '../shared/utils/brewMath';
-
-type RecipeDifficulty = NonNullable<Recipe['difficulty']>;
 
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const location = useLocation();
     const prefill = (location.state as { prefill?: Partial<Recipe> } | null)?.prefill;
 
@@ -26,57 +23,56 @@ export const RecipeEditPage = () => {
             if (!id) return;
             try {
                 if (id === 'new') {
-                    const method = (searchParams.get('method') || 'V60').toLowerCase();
-                    const newId = crypto.randomUUID();
+                    const method_id = (location.state as { method_id?: string } | null)?.method_id || 'v60';
+                    const newId = `${method_id}-custom-${Date.now()}`;
                     const now = new Date().toISOString();
 
                     if (prefill) {
-                        // Pre-fill from import — recipe is NOT saved yet
                         setRecipe({
                             id: newId,
-                            method_id: prefill.method_id || method,
+                            method_id: prefill.method_id || method_id,
                             name: prefill.name || '',
-                            ratio: prefill.ratio || '',
-                            temperature: prefill.temperature,
-                            grind_size: prefill.grind_size || '',
+                            ratio: prefill.ratio || '1:15',
+                            total_water: prefill.total_water || 250,
+                            grind_size: prefill.grind_size || 'Medium',
+                            temperature: prefill.temperature || 92,
                             difficulty: prefill.difficulty || 'Intermediate',
-                            total_water: prefill.total_water,
+                            style: prefill.style || 'Balanced',
                             description_short: prefill.description_short || '',
                             description_detailed: prefill.description_detailed || '',
                             philosophy: prefill.philosophy || '',
                             best_for_tags: prefill.best_for_tags || [],
                             not_recommended_tags: prefill.not_recommended_tags || [],
                             is_custom: true,
-                            is_favorite: false,
                             version: 1,
                             created_at: now,
                             updated_at: now,
-                            steps: (prefill.steps || []).map((step, idx) => ({
-                                ...step,
-                                id: crypto.randomUUID(),
-                                recipe_id: newId,
-                                step_order: idx + 1,
-                                created_at: now,
-                                updated_at: now,
-                            }))
+                            steps: prefill.steps && prefill.steps.length > 0 ? prefill.steps : [
+                                { id: `${newId}-1`, recipe_id: newId, step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: 50, instruction: 'Pour water evenly', created_at: now, updated_at: now }
+                            ]
                         });
                     } else {
-                        // Blank template for manual creation
                         setRecipe({
                             id: newId,
-                            method_id: method,
+                            method_id,
                             name: '',
-                            ratio: '',
-                            temperature: undefined,
-                            grind_size: '',
-                            total_water: undefined,
+                            ratio: '1:15',
+                            total_water: 250,
+                            grind_size: 'Medium',
+                            temperature: 92,
+                            difficulty: 'Intermediate',
+                            style: 'Balanced',
+                            description_short: '',
+                            description_detailed: '',
+                            philosophy: '',
+                            best_for_tags: [],
+                            not_recommended_tags: [],
                             is_custom: true,
-                            is_favorite: false,
                             version: 1,
                             created_at: now,
                             updated_at: now,
                             steps: [
-                                { id: crypto.randomUUID(), recipe_id: newId, step_order: 1, label: '', duration_seconds: 0, target_weight: undefined, created_at: now, updated_at: now }
+                                { id: `${newId}-1`, recipe_id: newId, step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: 50, instruction: 'Pour water evenly', created_at: now, updated_at: now }
                             ]
                         });
                     }
@@ -92,7 +88,7 @@ export const RecipeEditPage = () => {
         };
         fetchRecipe();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, searchParams]);
+    }, [id]);
 
     const handleSave = async () => {
         if (!recipe) return;
@@ -100,37 +96,15 @@ export const RecipeEditPage = () => {
             setError('Recipe name is required.');
             return;
         }
-        if (!parseRatio(recipe.ratio)) {
-            setError('Use a valid ratio, for example 1:15.');
-            return;
-        }
-        if (!recipe.total_water || recipe.total_water <= 0) {
-            setError('Total water must be greater than 0.');
-            return;
-        }
-        if (recipe.steps.length === 0 || recipe.steps.some(step => !step.label.trim() || step.duration_seconds <= 0)) {
-            setError('Every step needs a label and duration greater than 0.');
-            return;
-        }
-        const targets = recipe.steps
-            .map(step => step.target_weight)
-            .filter((target): target is number => typeof target === 'number' && target > 0);
-        if (targets.some(target => recipe.total_water && target > recipe.total_water)) {
-            setError('Step target cannot be higher than total water.');
-            return;
-        }
-        if (targets.some((target, index) => index > 0 && target <= targets[index - 1])) {
-            setError('Step targets must be cumulative and increase over time.');
+        if (!recipe.steps || recipe.steps.length === 0) {
+            setError('At least one step is required.');
             return;
         }
         setSaving(true);
         setError('');
         try {
-            await brewService.saveRecipe({
-                ...recipe,
-                steps: recipe.steps.map((step, index) => ({ ...step, step_order: index + 1 }))
-            });
-            navigate(`/recipes/${recipe.id}`);
+            await brewService.saveRecipe(recipe);
+            navigate(`/recipes/${recipe.method_id}`);
         } catch (err) {
             console.error('Error saving recipe:', err);
             alert('Failed to save recipe');
@@ -139,39 +113,53 @@ export const RecipeEditPage = () => {
         }
     };
 
-    const updateStep = (index: number, updates: Partial<BrewStep>) => {
-        if (!recipe) return;
-        const newSteps = [...recipe.steps];
-        newSteps[index] = { ...newSteps[index], ...updates };
-        setRecipe({ ...recipe, steps: newSteps });
-    };
-
     const addStep = () => {
         if (!recipe) return;
+        const now = new Date().toISOString();
+        const nextStepOrder = recipe.steps.length + 1;
         const newStep: BrewStep = {
-            id: crypto.randomUUID(),
+            id: `${recipe.id}-${nextStepOrder}-${Date.now()}`,
             recipe_id: recipe.id,
-            step_order: recipe.steps.length + 1,
-            label: 'New Step',
+            step_order: nextStepOrder,
+            label: `Pour ${nextStepOrder}`,
             duration_seconds: 30,
-            target_weight: undefined,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            target_weight: (recipe.total_water || 250),
+            instruction: 'Pour in spiral motion',
+            created_at: now,
+            updated_at: now
         };
-        setRecipe({ ...recipe, steps: [...recipe.steps, newStep] });
+        setRecipe({
+            ...recipe,
+            steps: [...recipe.steps, newStep]
+        });
+    };
+
+    const updateStep = (index: number, updatedFields: Partial<BrewStep>) => {
+        if (!recipe) return;
+        const updatedSteps = [...recipe.steps];
+        updatedSteps[index] = { ...updatedSteps[index], ...updatedFields };
+        setRecipe({
+            ...recipe,
+            steps: updatedSteps
+        });
     };
 
     const removeStep = (index: number) => {
-        if (!recipe) return;
-        const newSteps = recipe.steps.filter((_, i) => i !== index)
-            .map((step, i) => ({ ...step, step_order: i + 1 }));
-        setRecipe({ ...recipe, steps: newSteps });
+        if (!recipe || recipe.steps.length <= 1) return;
+        const updatedSteps = recipe.steps.filter((_, i) => i !== index).map((s, i) => ({
+            ...s,
+            step_order: i + 1
+        }));
+        setRecipe({
+            ...recipe,
+            steps: updatedSteps
+        });
     };
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <div className="flex min-h-screen items-center justify-center bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
@@ -179,115 +167,111 @@ export const RecipeEditPage = () => {
     if (!recipe) return null;
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl pb-32 font-display text-[#181411]">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md pt-12 pb-4 px-6 flex items-center justify-between border-b border-gray-50">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-[#181411] hover:bg-gray-100 transition-colors cursor-pointer"
-                    >
-                        <Icon name="arrow_back" className="text-[24px]" />
-                    </button>
-                    <span className="text-lg font-bold text-[#181411]">
-                        {id === 'new' ? 'Create Recipe' : 'Edit Recipe'}
-                    </span>
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            aria-label="Go back"
+                        >
+                            <Icon name="arrow_back" className="text-2xl" />
+                        </button>
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">
+                            {id === 'new' ? 'Create Recipe' : 'Edit Recipe'}
+                        </h1>
+                    </div>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="text-primary font-bold px-4 py-2 hover:bg-primary/5 rounded-xl transition-all cursor-pointer"
-                >
-                    {saving ? 'Saving...' : 'Save'}
-                </button>
-            </div>
+            </header>
 
-            <div className="px-6 py-6 space-y-8">
+            <main className="flex-1 px-5 pt-4 space-y-6">
                 {error && (
-                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                    <div className="rounded-2xl border border-md-error/30 bg-md-error-container/30 px-4 py-3 typescale-body-medium font-bold text-md-error">
                         {error}
                     </div>
                 )}
+
                 {/* Basic Info */}
-                <section className="space-y-4">
-                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Basic Information</h2>
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                    <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Basic Information</h2>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Recipe Name</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Recipe Name</label>
                             <input
                                 type="text"
                                 value={recipe.name}
                                 onChange={(e) => setRecipe({ ...recipe, name: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                 placeholder="e.g. Even Extraction Flow"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Ratio</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Ratio</label>
                                 <input
                                     type="text"
                                     value={recipe.ratio}
                                     onChange={(e) => setRecipe({ ...recipe, ratio: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                     placeholder="1:15"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Total Water (ml)</label>
+                            <div className="space-y-1.5">
+                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Total Water (ml)</label>
                                 <input
                                     type="number"
                                     value={recipe.total_water || ''}
                                     onChange={(e) => setRecipe({ ...recipe, total_water: parseInt(e.target.value) || undefined })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                     placeholder="250"
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Difficulty</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
                                 <Dropdown
-                                    buttonClassName="py-3 bg-gray-50 border-gray-100"
+                                    label="Difficulty"
                                     value={recipe.difficulty || ''}
                                     options={[
                                         { value: 'Beginner', label: 'Beginner' },
                                         { value: 'Intermediate', label: 'Intermediate' },
                                         { value: 'Advanced', label: 'Advanced' }
                                     ]}
-                                    onChange={(val) => setRecipe({ ...recipe, difficulty: val as RecipeDifficulty })}
+                                    onChange={(val) => setRecipe({ ...recipe, difficulty: val as Recipe['difficulty'] })}
                                     placeholder="Select"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Style</label>
+                            <div className="space-y-1.5">
+                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Style</label>
                                 <input
                                     type="text"
                                     value={recipe.style || ''}
                                     onChange={(e) => setRecipe({ ...recipe, style: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                     placeholder="Balanced / Round"
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Temp (°C)</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Temp (°C)</label>
                                 <input
                                     type="number"
                                     value={recipe.temperature || ''}
                                     onChange={(e) => setRecipe({ ...recipe, temperature: parseInt(e.target.value) || undefined })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                     placeholder="92"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Grind Size</label>
+                            <div className="space-y-1.5">
+                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Grind Size</label>
                                 <input
                                     type="text"
                                     value={recipe.grind_size || ''}
                                     onChange={(e) => setRecipe({ ...recipe, grind_size: e.target.value })}
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                     placeholder="Medium"
                                 />
                             </div>
@@ -296,36 +280,36 @@ export const RecipeEditPage = () => {
                 </section>
 
                 {/* Details Section */}
-                <section className="space-y-4">
-                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Details & Philosophy</h2>
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                    <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Details & Philosophy</h2>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Short Description</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Short Description</label>
                             <input
                                 type="text"
                                 value={recipe.description_short || ''}
                                 onChange={(e) => setRecipe({ ...recipe, description_short: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                 placeholder="A brief summary..."
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Detailed Description</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Detailed Description</label>
                             <textarea
                                 value={recipe.description_detailed || ''}
                                 onChange={(e) => setRecipe({ ...recipe, description_detailed: e.target.value })}
                                 rows={3}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 resize-none outline-none"
                                 placeholder="Explain the brewing approach..."
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Philosophy</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Philosophy</label>
                             <textarea
                                 value={recipe.philosophy || ''}
                                 onChange={(e) => setRecipe({ ...recipe, philosophy: e.target.value })}
                                 rows={2}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 resize-none outline-none"
                                 placeholder="Why this recipe works..."
                             />
                         </div>
@@ -333,26 +317,26 @@ export const RecipeEditPage = () => {
                 </section>
 
                 {/* Tags Section */}
-                <section className="space-y-4">
-                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Tags (Comma Separated)</h2>
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                    <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Tags (Comma Separated)</h2>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Best For</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-small font-bold text-md-on-surface-variant uppercase">Best For</label>
                             <input
                                 type="text"
                                 value={(recipe.best_for_tags || []).join(', ')}
                                 onChange={(e) => setRecipe({ ...recipe, best_for_tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-2.5 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                 placeholder="Arabica, Light Roast, Washed"
                             />
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Not Recommended For</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-small font-bold text-md-on-surface-variant uppercase">Not Recommended For</label>
                             <input
                                 type="text"
                                 value={(recipe.not_recommended_tags || []).join(', ')}
                                 onChange={(e) => setRecipe({ ...recipe, not_recommended_tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-2.5 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                 placeholder="Dark Roast, Robusta"
                             />
                         </div>
@@ -360,23 +344,23 @@ export const RecipeEditPage = () => {
                 </section>
 
                 {/* Steps Section */}
-                <section className="space-y-4">
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Brewing Steps</h2>
+                        <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Brewing Steps</h2>
                         <button
                             onClick={addStep}
-                            className="text-xs font-bold text-primary flex items-center gap-1 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                            className="typescale-label-medium font-bold text-md-primary flex items-center gap-1 bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                         >
-                            <Icon name="add" className="text-[16px]" />
+                            <Icon name="add" className="text-base" />
                             Add Step
                         </button>
                     </div>
 
                     <div className="space-y-3">
                         {recipe.steps.map((step, index) => (
-                            <div key={step.id} className="bg-gray-50 border border-gray-100 rounded-2xl p-4 relative group">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                            <div key={step.id} className="bg-md-surface-container-high border border-md-outline-variant/30 rounded-xl p-3.5 space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="size-7 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center typescale-label-medium font-bold shrink-0">
                                         {index + 1}
                                     </div>
                                     <div className="flex-1 space-y-3">
@@ -384,35 +368,35 @@ export const RecipeEditPage = () => {
                                             type="text"
                                             value={step.label}
                                             onChange={(e) => updateStep(index, { label: e.target.value })}
-                                            className="w-full bg-transparent border-none p-0 text-base font-bold text-[#181411] focus:ring-0 placeholder:text-gray-300"
+                                            className="w-full bg-transparent border-none p-0 typescale-title-small font-bold text-md-on-surface focus:ring-0 placeholder:text-md-on-surface-variant/50 outline-none"
                                             placeholder="Step label..."
                                         />
                                         <textarea
                                             value={step.instruction || ''}
                                             onChange={(e) => updateStep(index, { instruction: e.target.value })}
                                             rows={2}
-                                            className="w-full bg-white border border-gray-100 rounded-lg px-3 py-2 text-xs font-medium focus:ring-1 focus:ring-primary/20 outline-none resize-none placeholder:text-gray-300"
+                                            className="w-full bg-md-surface-container-low border border-md-outline-variant/30 rounded-lg p-2.5 typescale-body-small text-md-on-surface focus:ring-1 focus:ring-md-primary/40 outline-none resize-none placeholder:text-md-on-surface-variant/50"
                                             placeholder="Step instruction..."
                                         />
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Duration (s)</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="typescale-label-small font-bold text-md-on-surface-variant uppercase">Duration (s)</label>
                                                 <input
                                                     type="number"
                                                     value={step.duration_seconds || ''}
                                                     onChange={(e) => updateStep(index, { duration_seconds: parseInt(e.target.value) || 0 })}
-                                                    className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-sm font-bold"
+                                                    className="w-full bg-md-surface-container-low border border-md-outline-variant/30 rounded-lg p-2 typescale-title-small font-bold text-md-on-surface"
                                                     placeholder="30"
                                                 />
                                             </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Target (g)</label>
+                                            <div className="space-y-1">
+                                                <label className="typescale-label-small font-bold text-md-on-surface-variant uppercase">Target (g)</label>
                                                 <input
                                                     type="number"
                                                     step="any"
                                                     value={step.target_weight || ''}
                                                     onChange={(e) => updateStep(index, { target_weight: parseFloat(e.target.value) || undefined })}
-                                                    className="w-full bg-white border border-gray-100 rounded-lg px-2 py-1.5 text-sm font-bold"
+                                                    className="w-full bg-md-surface-container-low border border-md-outline-variant/30 rounded-lg p-2 typescale-title-small font-bold text-md-on-surface"
                                                     placeholder="50"
                                                 />
                                             </div>
@@ -420,15 +404,29 @@ export const RecipeEditPage = () => {
                                     </div>
                                     <button
                                         onClick={() => removeStep(index)}
-                                        className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                                        className="text-md-on-surface-variant/50 hover:text-md-error transition-colors p-1 cursor-pointer"
                                     >
-                                        <Icon name="delete" className="text-[20px]" />
+                                        <Icon name="delete" className="text-xl" />
                                     </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </section>
+            </main>
+
+            {/* Sticky Bottom Save Action */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+                <Button
+                    variant="filled"
+                    size="lg"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full"
+                >
+                    <Icon name="save" className="text-xl" />
+                    <span>{saving ? 'Saving...' : 'Save Recipe'}</span>
+                </Button>
             </div>
 
             <BottomNav activeTab="brewing" />

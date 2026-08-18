@@ -1,16 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
+import { Modal } from '../components/Modal';
 import { backupService } from '../core/services';
 import type { Backup } from '../features/settings/domain/entities';
 
 export const BackupRestorePage = () => {
     const navigate = useNavigate();
     const [backups, setBackups] = useState<Backup[]>([]);
-    const [lastBackup, setLastBackup] = useState<Backup | null>(null);
     const [isBackingUp, setIsBackingUp] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Confirmation Modal States
+    const [restoreModalId, setRestoreModalId] = useState<string | null>(null);
+    const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+    const [importedModalId, setImportedModalId] = useState<string | null>(null);
 
     useEffect(() => {
         loadBackups();
@@ -18,17 +24,14 @@ export const BackupRestorePage = () => {
 
     const loadBackups = async () => {
         try {
-            const data = await backupService.getBackups();
-            setBackups(data);
-            const last = await backupService.getLastSuccessfulBackup();
-            setLastBackup(last);
+            const list = await backupService.getBackups();
+            setBackups(list);
         } catch (error) {
-            console.error('Failed to load backups:', error);
+            console.error('Failed to list backups:', error);
         }
     };
 
     const handleBackup = async () => {
-        if (isBackingUp) return;
         setIsBackingUp(true);
         try {
             await backupService.performBackup();
@@ -40,59 +43,72 @@ export const BackupRestorePage = () => {
         }
     };
 
-    const handleRestore = async (id: string) => {
-        if (confirm('Are you sure you want to restore? Current data will be overwritten.')) {
-            try {
-                await backupService.restoreBackup(id);
-                alert('Restore successful! Your data has been updated.');
-            } catch (error) {
-                console.error('Restore failed:', error);
-                alert('Restore failed. See console for details.');
-            }
-        }
-    };
-
-    const handleDownloadFile = (id: string) => {
+    const confirmRestore = async () => {
+        if (!restoreModalId) return;
         try {
-            backupService.downloadBackupFile(id);
+            await backupService.restoreBackup(restoreModalId);
+            navigate('/home');
         } catch (error) {
-            console.error('Download failed:', error);
-            alert('Failed to download backup file.');
+            console.error('Restore failed:', error);
+        } finally {
+            setRestoreModalId(null);
         }
     };
 
-    const handleDeleteBackup = async (id: string) => {
-        if (confirm('Delete this backup snapshot?')) {
-            try {
-                await backupService.deleteBackup(id);
-                await loadBackups();
-            } catch (error) {
-                console.error('Delete failed:', error);
-            }
+    const confirmDelete = async () => {
+        if (!deleteModalId) return;
+        try {
+            await backupService.deleteBackup(deleteModalId);
+            await loadBackups();
+        } catch (error) {
+            console.error('Failed to delete backup:', error);
+        } finally {
+            setDeleteModalId(null);
         }
     };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const handleDownloadFile = (backupId: string) => {
+        try {
+            backupService.downloadBackupFile(backupId);
+        } catch (error) {
+            console.error('Failed to export backup file:', error);
+        }
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
         if (!file) return;
 
         setIsImporting(true);
         try {
             const text = await file.text();
-            await backupService.importBackupFromFile(text);
+            const importedBackup = await backupService.importBackupFromFile(text);
             await loadBackups();
-            alert(`Backup "${file.name}" imported and restored successfully!`);
+            setImportedModalId(importedBackup.id);
         } catch (error) {
-            console.error('Import failed:', error);
-            alert(error instanceof Error ? error.message : 'Failed to import backup file.');
+            console.error('Failed to import backup file:', error);
         } finally {
             setIsImporting(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
+    const confirmImportRestore = async () => {
+        if (!importedModalId) return;
+        try {
+            await backupService.restoreBackup(importedModalId);
+            navigate('/home');
+        } catch (error) {
+            console.error('Restore failed:', error);
+        } finally {
+            setImportedModalId(null);
+        }
+    };
+
+    const lastBackup = backups[0];
+
     return (
-        <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl font-display text-neutral-text pb-24">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Hidden File Input for Importing Backup */}
             <input
                 ref={fileInputRef}
@@ -103,117 +119,98 @@ export const BackupRestorePage = () => {
             />
 
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
-                        >
-                            <Icon name="arrow_back" className="text-[24px]" />
-                        </button>
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
-                            Backup & Restore
-                        </h1>
-                    </div>
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
+                    >
+                        <Icon name="arrow_back" className="text-2xl" />
+                    </button>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">
+                        Backup & Restore
+                    </h1>
                 </div>
-            </div>
+            </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col px-4 pt-4 gap-6">
+            <main className="flex-1 px-5 pt-4 space-y-6">
                 {/* Backup Status Card */}
                 <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 ml-1">Device Status</h3>
-                    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                        <div className="flex flex-col gap-4">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="flex flex-col gap-1">
-                                    <h3 className="text-neutral-text text-base font-bold">Last Backup Status</h3>
-                                    {lastBackup ? (
-                                        <div className="flex items-center gap-1.5 text-primary">
-                                            <Icon name="check_circle" className="text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                            <span className="text-sm font-medium">Ready ({lastBackup.location})</span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1.5 text-gray-400">
-                                            <Icon name="cloud_off" className="text-[18px]" />
-                                            <span className="text-sm font-medium">No Backup Available</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="bg-primary/10 rounded-full p-2 text-primary">
-                                    <Icon name="cloud_done" className="text-[24px]" />
-                                </div>
-                            </div>
-                            <div className="text-gray-500 text-sm leading-relaxed border-t border-gray-100 pt-3">
+                    <h2 className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant mb-2.5 ml-1">Device Status</h2>
+                    <div className="bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 p-5 shadow-md-1 space-y-4">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1">
+                                <h3 className="typescale-title-medium font-bold text-md-on-surface">Last Backup Status</h3>
                                 {lastBackup ? (
-                                    <>
-                                        <p>{new Date(lastBackup.created_at).toLocaleString()}</p>
-                                        <p>Size: {(lastBackup.size_bytes / 1024 / 1024).toFixed(2)} MB • {lastBackup.location}</p>
-                                    </>
+                                    <div className="flex items-center gap-1.5 text-md-primary">
+                                        <Icon name="check_circle" className="text-base" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                        <span className="typescale-body-small font-medium">Ready ({lastBackup.location})</span>
+                                    </div>
                                 ) : (
-                                    <p>No backups found on this device</p>
+                                    <div className="flex items-center gap-1.5 text-md-on-surface-variant/70">
+                                        <Icon name="cloud_off" className="text-base" />
+                                        <span className="typescale-body-small font-medium">No Backup Available</span>
+                                    </div>
                                 )}
                             </div>
-
-                            {/* Action Buttons: Backup Now & Import File */}
-                            <div className="flex gap-2.5 pt-1">
-                                <button
-                                    onClick={handleBackup}
-                                    disabled={isBackingUp}
-                                    className={`flex-1 flex cursor-pointer items-center justify-center rounded-xl h-11 text-xs font-bold transition-all shadow-md gap-2 ${isBackingUp ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' : 'bg-primary text-white hover:bg-primary-dark active:scale-[0.98] shadow-primary/20'}`}
-                                >
-                                    {isBackingUp ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Backing up...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon name="backup" className="text-[18px]" />
-                                            <span>Backup Now</span>
-                                        </>
-                                    )}
-                                </button>
-
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isImporting}
-                                    className="flex-1 flex cursor-pointer items-center justify-center rounded-xl h-11 text-xs font-bold border-2 border-primary text-primary hover:bg-primary/5 active:scale-[0.98] transition-all gap-2"
-                                >
-                                    {isImporting ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                            <span>Importing...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon name="file_upload" className="text-[18px]" />
-                                            <span>Import File</span>
-                                        </>
-                                    )}
-                                </button>
+                            <div className="bg-md-primary-container/40 rounded-full p-2.5 text-md-primary">
+                                <Icon name="cloud_done" className="text-2xl" />
                             </div>
+                        </div>
+                        <div className="typescale-body-small text-md-on-surface-variant border-t border-md-outline-variant/20 pt-3">
+                            {lastBackup ? (
+                                <>
+                                    <p>{new Date(lastBackup.created_at).toLocaleString()}</p>
+                                    <p>Size: {(lastBackup.size_bytes / 1024 / 1024).toFixed(2)} MB • {lastBackup.location}</p>
+                                </>
+                            ) : (
+                                <p>No backups found on this device</p>
+                            )}
+                        </div>
+
+                        {/* Action Buttons: Backup Now & Import File */}
+                        <div className="flex gap-2.5 pt-1">
+                            <Button
+                                variant="filled"
+                                size="md"
+                                onClick={handleBackup}
+                                disabled={isBackingUp}
+                                className="flex-1"
+                            >
+                                <Icon name="backup" className="text-lg" />
+                                <span>{isBackingUp ? 'Backing up...' : 'Backup Now'}</span>
+                            </Button>
+
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isImporting}
+                                className="flex-1 flex cursor-pointer items-center justify-center rounded-full h-10 px-4 typescale-label-large font-bold border border-md-primary text-md-primary hover:bg-md-primary-container/30 active:scale-[0.98] transition-all gap-2"
+                            >
+                                <Icon name="file_upload" className="text-lg" />
+                                <span>{isImporting ? 'Importing...' : 'Import File'}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Available Backups List */}
                 <div>
-                    <div className="flex items-center justify-between mb-3 px-1">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Backup Snapshots</h3>
-                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">Local & Shareable</span>
+                    <div className="flex items-center justify-between mb-2.5 px-1">
+                        <h2 className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Backup Snapshots</h2>
+                        <span className="typescale-label-small font-bold text-md-on-secondary-container bg-md-secondary-container px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">Local & Shareable</span>
                     </div>
                     <div className="flex flex-col gap-3">
                         {backups.map(backup => (
-                            <div key={backup.id} className="group relative flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3.5 transition-all hover:border-primary/30 hover:shadow-sm">
+                            <div key={backup.id} className="group relative flex items-center justify-between gap-3 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low p-4 transition-all hover:bg-md-surface-container-high shadow-md-1">
                                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                        <Icon name={backup.location === 'Imported File' ? "folder_zip" : "cloud"} className="text-[20px]" />
+                                    <div className="size-10 shrink-0 rounded-full bg-md-surface-container-highest flex items-center justify-center text-md-primary">
+                                        <Icon name={backup.location === 'Imported File' ? "folder_zip" : "cloud"} className="text-xl" />
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <p className="text-neutral-text text-sm font-bold truncate">{new Date(backup.created_at).toLocaleDateString()}</p>
-                                        <p className="text-gray-400 text-[11px] font-medium truncate">
+                                        <p className="typescale-title-small font-bold text-md-on-surface truncate">{new Date(backup.created_at).toLocaleDateString()}</p>
+                                        <p className="typescale-body-small text-md-on-surface-variant truncate">
                                             {new Date(backup.created_at).toLocaleTimeString()} • {(backup.size_bytes / 1024 / 1024).toFixed(2)} MB • {backup.location}
                                         </p>
                                     </div>
@@ -223,25 +220,25 @@ export const BackupRestorePage = () => {
                                     {/* Download / Export Button */}
                                     <button
                                         onClick={() => handleDownloadFile(backup.id)}
-                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+                                        className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-primary hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                                         title="Download JSON file to share"
                                     >
-                                        <Icon name="download" className="text-[18px]" />
+                                        <Icon name="download" className="text-lg" />
                                     </button>
 
                                     {/* Delete Button */}
                                     <button
-                                        onClick={() => handleDeleteBackup(backup.id)}
-                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                                        onClick={() => setDeleteModalId(backup.id)}
+                                        className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-error hover:bg-md-error-container/20 transition-colors cursor-pointer"
                                         title="Delete backup snapshot"
                                     >
-                                        <Icon name="delete" className="text-[18px]" />
+                                        <Icon name="delete" className="text-lg" />
                                     </button>
 
                                     {/* Restore Button */}
                                     <button
-                                        onClick={() => handleRestore(backup.id)}
-                                        className="rounded-lg px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white active:scale-95 transition-all uppercase tracking-wider cursor-pointer ml-1"
+                                        onClick={() => setRestoreModalId(backup.id)}
+                                        className="rounded-full px-3.5 py-1 typescale-label-small font-bold text-md-primary bg-md-primary-container/40 hover:bg-md-primary-container transition-colors uppercase tracking-wider cursor-pointer ml-1"
                                     >
                                         Restore
                                     </button>
@@ -249,7 +246,7 @@ export const BackupRestorePage = () => {
                             </div>
                         ))}
                         {backups.length === 0 && (
-                            <div className="text-center py-8 text-gray-400 text-sm bg-white rounded-xl border border-dashed border-gray-200">
+                            <div className="text-center py-8 text-md-on-surface-variant typescale-body-medium bg-md-surface-container-low rounded-2xl border border-dashed border-md-outline-variant">
                                 No backup history available
                             </div>
                         )}
@@ -257,18 +254,54 @@ export const BackupRestorePage = () => {
                 </div>
 
                 {/* Info Section */}
-                <div className="rounded-xl bg-white p-4 border border-gray-100 shadow-sm">
+                <div className="rounded-2xl bg-md-surface-container-low p-4 border border-md-outline-variant/30 shadow-md-1">
                     <div className="flex items-start gap-3">
-                        <Icon name="info" className="text-primary/60 text-[20px] mt-0.5" />
+                        <Icon name="info" className="text-md-primary text-xl mt-0.5 shrink-0" />
                         <div className="flex flex-col gap-1">
-                            <p className="text-sm font-bold text-neutral-text">Cross-Device Backup Sharing</p>
-                            <p className="text-xs text-text-secondary leading-relaxed text-gray-500">
-                                Click the <Icon name="download" className="inline text-[13px] text-primary" /> download icon to export a `.json` backup file. You can send this file via WhatsApp, Email, or Bluetooth to another phone and use <strong>Import File</strong> to restore all your recipes and logs there!
+                            <p className="typescale-title-small font-bold text-md-on-surface">Cross-Device Backup Sharing</p>
+                            <p className="typescale-body-small text-md-on-surface-variant leading-relaxed">
+                                Click the <Icon name="download" className="inline text-sm text-md-primary" /> download icon to export a `.json` backup file. You can send this file via WhatsApp, Email, or Bluetooth to another phone and use <strong>Import File</strong> to restore all your recipes and logs there!
                             </p>
                         </div>
                     </div>
                 </div>
             </main>
+
+            {/* Restore Confirmation Modal */}
+            <Modal
+                isOpen={!!restoreModalId}
+                onClose={() => setRestoreModalId(null)}
+                onConfirm={confirmRestore}
+                title="Restore Backup?"
+                message="Are you sure you want to restore this backup? Your current recipes and brew logs will be replaced."
+                confirmText="Restore Data"
+                cancelText="Cancel"
+                type="warning"
+            />
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={!!deleteModalId}
+                onClose={() => setDeleteModalId(null)}
+                onConfirm={confirmDelete}
+                title="Delete Snapshot?"
+                message="Are you sure you want to delete this backup snapshot from your device storage?"
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="warning"
+            />
+
+            {/* Imported File Restore Confirmation Modal */}
+            <Modal
+                isOpen={!!importedModalId}
+                onClose={() => setImportedModalId(null)}
+                onConfirm={confirmImportRestore}
+                title="Import Successful"
+                message="Backup file imported successfully! Would you like to restore all data to your device now?"
+                confirmText="Restore Now"
+                cancelText="Later"
+                type="info"
+            />
         </div>
     );
 };

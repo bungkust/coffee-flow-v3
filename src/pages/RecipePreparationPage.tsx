@@ -6,7 +6,8 @@ import type { Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
-import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, getPourAmount, type UnitSystem } from '../shared/utils/brewMath';
+import { Button } from '../components/Button';
+import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,12 +20,7 @@ export const RecipePreparationPage = () => {
     const [selectedBeanId, setSelectedBeanId] = useState<string>('');
     const [filters, setFilters] = useState<PantryItem[]>([]);
     const [selectedFilterId, setSelectedFilterId] = useState<string>('');
-    const [checklist, setChecklist] = useState({
-        coffee: false,
-        water: false,
-        filter: false,
-        scale: false
-    });
+    const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
     const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
 
@@ -68,14 +64,10 @@ export const RecipePreparationPage = () => {
                 const availableFilters = pantryItems.filter(item => item.category === 'filter');
                 setFilters(availableFilters);
 
-                if (availableBeans.length > 0) {
-                    setSelectedBeanId(availableBeans[0].id);
-                }
-                if (availableFilters.length > 0) {
-                    setSelectedFilterId(availableFilters[0].id);
-                }
-            } catch (err) {
-                console.error('Error fetching recipe:', err);
+                if (availableBeans.length > 0) setSelectedBeanId(availableBeans[0].id);
+                if (availableFilters.length > 0) setSelectedFilterId(availableFilters[0].id);
+            } catch (error) {
+                console.error('Failed to load recipe:', error);
             } finally {
                 setLoading(false);
             }
@@ -83,22 +75,91 @@ export const RecipePreparationPage = () => {
         fetchRecipe();
     }, [id]);
 
+    // Dynamic Checklist Generator
+    const dynamicChecklist = recipe ? (() => {
+        const items: { id: string; label: string }[] = [];
+        const grind = recipe.grind_size || 'Medium';
+        const isIced = Boolean(
+            recipe.style?.toLowerCase().includes('iced') ||
+            recipe.name?.toLowerCase().includes('iced') ||
+            recipe.id?.toLowerCase().includes('iced') ||
+            recipe.steps?.some(s => s.instruction?.toLowerCase().includes('ice') || s.label?.toLowerCase().includes('ice'))
+        );
+
+        items.push({
+            id: 'coffee',
+            label: `Weigh ${formatWeight(adjustedCoffeeDose, unitSystem)} coffee & Grind (${grind})`
+        });
+
+        if (recipe.temperature && recipe.temperature > 0) {
+            items.push({
+                id: 'water',
+                label: `Heat ${formatVolume(adjustedWaterVolume, unitSystem)} water to ${recipe.temperature}°C`
+            });
+        }
+
+        if (isIced) {
+            const iceWeight = recipe.id === 'v60-kurasu-japanese-iced-pour-over'
+                ? Math.round(70 * (adjustedCoffeeDose / 16))
+                : Math.round(adjustedCoffeeDose * 4.375);
+            items.push({
+                id: 'ice',
+                label: `Prepare ${formatWeight(iceWeight, unitSystem)} ice cubes directly into server`
+            });
+        }
+
+        if (recipe.method_id === 'aeropress') {
+            const isInverted = recipe.description_detailed?.toLowerCase().includes('inverted') || recipe.steps?.some(s => s.instruction?.toLowerCase().includes('inverted'));
+            items.push({
+                id: 'filter',
+                label: `Rinse paper filter & setup AeroPress (${isInverted ? 'Inverted position' : 'Standard position'})`
+            });
+        } else if (recipe.method_id === 'espresso') {
+            items.push({
+                id: 'filter',
+                label: 'Preheat espresso machine & portafilter basket'
+            });
+        } else {
+            items.push({
+                id: 'filter',
+                label: 'Rinse filter paper & preheat dripper'
+            });
+        }
+
+        items.push({
+            id: 'scale',
+            label: 'Add coffee grounds to brewer & tare scale'
+        });
+
+        return items;
+    })() : [];
+
+    const toggleCheck = (itemId: string) => {
+        setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const totalChecklistItems = dynamicChecklist.length;
+    const checkedCount = dynamicChecklist.filter(item => checkedItems[item.id]).length;
+    const isReady = dynamicChecklist.length > 0 && checkedCount === dynamicChecklist.length
+        && (beans.length === 0 || selectedBeanId !== '')
+        && (filters.length === 0 || selectedFilterId !== '');
+
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
     if (!recipe) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-white p-6 text-center">
-                <Icon name="error" className="text-5xl text-red-400 mb-4" />
-                <h2 className="text-xl font-bold text-neutral-text">Recipe not found</h2>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-md-surface p-6 text-center">
+                <Icon name="error" className="text-5xl text-md-error mb-4" />
+                <h2 className="typescale-title-large font-bold text-md-on-surface">Recipe not found</h2>
                 <button
                     onClick={() => navigate('/recipes')}
-                    className="mt-4 text-primary font-bold hover:underline"
+                    className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to recipes
                 </button>
@@ -113,134 +174,147 @@ export const RecipePreparationPage = () => {
         }
     };
 
-    const toggleCheck = (key: keyof typeof checklist) => {
-        setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const isReady = checklist.coffee && checklist.water && checklist.filter && checklist.scale
-        && (beans.length === 0 || selectedBeanId !== '')
-        && (filters.length === 0 || selectedFilterId !== '');
-
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white shadow-2xl pb-32 font-display text-[#181411]">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md pt-12 pb-4 px-6 flex items-center justify-between border-b border-gray-50">
-                <div className="flex items-center gap-2">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-[#181411] hover:bg-gray-100 transition-colors cursor-pointer"
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
                     >
-                        <Icon name="arrow_back" className="text-[24px]" />
+                        <Icon name="arrow_back" className="text-2xl" />
                     </button>
-                    <span className="text-lg font-bold text-[#181411]">Preparation</span>
+                    <span className="typescale-headline-small font-bold text-md-on-surface">Preparation</span>
                 </div>
+            </header>
+
+            {/* Preparation Banner Title */}
+            <div className="px-5 py-5 border-b border-md-outline-variant/20 bg-md-surface-container-low/60 space-y-1">
+                <span className="typescale-label-medium font-bold text-md-primary uppercase tracking-wider">Ready to Brew?</span>
+                <h1 className="typescale-headline-small font-bold text-md-on-surface leading-tight">{recipe.name}</h1>
+                <p className="typescale-body-small text-md-on-surface-variant">Make sure you have everything ready before we start the timer.</p>
             </div>
 
-            {/* Preparation Title */}
-            <div className="px-6 py-6 border-b border-gray-50 bg-gray-50/30">
-                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Ready to Brew?</span>
-                <h1 className="text-2xl font-bold text-[#181411] leading-tight mt-1">{recipe.name}</h1>
-                <p className="text-sm text-gray-500 mt-2">Make sure you have everything ready before we start the timer.</p>
-            </div>
-
-            {/* Stats Quad */}
-            <div className="px-6 py-6">
-                <div className="grid grid-cols-4 gap-2 mb-6">
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">
+            <main className="flex-1 px-5 pt-4 space-y-5">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
+                        <Icon name="coffee" className="text-md-primary mb-1 text-xl" />
+                        <span className="typescale-title-small font-bold text-md-on-surface">
                             {formatWeight(adjustedCoffeeDose, unitSystem)}
                         </span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Coffee</span>
+                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Coffee</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <Icon name="water_drop" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{formatVolume(adjustedWaterVolume, unitSystem)}</span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Water</span>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
+                        <Icon name="water_drop" className="text-md-primary mb-1 text-xl" />
+                        <span className="typescale-title-small font-bold text-md-on-surface">{formatVolume(adjustedWaterVolume, unitSystem)}</span>
+                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Water</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <Icon name="thermostat" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{recipe.temperature}°C</span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Temp</span>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
+                        <Icon name="thermostat" className="text-md-primary mb-1 text-xl" />
+                        <span className="typescale-title-small font-bold text-md-on-surface">{recipe.temperature}°C</span>
+                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Temp</span>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <Icon name="grain" className="text-primary mb-1 text-[20px]" />
-                        <span className="text-sm font-bold text-[#181411]">{recipe.grind_size || 'Coarse'}</span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold mt-0.5">Grind</span>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
+                        <Icon name="grain" className="text-md-primary mb-1 text-xl" />
+                        <span className="typescale-title-small font-bold text-md-on-surface line-clamp-1">{recipe.grind_size || 'Coarse'}</span>
+                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Grind</span>
                     </div>
                 </div>
 
                 {/* Dose Adjuster Card */}
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4 mb-6">
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Adjust Brew Dose</span>
-                        <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">Ratio {recipe.ratio}</span>
+                        <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Adjust Brew Dose</span>
+                        <span className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1 rounded-full">Ratio {recipe.ratio}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4 py-2">
+                    <div className="flex items-center justify-between gap-4 py-1">
                         <button
                             onClick={() => handleAdjustDose(-1)}
-                            className="w-12 h-12 rounded-full border border-gray-200 hover:border-primary/20 hover:bg-primary/5 text-gray-500 hover:text-primary transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+                            className="size-12 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
                         >
                             -
                         </button>
                         <div className="flex flex-col items-center flex-1">
-                            <span className="text-3xl font-extrabold text-[#181411] tracking-tight tabular-nums">{adjustedCoffeeDose.toFixed(1)}g</span>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Coffee Target</span>
+                            <span className="typescale-headline-medium font-extrabold text-md-on-surface tracking-tight tabular-nums">{adjustedCoffeeDose.toFixed(1)}g</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 font-bold uppercase tracking-wider mt-0.5">Coffee Target</span>
                         </div>
                         <button
                             onClick={() => handleAdjustDose(1)}
-                            className="w-12 h-12 rounded-full border border-gray-200 hover:border-primary/20 hover:bg-primary/5 text-gray-500 hover:text-primary transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+                            className="size-12 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
                         >
                             +
                         </button>
                     </div>
-                    <div className="h-px bg-gray-100"></div>
+                    <div className="h-px bg-md-outline-variant/20"></div>
                     <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
-                            <span className="text-xs font-semibold text-gray-400 block mb-0.5">Scaled Water</span>
-                            <span className="text-base font-extrabold text-[#181411] tabular-nums">{Math.round(adjustedWaterVolume)}ml</span>
+                            <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">Scaled Water</span>
+                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{Math.round(adjustedWaterVolume)}ml</span>
                         </div>
                         <div>
-                            <span className="text-xs font-semibold text-gray-400 block mb-0.5">Scale Ratio</span>
-                            <span className="text-base font-extrabold text-[#181411] tabular-nums">{Math.round((adjustedCoffeeDose / initialCoffeeDose) * 100)}%</span>
+                            <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">Scale Ratio</span>
+                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{Math.round((adjustedCoffeeDose / initialCoffeeDose) * 100)}%</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Scaled Steps Preview */}
                 {currentScaledRecipe && currentScaledRecipe.steps.length > 0 && (
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3 mb-6">
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Icon name="format_list_numbered" className="text-primary text-[16px]" />
+                            <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                                <Icon name="format_list_numbered" className="text-md-primary text-base" />
                                 Scaled Brew Steps
                             </span>
-                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-high px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
                                 {formatVolume(currentScaledRecipe.total_water || 0, unitSystem)} Total Water
                             </span>
                         </div>
-                        <div className="space-y-2 mt-1">
+                        <div className="space-y-3 mt-2">
                             {currentScaledRecipe.steps.map((step, idx) => {
                                 const pour = getPourAmount(currentScaledRecipe.steps, idx);
+                                const intervalInfo = getStepIntervalInfo(step);
                                 return (
-                                    <div key={step.id || idx} className="p-3 rounded-lg bg-gray-50/70 border border-gray-100/80 flex flex-col gap-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-[#181411]">
+                                    <div key={step.id || idx} className="p-4 rounded-2xl bg-md-surface-container-high/60 border border-md-outline-variant/20 space-y-2">
+                                        {/* Row 1: Title & Duration Pill */}
+                                        <div className="flex items-start justify-between gap-3">
+                                            <h4 className="typescale-title-small font-bold text-md-on-surface flex-1 min-w-0 leading-snug">
                                                 {idx + 1}. {step.label}
+                                            </h4>
+                                            <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full shrink-0 border border-md-outline-variant/20">
+                                                {step.duration_seconds}s
                                             </span>
-                                            <div className="flex items-center gap-2">
-                                                {typeof step.target_weight === 'number' && step.target_weight > 0 && (
-                                                    <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                                                        +{formatWeight(pour, unitSystem)} (Target: {formatWeight(step.target_weight, unitSystem)})
-                                                    </span>
-                                                )}
-                                                <span className="text-xs font-semibold text-gray-400">
-                                                    {step.duration_seconds}s
-                                                </span>
-                                            </div>
                                         </div>
+
+                                        {/* Row 2: Target, Pour Amount & Interval Chips */}
+                                        <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0 && (
+                                                <>
+                                                    <span className="inline-flex items-center gap-1 typescale-label-small font-extrabold text-md-primary bg-md-primary-container/40 px-2.5 py-0.5 rounded-full border border-md-primary/20">
+                                                        <Icon name="water_drop" className="text-xs" />
+                                                        +{formatWeight(pour, unitSystem)}
+                                                    </span>
+                                                    <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
+                                                        <Icon name="scale" className="text-xs text-md-on-surface-variant/70" />
+                                                        Target: {formatWeight(step.target_weight, unitSystem)}
+                                                    </span>
+                                                </>
+                                            )}
+
+                                            {intervalInfo.restSeconds > 0 && (
+                                                <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-secondary bg-md-secondary-container/40 px-2.5 py-0.5 rounded-full border border-md-secondary/20">
+                                                    <Icon name="hourglass_empty" className="text-xs" />
+                                                    Rest: {intervalInfo.restSeconds}s
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Row 3: Step Instruction */}
                                         {step.instruction && (
-                                            <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
+                                            <p className="typescale-body-small text-md-on-surface-variant leading-relaxed pt-0.5">
                                                 {step.instruction}
                                             </p>
                                         )}
@@ -252,7 +326,7 @@ export const RecipePreparationPage = () => {
                 )}
 
                 {/* Bean Selection */}
-                <div className="mb-4">
+                <div>
                     {beans.length > 0 ? (
                         <Dropdown
                             label="Choose Beans from Pantry"
@@ -265,14 +339,14 @@ export const RecipePreparationPage = () => {
                         />
                     ) : (
                         <div className="flex flex-col gap-2">
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                                <Icon name="inventory_2" className="text-[16px]" /> Choose Beans from Pantry
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
+                                <Icon name="inventory_2" className="text-base" /> Choose Beans from Pantry
                             </label>
-                            <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-500">No beans available</span>
+                            <div className="p-4 bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl flex items-center justify-between shadow-md-1">
+                                <span className="typescale-body-medium text-md-on-surface-variant font-medium">No beans available</span>
                                 <button
                                     onClick={() => navigate('/pantry/add/beans')}
-                                    className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
+                                    className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                                 >
                                     Add Beans
                                 </button>
@@ -282,7 +356,7 @@ export const RecipePreparationPage = () => {
                 </div>
 
                 {/* Filter Selection */}
-                <div className="mb-2">
+                <div>
                     {filters.length > 0 ? (
                         <Dropdown
                             label="Choose Filter from Pantry"
@@ -295,14 +369,14 @@ export const RecipePreparationPage = () => {
                         />
                     ) : (
                         <div className="flex flex-col gap-2">
-                            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
-                                <Icon name="filter_list" className="text-[16px]" /> Choose Filter from Pantry
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
+                                <Icon name="filter_list" className="text-base" /> Choose Filter from Pantry
                             </label>
-                            <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-500">No filters available</span>
+                            <div className="p-4 bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl flex items-center justify-between shadow-md-1">
+                                <span className="typescale-body-medium text-md-on-surface-variant font-medium">No filters available</span>
                                 <button
                                     onClick={() => navigate('/pantry/add/filter')}
-                                    className="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-lg hover:bg-primary/20 transition-colors"
+                                    className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                                 >
                                     Add Filters
                                 </button>
@@ -310,49 +384,47 @@ export const RecipePreparationPage = () => {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Checklist Section */}
-            <div className="px-6 pb-32">
-                <h2 className="text-lg font-bold text-[#181411] mb-5 flex items-center gap-2">
-                    <Icon name="checklist" className="text-primary" />
-                    Preparation Checklist
-                </h2>
-                <div className="space-y-3">
-                    <CheckItem
-                        label={`Weigh ${formatWeight(adjustedCoffeeDose, unitSystem)} coffee & Grind (${recipe.grind_size || 'Medium'})`}
-                        checked={checklist.coffee}
-                        onToggle={() => toggleCheck('coffee')}
-                    />
-                    <CheckItem
-                        label={`Heat ${formatVolume(adjustedWaterVolume, unitSystem)} water to ${recipe.temperature}°C`}
-                        checked={checklist.water}
-                        onToggle={() => toggleCheck('water')}
-                    />
-                    <CheckItem
-                        label="Rinse filter paper & preheat dripper"
-                        checked={checklist.filter}
-                        onToggle={() => toggleCheck('filter')}
-                    />
-                    <CheckItem
-                        label="Add coffee to dripper & tare scale"
-                        checked={checklist.scale}
-                        onToggle={() => toggleCheck('scale')}
-                    />
+                {/* Checklist Section */}
+                <div className="pt-2">
+                    <div className="flex items-center justify-between mb-3.5">
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface flex items-center gap-2">
+                            <Icon name="checklist" className="text-md-primary" />
+                            Preparation Checklist
+                        </h2>
+                        <span className={`typescale-label-small font-bold px-2.5 py-0.5 rounded-full border ${
+                            isReady
+                                ? 'bg-md-primary-container text-md-on-primary-container border-md-primary/20'
+                                : 'bg-md-surface-container-high text-md-on-surface-variant border-md-outline-variant/30'
+                        }`}>
+                            {checkedCount}/{totalChecklistItems} Checked
+                        </span>
+                    </div>
+                    <div className="space-y-2.5">
+                        {dynamicChecklist.map((item) => (
+                            <CheckItem
+                                key={item.id}
+                                label={item.label}
+                                checked={Boolean(checkedItems[item.id])}
+                                onToggle={() => toggleCheck(item.id)}
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </main>
 
             {/* Sticky Action Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent max-w-md mx-auto z-20">
-                <button
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 max-w-md mx-auto z-20">
+                <Button
+                    variant="filled"
+                    size="lg"
                     onClick={handleProceedToBrew}
                     disabled={!isReady}
-                    className={`w-full py-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer font-bold ${isReady ? 'bg-primary text-white shadow-primary/30' : 'bg-gray-100 text-gray-400 grayscale cursor-not-allowed'
-                        }`}
+                    className="w-full"
                 >
-                    <Icon name="timer" />
-                    I'm Ready, Start Timer
-                </button>
+                    <Icon name={isReady ? "timer" : "lock"} className="text-xl" />
+                    <span>{isReady ? "I'm Ready, Start Timer" : "Complete Checklist to Start"}</span>
+                </Button>
             </div>
         </div>
     );
@@ -361,14 +433,17 @@ export const RecipePreparationPage = () => {
 const CheckItem = ({ label, checked, onToggle }: { label: string, checked: boolean, onToggle: () => void }) => (
     <button
         onClick={onToggle}
-        className={`flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer w-full text-left ${checked ? 'bg-primary-light/30 border-primary/20' : 'bg-white border-gray-100'
-            }`}
+        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer w-full text-left shadow-md-1 ${
+            checked
+                ? 'bg-md-secondary-container text-md-on-secondary-container border-md-primary'
+                : 'bg-md-surface-container-low text-md-on-surface border-md-outline-variant/30 hover:bg-md-surface-container-high'
+        }`}
     >
-        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${checked ? 'bg-primary border-primary text-white' : 'border-gray-200'
-            }`}>
-            {checked && <Icon name="check" className="text-[16px] font-bold" />}
+        <div className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
+            checked ? 'bg-md-primary border-md-primary text-md-on-primary' : 'border-md-outline-variant text-transparent'
+        }`}>
+            <Icon name="check" className="text-base font-bold" />
         </div>
-        <span className={`text-sm font-bold ${checked ? 'text-primary' : 'text-[#181411]'}`}>{label}</span>
+        <span className={`typescale-body-medium font-bold ${checked ? 'text-md-on-secondary-container' : 'text-md-on-surface'}`}>{label}</span>
     </button>
 );
-

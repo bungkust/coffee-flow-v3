@@ -73,13 +73,10 @@ export const SettingsPage = () => {
     const confirmDeleteData = async () => {
         try {
             await settingsService.clearUserData();
-            // Re-seed to ensure base data is present (restores default recipes to their original state)
             await seedInitialData();
-            alert('All user data has been deleted. The app will now reload.');
             window.location.reload();
         } catch (error) {
             console.error('Failed to delete data:', error);
-            alert('Failed to delete data. Please try again.');
             setShowDeleteModal(false);
         }
     };

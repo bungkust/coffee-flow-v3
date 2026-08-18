@@ -12,6 +12,7 @@ export const ENHANCED_SCHEMA = `
     name TEXT NOT NULL,
     description TEXT,
     icon TEXT,
+    category TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT
@@ -259,6 +260,12 @@ export const MIGRATIONS = [
     version: 11,
     sql: `
       ALTER TABLE drinks ADD COLUMN image_url TEXT;
+    `
+  },
+  {
+    version: 12,
+    sql: `
+      ALTER TABLE brewing_methods ADD COLUMN category TEXT;
     `
   }
 ];

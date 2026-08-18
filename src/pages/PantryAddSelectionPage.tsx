@@ -33,67 +33,69 @@ export const PantryAddSelectionPage = () => {
     };
 
     return (
-        <div className="flex h-screen w-full flex-col bg-background-light dark:bg-background-dark font-display relative overflow-hidden">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100 z-10 pt-12">
-                <button
-                    onClick={() => navigate('/pantry')}
-                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50 text-gray-400 trasition-colors -ml-2"
-                >
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <h1 className="text-lg font-bold text-neutral-text">Add Item</h1>
-                <div className="w-10"></div>
-            </div>
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/pantry')}
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
+                    >
+                        <Icon name="arrow_back" className="text-2xl" />
+                    </button>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">Add Pantry Item</h1>
+                </div>
+            </header>
 
             {/* Tab Selection */}
-            <div className="px-6 py-4 bg-white border-b border-gray-50 flex gap-4">
+            <div className="px-5 py-4 flex gap-3">
                 <button
                     onClick={() => setActiveTab('supplies')}
-                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider rounded-xl transition-colors ${activeTab === 'supplies'
-                            ? 'bg-primary text-white shadow-md'
-                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                        }`}
+                    className={`flex-1 py-3 typescale-label-medium font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer border ${
+                        activeTab === 'supplies'
+                            ? 'bg-md-secondary-container text-md-on-secondary-container border-md-primary shadow-sm'
+                            : 'bg-md-surface-container-low text-md-on-surface-variant border-md-outline-variant/30 hover:bg-md-surface-container-high'
+                    }`}
                 >
                     Supplies
                 </button>
                 <button
                     onClick={() => setActiveTab('gear')}
-                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider rounded-xl transition-colors ${activeTab === 'gear'
-                            ? 'bg-primary text-white shadow-md'
-                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                        }`}
+                    className={`flex-1 py-3 typescale-label-medium font-bold uppercase tracking-wider rounded-full transition-all cursor-pointer border ${
+                        activeTab === 'gear'
+                            ? 'bg-md-secondary-container text-md-on-secondary-container border-md-primary shadow-sm'
+                            : 'bg-md-surface-container-low text-md-on-surface-variant border-md-outline-variant/30 hover:bg-md-surface-container-high'
+                    }`}
                 >
                     Gear
                 </button>
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 scrollbar-hide">
-                <p className="text-sm font-semibold text-gray-500 mb-4 px-1">
+            <main className="flex-1 px-5 py-2 space-y-3">
+                <p className="typescale-body-small font-medium text-md-on-surface-variant px-1">
                     What would you like to add to your pantry?
                 </p>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="flex flex-col gap-3">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => handleSelect(cat.id)}
-                            className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:border-primary/40 focus:border-primary transition-all text-left"
+                            className="group flex items-center gap-4 p-4 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 hover:bg-md-surface-container-high hover:border-md-primary/40 transition-all active:scale-[0.98] cursor-pointer shadow-md-1 text-left"
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
-                                    <Icon name={cat.icon} className="text-primary text-[24px]" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-neutral-text text-base">{cat.name}</h3>
-                                    <p className="text-xs text-gray-400 font-medium mt-0.5">{cat.desc}</p>
-                                </div>
+                            <div className="size-14 rounded-full bg-md-surface-container-highest flex items-center justify-center text-md-primary shrink-0 border border-md-outline-variant/20">
+                                <Icon name={cat.icon} className="text-2xl" />
                             </div>
-                            <Icon name="chevron_right" className="text-gray-300" />
+                            <div className="flex-1 min-w-0">
+                                <h3 className="typescale-title-medium font-bold text-md-on-surface line-clamp-1 mb-0.5">{cat.name}</h3>
+                                <p className="typescale-body-small text-md-on-surface-variant line-clamp-1">{cat.desc}</p>
+                            </div>
+                            <Icon name="chevron_right" className="text-md-on-surface-variant/40 text-xl group-hover:translate-x-0.5 transition-transform shrink-0" />
                         </button>
                     ))}
                 </div>
-            </div>
+            </main>
         </div>
     );
 };

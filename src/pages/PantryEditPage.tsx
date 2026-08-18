@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
 import { pantryService } from '../core/services';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
@@ -51,18 +52,18 @@ export const PantryEditPage = () => {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-background-light">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+            <div className="flex min-h-screen items-center justify-center bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
 
     if (!item) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-background-light p-6 text-center">
-                <Icon name="error" className="mb-4 text-5xl text-red-400" />
-                <h1 className="text-xl font-bold text-neutral-text">Item not found</h1>
-                <button onClick={() => navigate('/pantry')} className="mt-4 font-bold text-primary">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-md-surface p-6 text-center">
+                <Icon name="error" className="mb-4 text-5xl text-md-error" />
+                <h1 className="typescale-title-large font-bold text-md-on-surface">Item not found</h1>
+                <button onClick={() => navigate('/pantry')} className="mt-4 font-bold text-md-primary hover:underline cursor-pointer">
                     Back to pantry
                 </button>
             </div>
@@ -70,74 +71,104 @@ export const PantryEditPage = () => {
     }
 
     return (
-        <div className="flex h-auto min-h-screen w-full max-w-md flex-col overflow-x-hidden bg-background-light font-display text-neutral-text shadow-2xl mx-auto">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 pb-4 pt-12">
-                <button onClick={() => navigate(-1)} className="-ml-2 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 hover:bg-gray-50">
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <h1 className="text-lg font-bold">Edit Item</h1>
-                <button onClick={handleSave} disabled={saving} className="font-bold text-primary disabled:opacity-50">
-                    {saving ? 'Saving' : 'Save'}
-                </button>
-            </div>
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+            {/* Header */}
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            aria-label="Go back"
+                        >
+                            <Icon name="arrow_back" className="text-2xl" />
+                        </button>
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">Edit Item</h1>
+                    </div>
+                </div>
+            </header>
 
-            <main className="space-y-5 px-6 py-6">
-                {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{error}</div>}
+            <main className="flex-1 px-5 pt-4 space-y-6">
+                {error && (
+                    <div className="rounded-2xl border border-md-error/30 bg-md-error-container/30 px-4 py-3 typescale-body-medium font-bold text-md-error">
+                        {error}
+                    </div>
+                )}
 
-                <Field label="Name">
-                    <input
-                        value={item.name}
-                        onChange={(event) => setItem({ ...item, name: event.target.value })}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                    />
-                </Field>
-                <Field label="Brand / Roastery">
-                    <input
-                        value={item.brand || ''}
-                        onChange={(event) => setItem({ ...item, brand: event.target.value })}
-                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                    />
-                </Field>
-                <div className="grid grid-cols-2 gap-4">
-                    <Field label="Quantity">
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                    <Field label="Name">
                         <input
-                            type="number"
-                            min="0"
-                            value={item.quantity ?? ''}
-                            onChange={(event) => setItem({ ...item, quantity: event.target.value ? Number(event.target.value) : undefined })}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
+                            value={item.name}
+                            onChange={(event) => setItem({ ...item, name: event.target.value })}
+                            className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
                         />
                     </Field>
-                    <Field label="Unit">
-                        <select
-                            value={item.unit || ''}
-                            onChange={(event) => setItem({ ...item, unit: event.target.value as PantryItem['unit'] })}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                        >
-                            <option value="">None</option>
-                            <option value="g">g</option>
-                            <option value="ml">ml</option>
-                            <option value="pcs">pcs</option>
-                            <option value="%">%</option>
-                        </select>
+
+                    <Field label="Brand / Roastery">
+                        <input
+                            value={item.brand || ''}
+                            onChange={(event) => setItem({ ...item, brand: event.target.value })}
+                            className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                        />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Field label="Quantity">
+                            <input
+                                type="number"
+                                min="0"
+                                value={item.quantity ?? ''}
+                                onChange={(event) => setItem({ ...item, quantity: event.target.value ? Number(event.target.value) : undefined })}
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                            />
+                        </Field>
+
+                        <Field label="Unit">
+                            <select
+                                value={item.unit || ''}
+                                onChange={(event) => setItem({ ...item, unit: event.target.value as PantryItem['unit'] })}
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                            >
+                                <option value="">None</option>
+                                <option value="g">g</option>
+                                <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                                <option value="%">%</option>
+                            </select>
+                        </Field>
+                    </div>
+
+                    <Field label="Notes">
+                        <textarea
+                            value={item.description || ''}
+                            onChange={(event) => setItem({ ...item, description: event.target.value })}
+                            rows={4}
+                            className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40 resize-none"
+                        />
                     </Field>
                 </div>
-                <Field label="Notes">
-                    <textarea
-                        value={item.description || ''}
-                        onChange={(event) => setItem({ ...item, description: event.target.value })}
-                        rows={4}
-                        className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                    />
-                </Field>
             </main>
+
+            {/* Sticky Bottom Actions */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+                <Button
+                    variant="filled"
+                    size="lg"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full"
+                >
+                    <Icon name="save" className="text-xl" />
+                    <span>{saving ? 'Saving...' : 'Save Item'}</span>
+                </Button>
+            </div>
         </div>
     );
 };
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <label className="block">
-        <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">{label}</span>
+    <label className="block space-y-1.5">
+        <span className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant block">{label}</span>
         {children}
     </label>
 );

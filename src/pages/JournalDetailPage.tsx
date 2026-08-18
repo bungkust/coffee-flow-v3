@@ -1,32 +1,46 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
+import { Modal } from '../components/Modal';
 import { brewService, drinkService } from '../core/services';
 import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/entities';
 
-type JournalLog = BrewLogWithRecipe | DrinkLogWithDrink;
-
 export const JournalDetailPage = () => {
-    const { type, id } = useParams<{ type: 'brews' | 'drinks'; id: string }>();
+    const { id } = useParams<{ id: string }>();
+    const [searchParams] = useSearchParams();
+    const type = searchParams.get('type') || 'brews';
     const navigate = useNavigate();
-    const [log, setLog] = useState<JournalLog | null>(null);
-    const [rating, setRating] = useState(4);
+
+    const [log, setLog] = useState<BrewLogWithRecipe | DrinkLogWithDrink | null>(null);
+    const [rating, setRating] = useState(0);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
-        const loadLog = async () => {
-            if (!id || !type) return;
-            const data = type === 'brews' ? await brewService.getLog(id) : await drinkService.getLog(id);
-            setLog(data);
-            setRating(data?.rating || 4);
-            setNotes(data?.notes || '');
-        };
-        loadLog().catch((error) => console.error('Failed to load journal log:', error));
+        if (!id) return;
+        if (type === 'brews') {
+            brewService.getLog(id).then((data) => {
+                setLog(data);
+                if (data) {
+                    setRating(data.rating || 0);
+                    setNotes(data.notes || '');
+                }
+            });
+        } else {
+            drinkService.getLog(id).then((data) => {
+                setLog(data);
+                if (data) {
+                    setRating(data.rating || 0);
+                    setNotes(data.notes || '');
+                }
+            });
+        }
     }, [id, type]);
 
     const handleSave = async () => {
-        if (!log || !type) return;
+        if (!log) return;
         setSaving(true);
         try {
             if (type === 'brews') {
@@ -42,53 +56,112 @@ export const JournalDetailPage = () => {
         }
     };
 
-    const handleDelete = async () => {
-        if (!id || !type || !confirm('Delete this journal entry?')) return;
-        if (type === 'brews') await brewService.deleteLog(id);
-        else await drinkService.deleteLog(id);
-        navigate(`/journal?tab=${type}`);
+    const confirmDelete = async () => {
+        if (!id || !type) return;
+        try {
+            if (type === 'brews') await brewService.deleteLog(id);
+            else await drinkService.deleteLog(id);
+            navigate(`/journal?tab=${type}`);
+        } catch (error) {
+            console.error('Failed to delete log:', error);
+        } finally {
+            setIsDeleteModalOpen(false);
+        }
     };
 
-    if (!log) return <div className="flex min-h-screen items-center justify-center bg-background-light"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
+    if (!log) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
-    const title = 'recipe_name' in log ? log.recipe_name : log.drink_name;
-    const subtitle = 'method_id' in log ? log.method_id.toUpperCase() : log.category;
+    const brewLog = log as BrewLogWithRecipe;
+    const drinkLog = log as DrinkLogWithDrink;
+    const title = type === 'brews' ? (brewLog.recipe_name || 'Brew Log') : (drinkLog.drink_name || 'Drink Log');
 
     return (
-        <div className="flex min-h-screen w-full max-w-md flex-col bg-white font-display text-neutral-text shadow-2xl mx-auto">
-            <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white px-6 pb-4 pt-12">
-                <button onClick={() => navigate(-1)} className="-ml-2 flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-50">
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <div>
-                    <h1 className="text-lg font-bold">{title}</h1>
-                    <p className="text-xs font-medium text-gray-500">{subtitle}</p>
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer shrink-0"
+                            aria-label="Go back"
+                        >
+                            <Icon name="arrow_back" className="text-2xl" />
+                        </button>
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface truncate">{title}</h1>
+                    </div>
+                    <button
+                        onClick={() => setIsDeleteModalOpen(true)}
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-error hover:bg-md-error-container/20 transition-colors cursor-pointer shrink-0"
+                        title="Delete Entry"
+                    >
+                        <Icon name="delete" className="text-xl" />
+                    </button>
                 </div>
-            </div>
-            <main className="flex-1 space-y-8 px-6 py-8">
-                <div className="flex justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                        const displayRating = Math.min(5, Math.max(0, rating));
-                        return (
-                            <button key={star} onClick={() => setRating(star)}>
-                                <Icon name="star" className={`text-[40px] ${displayRating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }} />
+            </header>
+
+            <main className="flex-1 px-5 py-5 space-y-6">
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3 text-center">
+                    <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider block">Rating</span>
+                    <div className="flex justify-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                                key={star}
+                                type="button"
+                                onClick={() => setRating(star)}
+                                className="p-1 transition-transform active:scale-95 cursor-pointer"
+                            >
+                                <Icon
+                                    name="star"
+                                    className={`text-3xl ${star <= rating ? 'text-amber-500' : 'text-md-outline-variant/40'}`}
+                                    style={star <= rating ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                                />
                             </button>
-                        );
-                    })}
+                        ))}
+                    </div>
                 </div>
-                <label className="block">
-                    <span className="mb-3 block text-lg font-bold">Notes</span>
-                    <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={6} className="w-full resize-none rounded-2xl bg-gray-50 p-4 outline-none focus:ring-2 focus:ring-primary/20" />
-                </label>
+
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-2">
+                    <label className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider block">Tasting Notes</label>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={5}
+                        className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl p-3.5 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none resize-none placeholder:text-md-on-surface-variant/50"
+                        placeholder="Add tasting notes, acidity, body, or adjustments..."
+                    />
+                </div>
             </main>
-            <div className="sticky bottom-0 space-y-3 border-t border-gray-100 bg-white p-6">
-                <button onClick={handleSave} disabled={saving} className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-white disabled:opacity-50">
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-                <button onClick={handleDelete} className="w-full rounded-2xl bg-red-50 py-3 font-bold text-red-600">
-                    Delete Entry
-                </button>
+
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+                <Button
+                    variant="filled"
+                    size="lg"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full"
+                >
+                    <Icon name="save" className="text-xl" />
+                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                </Button>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Journal Entry?"
+                message="Are you sure you want to delete this journal entry? This action cannot be undone."
+                confirmText="Delete Entry"
+                cancelText="Cancel"
+                type="warning"
+            />
         </div>
     );
 };

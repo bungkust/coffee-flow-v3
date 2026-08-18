@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
-import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, sumStepDuration, getPourAmount, type UnitSystem } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, sumStepDuration, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -31,27 +31,26 @@ export const RecipeDetailPage = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background-light">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
     if (!recipe) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-background-light p-6 text-center">
-                <Icon name="error" className="text-5xl text-red-400 mb-4" />
-                <h2 className="text-xl font-bold text-neutral-text">Recipe not found</h2>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-md-surface p-6 text-center">
+                <Icon name="error" className="text-5xl text-md-error mb-4" />
+                <h2 className="typescale-title-large font-bold text-md-on-surface">Recipe not found</h2>
                 <button
                     onClick={() => navigate('/recipes')}
-                    className="mt-4 text-primary font-bold hover:underline"
+                    className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to recipes
                 </button>
             </div>
         );
     }
-
 
     const stepsWithRunningTotal = recipe.steps.map(step => {
         return {
@@ -67,122 +66,118 @@ export const RecipeDetailPage = () => {
     const notRecommendedTags = recipe.not_recommended_tags || [];
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-28 font-display text-neutral-text">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100 transition-all">
-                <div className="flex items-center justify-between mb-2">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                         >
-                            <Icon name="arrow_back" className="text-[24px]" />
+                            <Icon name="arrow_back" className="text-2xl" />
                         </button>
-                        <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight line-clamp-1">
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">
                             {recipe.name}
                         </h1>
                     </div>
                     <button
                         onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
-                        className="flex items-center justify-center w-10 h-10 -mr-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                     >
-                        <Icon name="edit" className="text-[24px]" />
+                        <Icon name="edit" className="text-2xl" />
                     </button>
                 </div>
-            </div>
+            </header>
 
-            {/* Main Content Content */}
-            <div className="flex flex-col px-4 pt-4 gap-4">
-
+            {/* Main Content */}
+            <main className="flex-1 px-5 pt-4 space-y-4">
                 {/* About Card */}
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex flex-col gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-1 rounded-md">{recipe.method_id}</span>
-                            {recipe.difficulty && (
-                                <span className={`text-xs px-2 py-1 rounded-md font-bold uppercase tracking-wide ${recipe.difficulty === 'Beginner' ? 'bg-green-100 text-green-700' :
-                                    recipe.difficulty === 'Intermediate' ? 'bg-orange-100 text-orange-700' :
-                                        'bg-red-100 text-red-700'
-                                    }`}>
-                                    {recipe.difficulty}
-                                </span>
-                            )}
-                            {recipe.style && (
-                                <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
-                                    <Icon name="style" className="text-[14px] text-gray-500" />
-                                    <span className="text-xs font-bold text-gray-600">{recipe.style}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {recipe.description_short && (
-                            <p className="text-lg font-bold text-neutral-text leading-tight">
-                                {recipe.description_short}
-                            </p>
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="typescale-label-medium text-md-primary font-bold uppercase tracking-wider bg-md-primary-container/40 px-3 py-1 rounded-full">
+                            {recipe.method_id}
+                        </span>
+                        {recipe.difficulty && (
+                            <span className="typescale-label-medium px-3 py-1 rounded-full font-bold uppercase tracking-wider bg-md-secondary-container text-md-on-secondary-container">
+                                {recipe.difficulty}
+                            </span>
                         )}
-
-                        {recipe.description_detailed && (
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                {recipe.description_detailed}
-                            </p>
-                        )}
-
-                        {recipe.philosophy && (
-                            <div className="mt-1 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                <p className="text-gray-600 text-xs italic leading-relaxed">
-                                    "{recipe.philosophy}"
-                                </p>
+                        {recipe.style && (
+                            <div className="flex items-center gap-1 bg-md-surface-container-high px-3 py-1 rounded-full text-md-on-surface-variant">
+                                <Icon name="style" className="text-sm" />
+                                <span className="typescale-label-medium font-bold">{recipe.style}</span>
                             </div>
                         )}
                     </div>
+
+                    {recipe.description_short && (
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface leading-snug">
+                            {recipe.description_short}
+                        </h2>
+                    )}
+
+                    {recipe.description_detailed && (
+                        <p className="typescale-body-medium text-md-on-surface-variant leading-relaxed">
+                            {recipe.description_detailed}
+                        </p>
+                    )}
+
+                    {recipe.philosophy && (
+                        <div className="p-3.5 bg-md-surface-container-high rounded-xl border border-md-outline-variant/20">
+                            <p className="typescale-body-small text-md-on-surface-variant italic leading-relaxed">
+                                "{recipe.philosophy}"
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Stats Card */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="bg-md-surface-container-low p-4 rounded-2xl border border-md-outline-variant/30 shadow-md-1">
                     <div className="grid grid-cols-3 gap-2 mb-2">
-                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
-                            <Icon name="coffee" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="coffee" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface">
                                 {hasValidRatio ? formatWeight(coffeeDose, unitSystem) : '—'}
                             </span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Coffee</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Coffee</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
-                            <Icon name="water_drop" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.total_water ? formatVolume(recipe.total_water, unitSystem) : '—'}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Water</span>
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="water_drop" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface">{recipe.total_water ? formatVolume(recipe.total_water, unitSystem) : '—'}</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Water</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
-                            <Icon name="thermostat" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.temperature ? `${recipe.temperature}°C` : '—'}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Temp</span>
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="thermostat" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface">{recipe.temperature ? `${recipe.temperature}°C` : '—'}</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Temp</span>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
-                            <Icon name="percent" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{recipe.ratio || '—'}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Ratio</span>
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="percent" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface">{recipe.ratio || '—'}</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Ratio</span>
                         </div>
-                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-50 border border-gray-50">
-                            <Icon name="timer" className="text-primary mb-1 text-[20px]" />
-                            <span className="text-sm font-bold text-neutral-text">{formatDuration(totalTime)}</span>
-                            <span className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5">Target Time</span>
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="timer" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface">{formatDuration(totalTime)}</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Target Time</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Tags Card (Conditional) */}
+                {/* Tags Card */}
                 {(bestForTags.length > 0 || notRecommendedTags.length > 0) && (
-                    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                         {bestForTags.length > 0 && (
                             <div>
-                                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Icon name="check_circle" className="text-[14px]" /> Best For
-                                </h2>
+                                <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <Icon name="check_circle" className="text-base text-md-primary" /> Best For
+                                </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {bestForTags.map(tag => (
-                                        <span key={tag} className="px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full border border-green-100">
+                                        <span key={tag} className="px-3 py-1 bg-md-primary-container/40 text-md-primary typescale-label-medium font-bold rounded-full border border-md-primary/20">
                                             {tag}
                                         </span>
                                     ))}
@@ -191,12 +186,12 @@ export const RecipeDetailPage = () => {
                         )}
                         {notRecommendedTags.length > 0 && (
                             <div>
-                                <h2 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                    <Icon name="cancel" className="text-[14px]" /> Not Recommended
-                                </h2>
+                                <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                    <Icon name="cancel" className="text-base text-md-error" /> Not Recommended
+                                </h3>
                                 <div className="flex flex-wrap gap-2">
                                     {notRecommendedTags.map(tag => (
-                                        <span key={tag} className="px-3 py-1 bg-red-50 text-red-700 text-xs font-bold rounded-full border border-red-100">
+                                        <span key={tag} className="px-3 py-1 bg-md-error-container/30 text-md-error typescale-label-medium font-bold rounded-full border border-md-error/20">
                                             {tag}
                                         </span>
                                     ))}
@@ -207,60 +202,76 @@ export const RecipeDetailPage = () => {
                 )}
 
                 {/* Steps Section */}
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-8">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400 mb-5 flex items-center gap-2">
-                        <Icon name="format_list_numbered" className="text-primary text-[18px]" />
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 mb-8">
+                    <h3 className="typescale-label-large font-bold uppercase tracking-wider text-md-on-surface-variant mb-5 flex items-center gap-2">
+                        <Icon name="format_list_numbered" className="text-md-primary text-xl" />
                         Brewing Steps
-                    </h2>
-                    <div className="relative pl-2 border-l-2 border-dashed border-gray-200 space-y-8 ml-2">
-                        {stepsWithRunningTotal.map((step, index) => (
-                            <div key={step.id} className="relative pl-6">
-                                <div className={`absolute -left-[17px] top-0 w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center border-4 border-white shadow-sm transition-transform hover:scale-110 ${index === 0 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
-                                    {index + 1}
-                                </div>
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="text-base font-bold text-neutral-text">{step.label}</h3>
-                                        {step.instruction && (
-                                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">{step.instruction}</p>
-                                        )}
+                    </h3>
+                    <div className="relative pl-2 border-l-2 border-dashed border-md-outline-variant/40 space-y-8 ml-2">
+                        {stepsWithRunningTotal.map((step, index) => {
+                            const intervalInfo = getStepIntervalInfo(step);
+                            return (
+                                <div key={step.id} className="relative pl-6 space-y-1.5">
+                                    <div className={`absolute -left-[17px] top-0 size-8 rounded-full typescale-label-medium font-bold flex items-center justify-center border-4 border-md-surface-container-low shadow-sm ${
+                                        index === 0 ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container-highest text-md-on-surface-variant'
+                                    }`}>
+                                        {index + 1}
                                     </div>
-                                    <div className="text-right shrink-0 ml-4 flex flex-col items-end">
-                                        <span className="text-sm font-bold text-primary flex items-center gap-1">
-                                            <Icon name="timer" className="text-[14px]" />
+                                    <div className="flex justify-between items-start gap-2">
+                                        <h4 className="typescale-title-medium font-bold text-md-on-surface flex-1 min-w-0 leading-snug">{step.label}</h4>
+                                        <span className="typescale-label-medium font-bold text-md-primary flex items-center gap-1 bg-md-primary-container/40 px-2.5 py-0.5 rounded-full shrink-0 border border-md-primary/20">
+                                            <Icon name="timer" className="text-xs" />
                                             {step.duration_seconds}s
                                         </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap pt-0.5">
                                         {step.isPour && step.target_weight && (
-                                            <span className="text-xs font-bold text-gray-400 mt-1 bg-gray-50 px-1.5 py-0.5 rounded-md">
-                                                +{getPourAmount(recipe.steps, index)}g (Target: {step.target_weight}g)
+                                            <>
+                                                <span className="inline-flex items-center gap-1 typescale-label-small font-extrabold text-md-primary bg-md-primary-container/40 px-2.5 py-0.5 rounded-full border border-md-primary/20">
+                                                    <Icon name="water_drop" className="text-xs" />
+                                                    +{getPourAmount(recipe.steps, index)}g
+                                                </span>
+                                                <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
+                                                    <Icon name="scale" className="text-xs text-md-on-surface-variant/70" />
+                                                    Target: {step.target_weight}g
+                                                </span>
+                                            </>
+                                        )}
+                                        {intervalInfo.restSeconds > 0 && (
+                                            <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-secondary bg-md-secondary-container/40 px-2.5 py-0.5 rounded-full border border-md-secondary/20">
+                                                <Icon name="hourglass_empty" className="text-xs" />
+                                                Rest: {intervalInfo.restSeconds}s
                                             </span>
                                         )}
                                     </div>
+                                    {step.instruction && (
+                                        <p className="typescale-body-small text-md-on-surface-variant leading-relaxed pt-0.5">{step.instruction}</p>
+                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         {/* Finish Step */}
                         <div className="relative pl-6 pt-2">
-                            <div className="absolute -left-[15px] top-2 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center border-4 border-white">
-                                <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                            <div className="absolute -left-[15px] top-2 size-6 rounded-full bg-md-primary-container flex items-center justify-center border-4 border-md-surface-container-low">
+                                <div className="size-2.5 bg-md-primary rounded-full"></div>
                             </div>
                             <div>
-                                <h3 className="text-base font-bold text-neutral-text">Enjoy!</h3>
-                                <p className="text-sm text-gray-500 mt-0.5 font-medium">Total Brew Time: ~{formatDuration(totalTime)}</p>
+                                <h4 className="typescale-title-medium font-bold text-md-on-surface">Enjoy!</h4>
+                                <p className="typescale-body-small text-md-on-surface-variant mt-0.5 font-medium">Total Brew Time: ~{formatDuration(totalTime)}</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
 
-            {/* Floating Action Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-light via-background-light/95 to-transparent max-w-md mx-auto z-20">
+            {/* Bottom Action CTA */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 max-w-md mx-auto z-20">
                 <button
                     onClick={() => navigate(`/recipes/${recipe.id}/prepare`)}
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer text-lg"
+                    className="w-full bg-md-primary text-md-on-primary font-bold py-3.5 rounded-full shadow-md-2 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer typescale-title-medium hover:bg-md-primary/90"
                 >
-                    <Icon name="play_circle" className="text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }} />
+                    <Icon name="play_circle" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                     Start Brewing
                 </button>
             </div>

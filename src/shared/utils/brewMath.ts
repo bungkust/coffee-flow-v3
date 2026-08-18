@@ -128,3 +128,40 @@ export const scaleRecipe = (recipe: Recipe, targetDose: number): Recipe => {
     };
 };
 
+export interface StepIntervalInfo {
+    isPauseStep: boolean;
+    pourSeconds: number;
+    restSeconds: number;
+    label: string;
+}
+
+export const getStepIntervalInfo = (step: BrewStep): StepIntervalInfo => {
+    const isPauseKeyword = /pause|rest|wait|settle|drawdown|tunggu|tiris/i.test(step.label);
+    
+    if (!step.target_weight || isPauseKeyword) {
+        return {
+            isPauseStep: true,
+            pourSeconds: 0,
+            restSeconds: step.duration_seconds || 0,
+            label: `Pause / Rest: ${step.duration_seconds || 0}s`
+        };
+    }
+
+    const match = step.instruction?.match(/(?:within|in|over)\s+(\d+)\s*(?:seconds|sec|s)/i);
+    let pourSec = match ? parseInt(match[1], 10) : Math.min(15, Math.max(5, Math.round(step.duration_seconds * 0.33)));
+    
+    if (pourSec >= step.duration_seconds) {
+        pourSec = Math.max(5, step.duration_seconds - 15);
+    }
+    
+    const restSec = Math.max(0, step.duration_seconds - pourSec);
+
+    return {
+        isPauseStep: false,
+        pourSeconds: pourSec,
+        restSeconds: restSec,
+        label: `Pour ${pourSec}s • Rest ${restSec}s`
+    };
+};
+
+

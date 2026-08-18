@@ -18,32 +18,56 @@ export const RatioCalculatorPage = () => {
     }, []);
 
     return (
-        <div className="flex min-h-screen w-full max-w-md flex-col bg-background-light font-display text-neutral-text shadow-2xl mx-auto">
-            <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-6 pb-4 pt-12">
-                <button onClick={() => navigate(-1)} className="-ml-2 flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-50">
-                    <Icon name="arrow_back" className="text-[24px]" />
-                </button>
-                <h1 className="text-xl font-bold">Ratio Calculator</h1>
-            </div>
-            <main className="space-y-6 px-6 py-8">
-                <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">Coffee</label>
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
+            {/* Header */}
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
+                    >
+                        <Icon name="arrow_back" className="text-2xl" />
+                    </button>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">Ratio Calculator</h1>
+                </div>
+            </header>
+
+            <main className="flex-1 px-5 py-6 space-y-5">
+                <div className="rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low p-5 shadow-md-1 space-y-2">
+                    <label className="typescale-label-medium text-md-on-surface-variant/80 font-bold uppercase tracking-wider block">Coffee Amount</label>
                     <div className="flex items-center gap-3">
-                        <input type="number" min="0.1" step="0.1" value={coffee} onChange={(event) => setCoffee(Math.max(0.1, Number(event.target.value) || 0.1))} className="w-full rounded-xl bg-gray-50 px-4 py-3 text-lg font-bold outline-none focus:ring-2 focus:ring-primary/20" />
-                        <span className="font-bold text-gray-400">{unitSystem === 'metric' ? 'g' : 'oz'}</span>
+                        <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={coffee}
+                            onChange={(event) => setCoffee(Math.max(0.1, Number(event.target.value) || 0.1))}
+                            className="w-full rounded-xl bg-md-surface-container-high px-4 py-3 typescale-title-large font-bold text-md-on-surface outline-none focus:ring-2 focus:ring-md-primary/40 border border-md-outline-variant/30"
+                        />
+                        <span className="typescale-title-medium font-bold text-md-on-surface-variant">{unitSystem === 'metric' ? 'g' : 'oz'}</span>
                     </div>
                 </div>
-                <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-gray-400">Ratio</label>
+
+                <div className="rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low p-5 shadow-md-1 space-y-2">
+                    <label className="typescale-label-medium text-md-on-surface-variant/80 font-bold uppercase tracking-wider block">Brew Ratio</label>
                     <div className="flex items-center gap-3">
-                        <span className="font-bold text-gray-400">1:</span>
-                        <input type="number" min="1" step="0.1" value={ratio} onChange={(event) => setRatio(Math.max(1, Number(event.target.value) || 1))} className="w-full rounded-xl bg-gray-50 px-4 py-3 text-lg font-bold outline-none focus:ring-2 focus:ring-primary/20" />
+                        <span className="typescale-title-medium font-bold text-md-on-surface-variant">1:</span>
+                        <input
+                            type="number"
+                            min="1"
+                            step="0.1"
+                            value={ratio}
+                            onChange={(event) => setRatio(Math.max(1, Number(event.target.value) || 1))}
+                            className="w-full rounded-xl bg-md-surface-container-high px-4 py-3 typescale-title-large font-bold text-md-on-surface outline-none focus:ring-2 focus:ring-md-primary/40 border border-md-outline-variant/30"
+                        />
                     </div>
                 </div>
-                <div className="rounded-xl bg-primary p-6 text-white shadow-lg shadow-primary/20">
-                    <p className="text-sm font-semibold opacity-80">Target Water</p>
-                    <p className="mt-1 text-5xl font-extrabold">{formatVolume(water, unitSystem)}</p>
-                    <p className="mt-3 text-sm opacity-80">{coffeeLabel} coffee at 1:{ratioLabel}</p>
+
+                <div className="rounded-2xl bg-md-primary text-md-on-primary p-6 shadow-md-2 space-y-1">
+                    <p className="typescale-label-medium font-bold uppercase tracking-wider opacity-80">Target Water Amount</p>
+                    <p className="typescale-headline-large font-extrabold">{formatVolume(water, unitSystem)}</p>
+                    <p className="typescale-body-medium opacity-90 pt-1">{coffeeLabel} coffee at 1:{ratioLabel}</p>
                 </div>
             </main>
         </div>

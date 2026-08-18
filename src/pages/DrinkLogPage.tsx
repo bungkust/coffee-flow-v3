@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 
@@ -30,36 +31,69 @@ export const DrinkLogPage = () => {
         }
     };
 
-    if (!drink) return <div className="flex min-h-screen items-center justify-center bg-white"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
+    if (!drink) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
-        <div className="flex min-h-screen w-full max-w-md flex-col bg-white font-display text-neutral-text shadow-2xl mx-auto">
-            <div className="sticky top-0 z-10 border-b border-gray-100 bg-white px-6 pb-4 pt-12">
-                <h1 className="text-xl font-bold">How was it?</h1>
-                <p className="mt-1 text-xs font-medium text-gray-500">{drink.name}</p>
-            </div>
-            <main className="flex-1 px-6 py-8">
-                <div className="mb-10 flex flex-col items-center">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+            {/* Header */}
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+                <h1 className="typescale-headline-small font-bold text-md-on-surface">How was it?</h1>
+                <p className="typescale-body-small text-md-on-surface-variant mt-0.5">{drink.name}</p>
+            </header>
+
+            <main className="flex-1 px-5 py-6 space-y-6">
+                {/* Rating */}
+                <div className="flex flex-col items-center justify-center p-6 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
                     <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((star) => {
                             const displayRating = Math.min(5, Math.max(0, rating));
                             return (
-                                <button key={star} onClick={() => setRating(star)}>
-                                    <Icon name="star" className={`text-[42px] ${displayRating >= star ? 'text-primary' : 'text-gray-200'}`} style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }} />
+                                <button key={star} onClick={() => setRating(star)} className="focus:outline-none group cursor-pointer">
+                                    <Icon
+                                        name="star"
+                                        className={`text-4xl transition-transform group-active:scale-110 ${displayRating >= star ? 'text-md-primary' : 'text-md-outline/40'}`}
+                                        style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
+                                    />
                                 </button>
                             );
                         })}
                     </div>
                 </div>
-                <label className="block">
-                    <span className="mb-3 block text-lg font-bold">Notes</span>
-                    <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={5} className="w-full resize-none rounded-2xl bg-gray-50 p-4 outline-none focus:ring-2 focus:ring-primary/20" placeholder="Texture, balance, sweetness..." />
-                </label>
+
+                {/* Notes Input */}
+                <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-2">
+                    <label className="typescale-title-medium font-bold text-md-on-surface block" htmlFor="drink-notes">
+                        Notes
+                    </label>
+                    <textarea
+                        id="drink-notes"
+                        value={notes}
+                        onChange={(event) => setNotes(event.target.value)}
+                        rows={5}
+                        className="w-full rounded-xl border border-md-outline-variant/30 bg-md-surface-container-high p-3.5 typescale-body-medium text-md-on-surface placeholder:text-md-on-surface-variant/70 focus:ring-2 focus:ring-md-primary/40 shadow-sm resize-none outline-none"
+                        placeholder="Texture, balance, sweetness..."
+                    />
+                </div>
             </main>
-            <div className="sticky bottom-0 border-t border-gray-100 bg-white p-6">
-                <button onClick={handleSave} disabled={saving} className="w-full rounded-2xl bg-primary py-4 text-lg font-bold text-white disabled:opacity-50">
-                    {saving ? 'Saving...' : 'Save to Journal'}
-                </button>
+
+            {/* Sticky Save CTA */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+                <Button
+                    variant="filled"
+                    size="lg"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full"
+                >
+                    <Icon name="bookmark" style={{ fontVariationSettings: "'FILL' 1" }} className="text-xl" />
+                    <span>{saving ? 'Saving...' : 'Save to Journal'}</span>
+                </Button>
             </div>
         </div>
     );

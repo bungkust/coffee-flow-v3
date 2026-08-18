@@ -47,9 +47,10 @@ export class BrewService {
         beanId?: string,
         filterId?: string,
         coffeeConsumed?: number
-    ): Promise<void> {
+    ): Promise<string> {
+        const logId = crypto.randomUUID();
         const log: BrewLog = {
-            id: crypto.randomUUID(),
+            id: logId,
             recipe_id: recipeId,
             bean_id: beanId,
             rating,
@@ -73,6 +74,8 @@ export class BrewService {
         if (filterId) {
             await this.pantryService.deductStock(filterId, 1);
         }
+
+        return logId;
     }
 
     async getDashboardStats(): Promise<BrewStats> {

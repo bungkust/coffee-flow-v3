@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon, SplashLogoIcon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
+import { Button } from '../components/Button';
 import { drinkService, settingsService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { SmartImportModal } from '../components/SmartImportModal';
@@ -25,6 +26,25 @@ const parseList = (json: string): string[] => {
     } catch {
         return [];
     }
+};
+
+const DrinkImage = ({ src, alt }: { src: string; alt: string }) => {
+    const [failed, setFailed] = useState(false);
+    if (failed || !src) {
+        return (
+            <div className="flex items-center justify-center w-full h-full text-md-primary">
+                <Icon name="local_cafe" className="text-3xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+            </div>
+        );
+    }
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-cover rounded-full"
+            onError={() => setFailed(true)}
+        />
+    );
 };
 
 export const DrinkMenuPage = () => {
@@ -112,42 +132,57 @@ export const DrinkMenuPage = () => {
     );
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light dark:bg-background-dark shadow-2xl pb-32 transition-colors duration-300">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100 dark:border-white/5 transition-colors duration-300">
-                <div className="flex items-center justify-between mb-4 px-2">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20 space-y-3">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        {isEditing && (
-                            <button onClick={handleEditToggle} className="flex items-center text-neutral-text dark:text-white/60 hover:text-coffee-brown transition-colors">
-                                <Icon name="arrow_back" className="text-2xl" />
-                            </button>
-                        )}
-                        <h1 className="text-neutral-text dark:text-white tracking-tight text-xl font-bold leading-tight">
-                            {isEditing ? 'Edit Drinks Menu' : 'Drinks Menu'}
-                        </h1>
+                        <button
+                            onClick={() => (isEditing ? setIsEditing(false) : navigate(-1))}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            aria-label="Go back"
+                        >
+                            <Icon name="arrow_back" className="text-2xl" />
+                        </button>
+                        <div>
+                            <h1 className="typescale-headline-small font-bold text-md-on-surface">
+                                {isEditing ? 'Select Drinks' : 'Drinks Menu'}
+                            </h1>
+                            <p className="typescale-body-small text-md-on-surface-variant">
+                                {isEditing ? 'Choose drinks for your active menu' : 'Select a drink to view recipe'}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <div className="relative px-2 pb-2">
-                    <span className="absolute inset-y-0 left-5 flex items-center text-gray-400">
-                        <Icon name="search" className="text-[20px]" />
-                    </span>
+                {/* Search Bar */}
+                <div className="relative">
+                    <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-md-on-surface-variant text-xl" />
                     <input
-                        className="w-full bg-white dark:bg-white/5 text-neutral-text dark:text-white placeholder-gray-400 rounded-xl py-3 pl-10 pr-4 border-none shadow-sm focus:ring-2 focus:ring-primary/50 text-sm font-medium transition-all"
-                        placeholder="Search espresso, latte..."
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search espresso, latte..."
+                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-on-surface-variant/70 typescale-body-medium rounded-full pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-md-primary/40 border border-md-outline-variant/30 transition-all"
                     />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-md-on-surface-variant hover:text-md-on-surface cursor-pointer"
+                        >
+                            <Icon name="close" className="text-lg" />
+                        </button>
+                    )}
                 </div>
-            </div>
+            </header>
 
             {/* Content */}
             {isEditing ? (
-                <div className="flex-1 flex flex-col pt-6 px-5 pb-24 relative">
-                    <div className="mb-6 text-center space-y-1">
-                        <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
-                            Pick the drinks you want to see on your menu screen.
+                /* EDIT MODE: Pick active drinks */
+                <main className="flex-1 px-5 pt-4">
+                    <div className="mb-4 text-center bg-md-secondary-container/50 p-3 rounded-xl border border-md-outline-variant/20">
+                        <p className="typescale-body-medium text-md-on-secondary-container font-medium">
+                            Select drinks to feature on your menu screen. ({selectedDrinks.length} selected)
                         </p>
                     </div>
 
@@ -158,23 +193,25 @@ export const DrinkMenuPage = () => {
                                 <button
                                     key={item.id}
                                     onClick={() => toggleDrink(item.id)}
-                                    className={`group relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all active:scale-[0.98] border ${isSelected
-                                        ? 'bg-primary/5 border-primary/50 shadow-sm'
-                                        : 'bg-white dark:bg-[#2C241B] border-gray-100 dark:border-white/5 shadow-sm hover:border-primary/30'
-                                        }`}
+                                    className={`group relative flex flex-col items-center justify-center p-3.5 rounded-xl transition-all active:scale-[0.98] border cursor-pointer ${
+                                        isSelected
+                                            ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-md-1'
+                                            : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface hover:bg-md-surface-container-high'
+                                    }`}
                                 >
                                     {isSelected && (
-                                        <div className="absolute top-2 right-2 text-primary">
-                                            <Icon name="check_circle" className="text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                        <div className="absolute top-2 right-2 text-md-primary">
+                                            <Icon name="check_circle" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                                         </div>
                                     )}
-                                    <div className="w-16 h-16 rounded-xl bg-gray-50 dark:bg-white/5 flex items-center justify-center overflow-hidden mb-3 border border-gray-50 dark:border-white/5">
-                                        <img src={getDrinkImage(item)} alt={item.name} className="w-full h-full object-cover p-1" />
+                                    <div className={`size-14 mb-2 rounded-full flex items-center justify-center transition-colors overflow-hidden border border-md-outline-variant/20 p-1 ${
+                                        isSelected ? 'bg-md-primary-container' : 'bg-md-surface-container-highest'
+                                    }`}>
+                                        <DrinkImage src={getDrinkImage(item)} alt={item.name} />
                                     </div>
-                                    <span className={`font-bold text-sm text-center ${isSelected
-                                        ? 'text-primary'
-                                        : 'text-neutral-text dark:text-gray-300'
-                                        }`}>
+                                    <span className={`typescale-title-small text-center line-clamp-1 ${
+                                        isSelected ? 'text-md-on-secondary-container font-bold' : 'text-md-on-surface font-semibold'
+                                    }`}>
                                         {item.name}
                                     </span>
                                 </button>
@@ -182,73 +219,86 @@ export const DrinkMenuPage = () => {
                         })}
                     </div>
 
-                    <div className="fixed bottom-0 w-full bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-t border-black/5 dark:border-white/5 p-6 z-30 max-w-md mx-auto left-0 right-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] dark:shadow-none">
-                        <button
+                    <div className="fixed bottom-0 w-full bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 p-5 z-30 max-w-md mx-auto left-0 right-0">
+                        <Button
+                            variant="filled"
+                            size="lg"
                             onClick={handleSaveDrinks}
-                            className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 px-6 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+                            disabled={selectedDrinks.length < 1}
+                            className="w-full"
                         >
-                            <span>Save Menu</span>
+                            <span>Save Menu Selection ({selectedDrinks.length})</span>
                             <Icon name="check" className="text-xl" />
-                        </button>
+                        </Button>
                     </div>
-                </div>
+                </main>
             ) : (
-                <div className="flex-1 px-5 pt-6">
-                    <div className="flex justify-between items-center mb-4 ml-1">
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Menu</p>
-                        <button onClick={handleEditToggle} className="text-xs font-bold text-primary hover:text-primary-dark transition-colors flex items-center gap-1 cursor-pointer">
-                            <Icon name="edit" className="text-[14px]" />
-                            Edit
+                /* NORMAL MODE: Clean Row List matching equipment page UI */
+                <main className="flex-1 px-5 pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 className="typescale-title-medium font-bold text-md-on-surface">Active Menu</h2>
+                            <p className="typescale-body-small text-md-on-surface-variant">Tap any drink to view recipe & preparation</p>
+                        </div>
+                        <button
+                            onClick={handleEditToggle}
+                            className="typescale-label-large bg-md-secondary-container text-md-on-secondary-container px-3.5 py-1.5 rounded-full hover:bg-md-secondary-container/80 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                            <Icon name="edit" className="text-base" />
+                            Edit Menu
                         </button>
                     </div>
 
                     {loading ? (
-                        <div className="flex justify-center py-10">
-                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <div className="flex justify-center py-12">
+                            <div className="size-9 border-4 border-md-primary border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : (
-                        <div className="space-y-3">
-                            {filteredDisplayDrinks.map((drink) => (
-                                <button
-                                    key={drink.id}
-                                    onClick={() => navigate(`/drinks/${drink.id}`)}
-                                    className="group flex items-center p-3 rounded-2xl bg-white dark:bg-[#2C241B] border border-gray-100 dark:border-white/5 active:scale-[0.98] transition-all hover:border-primary/20 shadow-sm w-full text-left"
-                                >
-                                    <div className="w-16 h-16 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-white/5 mr-4 transition-transform group-hover:scale-105">
-                                        <img src={getDrinkImage(drink)} alt={drink.name} className="w-full h-full object-cover p-1" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="font-bold text-lg text-neutral-text dark:text-white leading-tight">
+                        <div className="flex flex-col gap-3">
+                            {filteredDisplayDrinks.map((drink) => {
+                                const ingredientsList = parseList(drink.ingredients_json).join(', ');
+                                return (
+                                    <div
+                                        key={drink.id}
+                                        onClick={() => navigate(`/drinks/${drink.id}`)}
+                                        className="group flex items-center gap-4 p-4 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 hover:bg-md-surface-container-high hover:border-md-primary/40 transition-all active:scale-[0.98] cursor-pointer shadow-md-1"
+                                    >
+                                        {/* Circular Left Image / Avatar Container */}
+                                        <div className="size-14 rounded-full bg-md-surface-container-highest flex items-center justify-center overflow-hidden border border-md-outline-variant/20 p-1 shrink-0">
+                                            <DrinkImage src={getDrinkImage(drink)} alt={drink.name} />
+                                        </div>
+
+                                        {/* Middle Text Details */}
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="typescale-title-medium font-bold text-md-on-surface line-clamp-1 mb-0.5">
                                                 {drink.name}
                                             </h3>
-                                            <span className="text-[11px] font-bold text-gray-400 group-hover:text-primary transition-colors">
-                                                {drink.category}
-                                            </span>
+                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-2 leading-tight">
+                                                {ingredientsList || 'Espresso drink recipe'}
+                                            </p>
                                         </div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
-                                            {parseList(drink.ingredients_json).join(', ')}
-                                        </p>
+
+                                        {/* Right Chevron */}
+                                        <Icon name="chevron_right" className="text-md-on-surface-variant/40 text-xl group-hover:translate-x-0.5 transition-transform shrink-0" />
                                     </div>
-                                    <div className="ml-2 text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-1">
-                                        <Icon name="chevron_right" className="text-xl" />
-                                    </div>
-                                </button>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
                     {filteredDisplayDrinks.length === 0 && !loading && (
-                        <div className="text-center py-12 px-4">
-                            <Icon name="search_off" className="text-4xl text-gray-300 mb-3 mx-auto" />
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">No drinks found matching your search.</p>
+                        <div className="text-center py-12 px-4 bg-md-surface-container-low rounded-xl border border-dashed border-md-outline-variant">
+                            <Icon name="local_cafe" className="text-4xl text-md-outline/50 mb-2 mx-auto" />
+                            <p className="typescale-body-medium text-md-on-surface-variant">
+                                {searchQuery ? 'No drinks match your search.' : 'No drinks found.'}
+                            </p>
                         </div>
                     )}
-                </div>
+                </main>
             )}
 
             {/* Floating Speed Dial FAB */}
-            <div className="fixed bottom-28 right-6 z-40 flex flex-col items-end gap-3">
+            <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-3 max-w-md mx-auto">
                 {isFabMenuOpen && (
                     <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
                         <button
@@ -256,9 +306,9 @@ export const DrinkMenuPage = () => {
                                 setIsFabMenuOpen(false);
                                 setIsImportModalOpen(true);
                             }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-primary rounded-2xl shadow-xl border border-primary/10 text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all cursor-pointer"
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-md-surface-container-high text-md-on-surface rounded-2xl shadow-md-2 border border-md-outline-variant/30 typescale-label-medium font-bold hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
                         >
-                            <SplashLogoIcon className="w-4 h-4 text-primary" />
+                            <SplashLogoIcon className="w-4 h-4 text-md-primary" />
                             <span>Import Drink</span>
                         </button>
 
@@ -267,9 +317,9 @@ export const DrinkMenuPage = () => {
                                 setIsFabMenuOpen(false);
                                 navigate('/drinks/new/edit');
                             }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+                            className="flex items-center gap-2.5 px-4 py-2.5 bg-md-surface-container-high text-md-on-surface rounded-2xl shadow-md-2 border border-md-outline-variant/30 typescale-label-medium font-bold hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
                         >
-                            <Icon name="edit" className="text-[18px] text-gray-500" />
+                            <Icon name="edit" className="text-lg text-md-on-surface-variant" />
                             <span>New Drink</span>
                         </button>
                     </div>
@@ -277,10 +327,11 @@ export const DrinkMenuPage = () => {
 
                 <button
                     onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-                    className={`w-14 h-14 rounded-full text-white shadow-lg shadow-primary/40 flex items-center justify-center transition-all duration-300 active:scale-90 border-[3px] border-white cursor-pointer ${isFabMenuOpen ? 'bg-gray-800 rotate-45' : 'bg-primary hover:bg-primary-dark'
-                        }`}
+                    className={`size-14 rounded-full text-md-on-primary shadow-md-3 flex items-center justify-center transition-all duration-300 active:scale-90 border-2 border-md-surface cursor-pointer ${
+                        isFabMenuOpen ? 'bg-md-on-surface-variant rotate-45' : 'bg-md-primary hover:bg-md-primary/90'
+                    }`}
                 >
-                    <Icon name="add" className="text-[32px]" />
+                    <Icon name="add" className="text-3xl" />
                 </button>
             </div>
 
@@ -296,10 +347,7 @@ export const DrinkMenuPage = () => {
                 }}
                 onImport={(importedData) => {
                     setIsImportModalOpen(false);
-                    // Transform Recipe-like data to Drink format
                     const data = importedData as Record<string, unknown>;
-                    
-                    // Extract ingredients from steps or use ingredients_json if present
                     let ingredients: string[] = [];
                     let instructions: string[] = [];
                     
@@ -308,16 +356,14 @@ export const DrinkMenuPage = () => {
                             ingredients = JSON.parse((data.ingredients_json as string) || '[]');
                         } catch { ingredients = []; }
                     } else if (data.steps) {
-                        // Extract ingredients from steps (look for quantities in instructions)
                         const steps = (data.steps as Array<Record<string, unknown>>) || [];
                         ingredients = steps
                             .flatMap((step: Record<string, unknown>) => {
                                 const instruction = (step.instruction as string) || '';
-                                // Extract quantities like "18g coffee", "120ml milk", "1 shot espresso"
                                 const matches = instruction.match(/(\d+(?:\.\d+)?)\s*(g|ml|shot|shots?)\s*(coffee|espresso|milk|water|syrup|cream|foam)/gi);
                                 return matches || [];
                             })
-                            .filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+                            .filter((v, i, a) => a.indexOf(v) === i);
                     }
                     
                     if (data.instructions_json) {
@@ -325,14 +371,12 @@ export const DrinkMenuPage = () => {
                             instructions = JSON.parse((data.instructions_json as string) || '[]');
                         } catch { instructions = []; }
                     } else if (data.steps) {
-                        // Extract instructions from steps
                         const steps = (data.steps as Array<Record<string, unknown>>) || [];
                         instructions = steps
                             .map((step: Record<string, unknown>) => (step.instruction as string) || (step.label as string))
                             .filter(Boolean);
                     }
                     
-                    // Determine category from method_id or name
                     const methodId = (data.method_id as string) || '';
                     const name = (data.name as string) || '';
                     const isCold = methodId === 'cold_brew' || name.toLowerCase().includes('cold') || name.toLowerCase().includes('iced') || name.toLowerCase().includes('frapp');

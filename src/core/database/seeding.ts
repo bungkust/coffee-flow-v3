@@ -5,22 +5,29 @@ import { BREWING_METHOD_SEEDS, RECIPE_SEEDS } from './recipeSeeds';
 export const seedInitialData = async () => {
     const db = dbService.getDb();
 
+    // Ensure category column exists in brewing_methods before seeding
+    try {
+        const cols = await db.query("PRAGMA table_info(brewing_methods)");
+        const hasCategory = cols.values?.some((c: { name: string }) => c.name === 'category');
+        if (!hasCategory) {
+            await db.execute("ALTER TABLE brewing_methods ADD COLUMN category TEXT;");
+        }
+    } catch (e) {
+        console.warn("Category column check failed, proceeding with seeding:", e);
+    }
+
     for (const method of BREWING_METHOD_SEEDS) {
         await db.run(
-            `INSERT OR IGNORE INTO brewing_methods (id, name, description, icon, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [method.id, method.name, method.description, method.icon, method.created_at, method.updated_at]
+            `INSERT OR REPLACE INTO brewing_methods (id, name, description, icon, category, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [method.id, method.name, method.description, method.icon, method.category || 'Other', method.created_at, method.updated_at]
         );
     }
 
-    const recipes = await brewService.getAllRecipes();
-    const existingRecipeIds = new Set(recipes.map(recipe => recipe.id));
-    const missingRecipes = RECIPE_SEEDS.filter(recipe => !existingRecipeIds.has(recipe.id));
-
-    if (missingRecipes.length > 0) {
-        console.log(`Seeding ${missingRecipes.length} missing recipes...`);
-        for (const recipe of missingRecipes) {
-            await brewService.saveRecipe(recipe);
+    // Always ensure built-in seed recipes have updated steps & instructions
+    for (const seedRecipe of RECIPE_SEEDS) {
+        if (!seedRecipe.is_custom) {
+            await brewService.saveRecipe(seedRecipe);
         }
     }
 

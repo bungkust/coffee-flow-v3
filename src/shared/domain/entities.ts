@@ -8,6 +8,7 @@ export interface BrewingMethod {
     name: string;
     description?: string;
     icon?: string;
+    category?: string;
     created_at: string;
     updated_at: string;
     deleted_at?: string;

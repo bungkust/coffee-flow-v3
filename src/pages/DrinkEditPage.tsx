@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
@@ -124,8 +125,8 @@ export const DrinkEditPage = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <div className="flex min-h-screen items-center justify-center bg-md-surface">
+                <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
@@ -136,47 +137,47 @@ export const DrinkEditPage = () => {
     const instructions = JSON.parse(drink.instructions_json || '[]');
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-background-light shadow-2xl pb-32 font-display text-neutral-text">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-background-light/95 backdrop-blur-md pt-12 pb-2 px-4 border-b border-gray-100">
+            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full text-neutral-text hover:bg-gray-100 transition-colors cursor-pointer"
+                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        aria-label="Go back"
                     >
-                        <Icon name="arrow_back" className="text-[24px]" />
+                        <Icon name="arrow_back" className="text-2xl" />
                     </button>
-                    <h1 className="text-neutral-text tracking-tight text-xl font-bold leading-tight">
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">
                         {id === 'new' ? 'Create Drink' : 'Edit Drink'}
                     </h1>
                 </div>
-            </div>
+            </header>
 
-            <div className="px-6 py-6 space-y-8">
+            <main className="flex-1 px-5 pt-4 space-y-6">
                 {error && (
-                    <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                    <div className="rounded-2xl border border-md-error/30 bg-md-error-container/30 px-4 py-3 typescale-body-medium font-bold text-md-error">
                         {error}
                     </div>
                 )}
 
                 {/* Basic Info */}
-                <section className="space-y-4">
-                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Basic Information</h2>
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                    <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Basic Information</h2>
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Drink Name</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Drink Name</label>
                             <input
                                 type="text"
                                 value={drink.name}
                                 onChange={(e) => setDrink({ ...drink, name: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-base font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
                                 placeholder="e.g. Caramel Macchiato"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Category</label>
+                        <div className="space-y-1.5">
                             <Dropdown
-                                buttonClassName="py-3 bg-gray-50 border-gray-100"
+                                label="Category"
                                 value={drink.category}
                                 options={[
                                     { value: 'hot', label: 'Hot' },
@@ -186,8 +187,8 @@ export const DrinkEditPage = () => {
                                 placeholder="Select"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Image</label>
+                        <div className="space-y-1.5">
+                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Image</label>
                             <input
                                 type="file"
                                 accept="image/*"
@@ -195,19 +196,16 @@ export const DrinkEditPage = () => {
                                     const file = e.target.files?.[0];
                                     if (!file) return;
                                     
-                                    // Compress and convert to WebP
                                     const img = document.createElement('img');
                                     const canvas = document.createElement('canvas');
                                     const ctx = canvas.getContext('2d');
                                     
                                     img.onload = () => {
-                                        // Max dimensions
                                         const MAX_WIDTH = 400;
                                         const MAX_HEIGHT = 400;
                                         let width = img.width;
                                         let height = img.height;
                                         
-                                        // Scale down if needed
                                         if (width > MAX_WIDTH || height > MAX_HEIGHT) {
                                             if (width > height) {
                                                 height = (height * MAX_WIDTH) / width;
@@ -222,25 +220,24 @@ export const DrinkEditPage = () => {
                                         canvas.height = height;
                                         ctx?.drawImage(img, 0, 0, width, height);
                                         
-                                        // Convert to WebP with 80% quality
                                         const webpUrl = canvas.toDataURL('image/webp', 0.8);
                                         setDrink({ ...drink, image_url: webpUrl });
                                     };
                                     
                                     img.src = URL.createObjectURL(file);
                                 }}
-                                className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-small file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:typescale-label-medium file:font-bold file:bg-md-primary-container file:text-md-on-primary-container hover:file:bg-md-primary-container/80"
                             />
                             {drink.image_url && (
                                 <div className="mt-2 relative">
-                                    <div className="w-full h-32 rounded-xl overflow-hidden border border-gray-100">
+                                    <div className="w-full h-32 rounded-xl overflow-hidden border border-md-outline-variant/30">
                                         <img src={drink.image_url} alt="Preview" className="w-full h-full object-cover" />
                                     </div>
                                     <button
                                         onClick={() => setDrink({ ...drink, image_url: undefined })}
-                                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600"
+                                        className="absolute top-2 right-2 size-8 rounded-full bg-md-error text-md-on-error flex items-center justify-center shadow-md-1 hover:opacity-90 cursor-pointer"
                                     >
-                                        <Icon name="close" className="text-[16px]" />
+                                        <Icon name="close" className="text-base" />
                                     </button>
                                 </div>
                             )}
@@ -249,103 +246,94 @@ export const DrinkEditPage = () => {
                 </section>
 
                 {/* Ingredients Section */}
-                <section className="space-y-4">
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ingredients</h2>
+                        <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Ingredients</h2>
                         <button
                             onClick={addIngredient}
-                            className="text-xs font-bold text-primary flex items-center gap-1 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                            className="typescale-label-medium font-bold text-md-primary flex items-center gap-1 bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                         >
-                            <Icon name="add" className="text-[16px]" />
+                            <Icon name="add" className="text-base" />
                             Add Ingredient
                         </button>
                     </div>
                     <div className="space-y-3">
                         {ingredients.map((item: string, index: number) => (
-                            <div key={index} className="bg-gray-50 border border-gray-100 rounded-2xl p-4 relative group">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                        {index + 1}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={item}
-                                        onChange={(e) => updateIngredient(index, e.target.value)}
-                                        className="flex-1 bg-transparent border-none p-0 text-base font-bold text-[#181411] focus:ring-0 placeholder:text-gray-300"
-                                        placeholder="e.g. 18g espresso, 120ml milk"
-                                    />
-                                    {ingredients.length > 1 && (
-                                        <button
-                                            onClick={() => removeIngredient(index)}
-                                            className="text-gray-300 hover:text-red-400 transition-colors p-1"
-                                        >
-                                            <Icon name="delete" className="text-[20px]" />
-                                        </button>
-                                    )}
+                            <div key={index} className="bg-md-surface-container-high border border-md-outline-variant/30 rounded-xl p-3.5 flex items-center gap-3">
+                                <div className="size-7 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center typescale-label-medium font-bold shrink-0">
+                                    {index + 1}
                                 </div>
+                                <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => updateIngredient(index, e.target.value)}
+                                    className="flex-1 bg-transparent border-none p-0 typescale-body-medium font-bold text-md-on-surface focus:ring-0 placeholder:text-md-on-surface-variant/50 outline-none"
+                                    placeholder="e.g. 18g espresso, 120ml milk"
+                                />
+                                {ingredients.length > 1 && (
+                                    <button
+                                        onClick={() => removeIngredient(index)}
+                                        className="text-md-on-surface-variant/50 hover:text-md-error transition-colors p-1 cursor-pointer"
+                                    >
+                                        <Icon name="delete" className="text-xl" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 </section>
 
                 {/* Instructions Section */}
-                <section className="space-y-4">
+                <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Instructions</h2>
+                        <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Instructions</h2>
                         <button
                             onClick={addInstruction}
-                            className="text-xs font-bold text-primary flex items-center gap-1 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                            className="typescale-label-medium font-bold text-md-primary flex items-center gap-1 bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                         >
-                            <Icon name="add" className="text-[16px]" />
+                            <Icon name="add" className="text-base" />
                             Add Step
                         </button>
                     </div>
                     <div className="space-y-3">
                         {instructions.map((item: string, index: number) => (
-                            <div key={index} className="bg-gray-50 border border-gray-100 rounded-2xl p-4 relative group">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                                        {index + 1}
-                                    </div>
-                                    <textarea
-                                        value={item}
-                                        onChange={(e) => updateInstruction(index, e.target.value)}
-                                        rows={2}
-                                        className="flex-1 bg-transparent border-none p-0 text-sm font-medium text-neutral-text focus:ring-0 placeholder:text-gray-300 resize-none"
-                                        placeholder="Describe this step..."
-                                    />
-                                    {instructions.length > 1 && (
-                                        <button
-                                            onClick={() => removeInstruction(index)}
-                                            className="text-gray-300 hover:text-red-400 transition-colors p-1"
-                                        >
-                                            <Icon name="delete" className="text-[20px]" />
-                                        </button>
-                                    )}
+                            <div key={index} className="bg-md-surface-container-high border border-md-outline-variant/30 rounded-xl p-3.5 flex items-start gap-3">
+                                <div className="size-7 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center typescale-label-medium font-bold shrink-0">
+                                    {index + 1}
                                 </div>
+                                <textarea
+                                    value={item}
+                                    onChange={(e) => updateInstruction(index, e.target.value)}
+                                    rows={2}
+                                    className="flex-1 bg-transparent border-none p-0 typescale-body-medium text-md-on-surface focus:ring-0 placeholder:text-md-on-surface-variant/50 resize-none outline-none"
+                                    placeholder="Describe this step..."
+                                />
+                                {instructions.length > 1 && (
+                                    <button
+                                        onClick={() => removeInstruction(index)}
+                                        className="text-md-on-surface-variant/50 hover:text-md-error transition-colors p-1 cursor-pointer"
+                                    >
+                                        <Icon name="delete" className="text-xl" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 </section>
+            </main>
 
-                {/* Save Button */}
-                <button
+            {/* Sticky Bottom Actions */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+                <Button
+                    variant="filled"
+                    size="lg"
                     onClick={handleSave}
                     disabled={saving}
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
+                    className="w-full"
                 >
-                    {saving ? (
-                        <>
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            <span>Saving...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Icon name="save" className="text-[24px]" />
-                            <span>Save Drink</span>
-                        </>
-                    )}
-                </button>
+                    <Icon name="save" className="text-xl" />
+                    <span>{saving ? 'Saving...' : 'Save Drink'}</span>
+                </Button>
             </div>
         </div>
     );

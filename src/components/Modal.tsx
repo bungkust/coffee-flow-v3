@@ -1,6 +1,5 @@
 import { Icon } from './Icons';
 import { type ReactNode } from 'react';
-import { Button } from './Button';
 
 type ModalSize = 'sm' | 'md' | 'lg';
 
@@ -30,57 +29,86 @@ export const Modal = ({
     if (!isOpen) return null;
 
     const typeConfig = {
-        warning: { icon: 'warning', color: 'text-amber-600', bg: 'bg-amber-100 dark:bg-amber-950' },
-        error: { icon: 'error', color: 'text-md-error', bg: 'bg-md-error-container' },
-        info: { icon: 'info', color: 'text-md-primary', bg: 'bg-md-primary-container' },
-        success: { icon: 'check_circle', color: 'text-emerald-600', bg: 'bg-emerald-100 dark:bg-emerald-950' }
+        warning: {
+            icon: 'warning',
+            color: 'text-md-error',
+            bg: 'bg-md-error-container/60'
+        },
+        error: {
+            icon: 'error',
+            color: 'text-md-error',
+            bg: 'bg-md-error-container/60'
+        },
+        info: {
+            icon: 'info',
+            color: 'text-md-primary',
+            bg: 'bg-md-primary-container/60'
+        },
+        success: {
+            icon: 'check_circle',
+            color: 'text-md-primary',
+            bg: 'bg-md-primary-container/60'
+        }
     };
 
     const sizeConfig = {
-        sm: 'max-w-xs',
+        sm: 'max-w-sm',
         md: 'max-w-md',
         lg: 'max-w-lg'
     };
 
-    const config = typeConfig[type];
+    const config = typeConfig[type] || typeConfig.info;
     const widthClass = sizeConfig[size];
-
     const isForm = typeof message !== 'string';
+    const isDestructive = type === 'warning' || type === 'error';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/50 backdrop-blur-xs transition-opacity duration-200">
-            <div className={`bg-md-surface-container-high text-md-on-surface w-full ${widthClass} rounded-xl p-6 shadow-md-3 border border-md-outline-variant/30`}>
-                <div className={isForm ? 'text-left' : 'flex flex-col items-center text-center'}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60 backdrop-blur-xs transition-opacity duration-200">
+            <div className={`bg-md-surface-container-high text-md-on-surface w-full ${widthClass} rounded-[28px] p-6 shadow-md-3 border border-md-outline-variant/30 animate-in fade-in zoom-in-95 duration-150`}>
+                <div className="flex flex-col items-center text-center">
                     {!isForm && (
-                        <div className={`w-12 h-12 rounded-full ${config.bg} flex items-center justify-center mb-4 ${isForm ? 'mx-auto' : ''}`}>
+                        <div className={`size-12 rounded-full ${config.bg} flex items-center justify-center mb-3 shrink-0`}>
                             <Icon name={config.icon} className={`text-2xl ${config.color}`} style={{ fontVariationSettings: "'FILL' 1" }} />
                         </div>
                     )}
-                    <h3 className={`typescale-headline-small text-md-on-surface mb-2 ${isForm ? 'text-left' : 'text-center'}`}>{title}</h3>
+
+                    <h3 className="typescale-headline-small font-bold text-md-on-surface mb-2 text-center">
+                        {title}
+                    </h3>
+
                     {typeof message === 'string' ? (
-                        <p className="typescale-body-medium text-md-on-surface-variant mb-6 leading-relaxed">{message}</p>
+                        <p className="typescale-body-medium text-md-on-surface-variant mb-6 leading-relaxed text-center">
+                            {message}
+                        </p>
                     ) : (
-                        <div className="mb-6">{message}</div>
+                        <div className="mb-6 w-full text-left">{message}</div>
                     )}
 
-                    <div className="flex items-center justify-end w-full gap-2 pt-2">
+                    {/* Centered Equal-Width Button Grid */}
+                    <div className="grid grid-cols-2 gap-3 w-full pt-1">
                         {cancelText && (
-                            <Button
-                                variant="text"
+                            <button
+                                type="button"
                                 onClick={onClose}
+                                className="w-full py-3 px-4 rounded-full typescale-label-large font-bold bg-md-surface-container-highest hover:bg-md-surface-container-highest/80 text-md-on-surface border border-md-outline-variant/30 transition-all active:scale-95 cursor-pointer text-center"
                             >
                                 {cancelText}
-                            </Button>
+                            </button>
                         )}
-                        <Button
-                            variant="filled"
+                        <button
+                            type="button"
                             onClick={() => {
                                 onConfirm?.();
                                 onClose();
                             }}
+                            className={`w-full py-3 px-4 rounded-full typescale-label-large font-bold transition-all active:scale-95 cursor-pointer text-center shadow-md-1 ${
+                                isDestructive
+                                    ? 'bg-md-error text-md-on-error hover:bg-md-error/90'
+                                    : 'bg-md-primary text-md-on-primary hover:bg-md-primary/90'
+                            } ${!cancelText ? 'col-span-2' : ''}`}
                         >
                             {confirmText}
-                        </Button>
+                        </button>
                     </div>
                 </div>
             </div>

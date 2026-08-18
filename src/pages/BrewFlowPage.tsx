@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
-import { settingsService } from '../core/services';
-import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, type UnitSystem } from '../shared/utils/brewMath';
+import { Button } from '../components/Button';
+import { brewService, settingsService } from '../core/services';
+import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
+    const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+    const isAutoSavedRef = useRef(false);
 
     const feedbackEnabledRef = useRef(feedbackEnabled);
     useEffect(() => {
@@ -121,13 +123,35 @@ export const BrewFlowPage = () => {
             if (engineState.isCompleted) {
                 playFeedback(880, 0.5);
                 if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+
+                if (!isAutoSavedRef.current) {
+                    isAutoSavedRef.current = true;
+                    let totalSeconds = 0;
+                    for (const step of activeRecipe.steps) {
+                        totalSeconds += step.duration_seconds;
+                    }
+                    brewService.logBrew(
+                        activeRecipe.id,
+                        5,
+                        'Auto-saved brew session',
+                        { sweetness: 50, acidity: 50, body: 50, bitterness: 50 },
+                        ['Balanced'],
+                        selectedBeanId || undefined,
+                        selectedFilterId || undefined,
+                        coffeeConsumed || undefined
+                    ).then((logId) => {
+                        sessionStorage.setItem('coffee_flow_last_logged_id', logId);
+                    }).catch((err) => {
+                        console.error('Auto-save brew log error:', err);
+                    });
+                }
             }
 
             if (engineState.remainingTime > 0 && engineState.remainingTime <= 3) {
                 playFeedback(330, 0.1);
             }
         }
-    }, [engineState, activeRecipe, playFeedback]);
+    }, [engineState, activeRecipe, playFeedback, selectedBeanId, selectedFilterId, coffeeConsumed]);
 
     if (!activeRecipe || !engineState) return null;
 
@@ -151,7 +175,6 @@ export const BrewFlowPage = () => {
 
     const handleSkipStep = () => {
         if (engineState.currentStepIndex >= activeRecipe.steps.length - 1) {
-            // Last step — completing
             skipStep();
         } else {
             setIsSkipModalOpen(true);
@@ -176,42 +199,42 @@ export const BrewFlowPage = () => {
 
     if (engineState.isCompleted) {
         return (
-            <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-white shadow-2xl font-display text-[#181411]">
+            <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
                 {/* Header for Done state */}
-                <div className="shrink-0 bg-white/95 backdrop-blur-md pt-12 pb-4 px-6 flex items-center justify-between border-b border-gray-50">
+                <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                     <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Brewing Method</span>
-                        <h1 className="text-lg font-bold text-[#181411]">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
+                        <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
                     </div>
-                </div>
+                </header>
 
-                <div className="flex-1 flex flex-col px-6 py-4 overflow-y-auto hide-scrollbar">
+                <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                     {/* Done Card */}
                     <div className="shrink-0 flex flex-col justify-center items-center mb-6 relative">
-                        <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-[#34A853]"></div>
+                        <div className="w-full bg-md-surface-container-low rounded-3xl p-6 border border-md-outline-variant/30 shadow-md-2 flex flex-col items-center justify-center text-center relative overflow-hidden space-y-3">
+                            <div className="absolute top-0 left-0 w-full h-1.5 bg-md-primary"></div>
 
-                            <div className="w-20 h-20 rounded-full bg-[#F2FAF5] flex items-center justify-center mb-6">
-                                <Icon name="emoji_events" className="text-[#34A853] text-[40px]" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            <div className="size-20 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center mb-2 shadow-inner">
+                                <Icon name="emoji_events" className="text-4xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                             </div>
 
-                            <h2 className="text-[44px] font-extrabold text-[#181411] mb-2">Done!</h2>
-                            <h3 className="text-xl font-bold text-[#181411] mb-2">Enjoy your coffee</h3>
-                            <p className="text-gray-600 text-sm mb-12 max-w-[240px]">
+                            <h2 className="typescale-headline-large font-extrabold text-md-on-surface">Done!</h2>
+                            <h3 className="typescale-title-large font-bold text-md-on-surface">Enjoy your coffee</h3>
+                            <p className="typescale-body-medium text-md-on-surface-variant max-w-[240px]">
                                 Great job! Your brew is complete and ready to serve.
                             </p>
 
                             {/* Final Water Progress */}
-                            <div className="w-full">
+                            <div className="w-full pt-2">
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-sm font-semibold text-gray-500">Total Water</span>
-                                    <span className="text-lg font-bold text-[#8B5E3C] tabular-nums">
-                                        {formatVolume(totalWaterRecipe, unitSystem)} <span className="text-gray-400 font-normal text-sm">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                    <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
+                                    <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
+                                        {formatVolume(totalWaterRecipe, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                     </span>
                                 </div>
-                                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                                <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
                                     <div
-                                        className="bg-[#8B5E3C] h-3 rounded-full"
+                                        className="bg-md-primary h-3 rounded-full"
                                         style={{ width: '100%' }}
                                     ></div>
                                 </div>
@@ -221,16 +244,16 @@ export const BrewFlowPage = () => {
 
                     {/* Previous Steps section */}
                     <div className="mb-6">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Previous Steps</h3>
-                        <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-50 bg-gray-50/30">
-                            <div className="h-10 w-10 rounded-full bg-[#F2FAF5] flex items-center justify-center text-[#34A853] shrink-0">
-                                <Icon name="check" className="text-xl" style={{ fontVariationSettings: "'wght' 700" }} />
+                        <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2.5 ml-1">Previous Steps</h3>
+                        <div className="flex items-center gap-4 p-4 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1">
+                            <div className="size-10 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center shrink-0">
+                                <Icon name="check" className="text-xl font-bold" />
                             </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-400">{activeRecipe.steps[activeRecipe.steps.length - 1].label}</h4>
-                                <p className="text-xs text-gray-400">Completed at {formatDuration(totalElapsed)}</p>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">{activeRecipe.steps[activeRecipe.steps.length - 1].label}</h4>
+                                <p className="typescale-body-small text-md-on-surface-variant">Completed at {formatDuration(totalElapsed)}</p>
                             </div>
-                            <span className="ml-auto text-sm font-semibold text-gray-300">
+                            <span className="typescale-label-medium font-bold text-md-primary shrink-0">
                                 Done
                             </span>
                         </div>
@@ -238,20 +261,22 @@ export const BrewFlowPage = () => {
                 </div>
 
                 {/* Bottom Controls for Done State */}
-                <div className="sticky bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-50 z-20 flex flex-col gap-4">
-                    <button
+                <div className="sticky bottom-0 left-0 right-0 p-5 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20 flex flex-col gap-3">
+                    <Button
+                        variant="filled"
+                        size="lg"
                         onClick={() => navigate('/brew-log')}
-                        className="w-full bg-[#8B5E3C] hover:bg-[#7A4D2F] text-white font-bold py-5 rounded-2xl shadow-lg shadow-[#8B5E3C]/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"
+                        className="w-full"
                     >
                         <Icon name="assignment" style={{ fontVariationSettings: "'FILL' 1" }} />
-                        Finish & Log Brew
-                    </button>
+                        <span>Finish & Log Brew</span>
+                    </Button>
                     <button
                         onClick={() => {
                             stopBrew();
                             navigate('/home');
                         }}
-                        className="w-full py-2 text-gray-400 font-bold hover:text-gray-600 transition-colors"
+                        className="w-full py-2.5 text-md-on-surface-variant font-bold hover:text-md-on-surface transition-colors cursor-pointer typescale-label-large"
                     >
                         Back to Homepage
                     </button>
@@ -261,46 +286,56 @@ export const BrewFlowPage = () => {
     }
 
     return (
-        <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-white shadow-2xl font-display text-[#181411]">
+        <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <div className="shrink-0 bg-white/95 backdrop-blur-md pt-12 pb-4 px-6 flex items-center justify-between border-b border-gray-50">
+            <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                 <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Brewing Method</span>
-                    <h1 className="text-lg font-bold text-[#181411]">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
+                    <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
                 </div>
-            </div>
+            </header>
 
-            <div className="flex-1 flex flex-col px-6 py-4 overflow-y-auto hide-scrollbar">
+            <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                 {/* Active Phase Card */}
                 <div className="shrink-0 flex flex-col justify-center items-center mb-6 relative">
-                    <div className="w-full bg-white rounded-3xl p-6 border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center justify-center text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-primary/10"></div>
-                        <div className="mb-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-white">
+                    <div className="w-full bg-md-surface-container-low rounded-3xl p-6 border border-md-outline-variant/30 shadow-md-2 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-md-primary"></div>
+                        <div className="mb-2 flex items-center gap-2 flex-wrap justify-center">
+                            <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
+                            {(() => {
+                                const intervalInfo = getStepIntervalInfo(currentStep);
+                                if (intervalInfo.restSeconds <= 0) return null;
+                                return (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
+                                        <Icon name="hourglass_empty" className="text-xs" />
+                                        Pour ~{intervalInfo.pourSeconds}s • Rest ~{intervalInfo.restSeconds}s
+                                    </span>
+                                );
+                            })()}
                         </div>
-                        <div className="text-[80px] font-extrabold text-[#181411] leading-none tracking-tight tabular-nums mb-4 mt-2">
+                        <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
                             {formatDuration(engineState.remainingTime)}
                         </div>
-                        <h2 className="text-2xl font-bold text-[#181411] mb-2">
+                        <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
                             {stepTitle}
                         </h2>
-                        <p className="text-gray-500 mb-8 max-w-[240px]">
+                        <p className="typescale-body-small text-md-on-surface-variant mb-6 max-w-[260px]">
                             {stepSubtitle}
                         </p>
 
                         {/* Water Progress */}
                         <div className="w-full">
                             <div className="flex justify-between items-end mb-2">
-                                <span className="text-sm font-semibold text-gray-400">Total Water</span>
-                                <span className="text-lg font-bold text-primary tabular-nums">
-                                    {formatWeight(currentTargetWeight, unitSystem)} <span className="text-gray-400 font-normal text-sm">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
+                                <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
+                                    {formatWeight(currentTargetWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                 </span>
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
                                 <div
-                                    className="bg-primary h-3 rounded-full transition-all duration-500"
+                                    className="bg-md-primary h-3 rounded-full transition-all duration-500"
                                     style={{ width: `${progressPercent}%` }}
                                 ></div>
                             </div>
@@ -311,26 +346,26 @@ export const BrewFlowPage = () => {
                 {/* Next Up - All Remaining Steps */}
                 {engineState.currentStepIndex < activeRecipe.steps.length - 1 && (
                     <div className="mb-6">
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 ml-1">Next Up</h3>
-                        <div className="space-y-3">
+                        <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2.5 ml-1">Next Up</h3>
+                        <div className="space-y-2.5">
                             {activeRecipe.steps.slice(engineState.currentStepIndex + 1).map((step, idx) => (
-                                <div key={step.id || idx} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 bg-gray-50/50 opacity-60">
-                                    <div className="h-8 w-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 text-xs font-bold shrink-0">
+                                <div key={step.id || idx} className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low/70 opacity-70">
+                                    <div className="size-8 rounded-full bg-md-surface-container-highest border border-md-outline-variant/20 flex items-center justify-center text-md-on-surface-variant typescale-label-medium font-bold shrink-0">
                                         {engineState.currentStepIndex + idx + 2}
                                     </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-[#181411]">
-{typeof step.target_weight === 'number' && step.target_weight > 0
-                                                    ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
-                                                    : step.label}
-                                        </h4>
-                                        <p className="text-xs text-gray-500">
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">
                                             {typeof step.target_weight === 'number' && step.target_weight > 0
-                                                ? `Target: ${formatWeight(step.target_weight)} on scale — ${step.instruction || step.label}`
+                                                ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
+                                                : step.label}
+                                        </h4>
+                                        <p className="typescale-body-small text-md-on-surface-variant line-clamp-1">
+                                            {typeof step.target_weight === 'number' && step.target_weight > 0
+                                                ? `Target: ${formatWeight(step.target_weight)} on scale`
                                                 : step.instruction || step.label}
                                         </p>
                                     </div>
-                                    <span className="ml-auto text-sm font-semibold text-gray-400 tabular-nums">
+                                    <span className="typescale-label-medium font-semibold text-md-on-surface-variant tabular-nums shrink-0">
                                         {formatDuration(step.duration_seconds)}
                                     </span>
                                 </div>
@@ -341,43 +376,48 @@ export const BrewFlowPage = () => {
             </div>
 
             {/* Bottom Controls */}
-            <div className="sticky bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-50 z-20">
+            <div className="sticky bottom-0 left-0 right-0 p-5 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20">
                 <div className="flex w-full gap-3">
                     {totalElapsed === 0 && !engineState.isRunning ? (
-                        <button
+                        <Button
+                            variant="filled"
+                            size="lg"
                             onClick={resumeBrew}
-                            className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"
+                            className="w-full"
                         >
                             <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
-                            Start Brew
-                        </button>
+                            <span>Start Brew</span>
+                        </Button>
                     ) : (
                         <>
                             <button
                                 onClick={handleBack}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 text-[#181411] font-bold py-5 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg border border-gray-100"
+                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
                             >
                                 <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
                                 Stop
                             </button>
                             <button
                                 onClick={handleSkipStep}
-                                className="flex-1 bg-gray-50 hover:bg-gray-100 text-[#181411] font-bold py-5 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg border border-gray-100"
+                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
                             >
                                 <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
                                 Skip
                             </button>
-                            <button
+                            <Button
+                                variant="filled"
+                                size="lg"
                                 onClick={engineState.isRunning ? pauseBrew : resumeBrew}
-                                className="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg"
+                                className="flex-1"
                             >
                                 <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
-                                {engineState.isRunning ? 'Pause' : 'Resume'}
-                            </button>
+                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
+                            </Button>
                         </>
                     )}
                 </div>
             </div>
+
             <Modal
                 isOpen={isStopModalOpen}
                 onClose={() => setIsStopModalOpen(false)}

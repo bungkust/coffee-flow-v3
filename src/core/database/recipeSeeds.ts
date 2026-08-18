@@ -28,16 +28,39 @@ type RecipeSeed = {
 };
 
 export const BREWING_METHOD_SEEDS: BrewingMethod[] = [
-    { id: 'v60', name: 'V60 Pour Over', description: 'Cone dripper for clean, expressive cups.', icon: 'filter_alt', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'aeropress', name: 'AeroPress', description: 'Pressure-assisted immersion brewer.', icon: 'science', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'french_press', name: 'French Press', description: 'Full-bodied immersion brewing.', icon: 'coffee', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'chemex', name: 'Chemex', description: 'Thick-filter brewer for refined clarity.', icon: 'hourglass_top', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'espresso', name: 'Espresso', description: 'Concentrated pressure extraction.', icon: 'coffee', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'moka_pot', name: 'Moka Pot', description: 'Stovetop brewer for intense coffee.', icon: 'local_cafe', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'cold_brew', name: 'Cold Brew', description: 'Low-acid immersion brewed cold.', icon: 'ac_unit', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'kalita', name: 'Kalita Wave', description: 'Flat-bottom dripper for steady extraction.', icon: 'waves', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'clever', name: 'Clever Dripper', description: 'Immersion with controlled drawdown.', icon: 'filter_list', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
-    { id: 'siphon', name: 'Siphon', description: 'Vacuum brewer with high aroma clarity.', icon: 'science', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP }
+    // 1. Pressure Brewing Methods
+    { id: 'espresso', name: 'Espresso Machine', category: 'Pressure Brewing Methods', description: 'Forces hot water through finely ground coffee at high pressure (9 bars) to create a highly concentrated shot with a dense crema layer.', icon: 'coffee', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'moka_pot', name: 'Moka Pot', category: 'Pressure Brewing Methods', description: 'A classic Italian stovetop brewer using steam pressure to force boiling water up through medium-fine grounds.', icon: 'local_cafe', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'aeropress', name: 'AeroPress', category: 'Pressure Brewing Methods', description: 'A compact manual device using air pressure plunger to push water through coffee grounds for quick filtration.', icon: 'science', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'keurig', name: 'Keurig (Single Pod)', category: 'Pressure Brewing Methods', description: 'An automatic system pumping pressurized hot water through plastic K-Cup pods for fast brewing.', icon: 'widgets', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+
+    // 2. Drip, Flow & Gravity Brewing Methods
+    { id: 'v60', name: 'V60 Pour Over', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Cone dripper with spiral ridges promoting fast flow for bright, clean, expressive cups.', icon: 'filter_alt', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'kalita', name: 'Flat-Bottom Dripper', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Flat-bottom dripper (like Kalita Wave) restricting water flow for steady, highly even extraction.', icon: 'waves', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'chemex', name: 'Chemex', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Hourglass glass vessel with thick bonded paper filters to remove oils and sediment for extreme clarity.', icon: 'hourglass_top', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'drip_machine', name: 'Drip Coffee Maker', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Automatic kitchen appliance heating water and dripping it over a filter basket of medium-ground coffee.', icon: 'coffee_maker', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'phin', name: 'Vietnamese Phin Filter', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Small metal filter resting on a cup that slowly drips bold, concentrated coffee via gravity.', icon: 'water_drop', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'south_indian_filter', name: 'South Indian Filter', category: 'Drip, Flow & Gravity Brewing Methods', description: 'Slow-drip two-chamber metal filter percolating coffee and chicory to yield a heavy decoction.', icon: 'invert_colors', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+
+    // 3. Full Immersion (Steeping) Methods
+    { id: 'french_press', name: 'French Press', category: 'Full Immersion (Steeping) Methods', description: 'Classic carafe where coarse grounds steep fully before being separated by a metal mesh plunger.', icon: 'coffee', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'cold_brew', name: 'Cold Brew', category: 'Full Immersion (Steeping) Methods', description: 'Steeps coarse-ground coffee in cold water for 12-24 hours to produce a low-acid, sweet concentrate.', icon: 'ac_unit', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'turkish', name: 'Turkish Coffee (Cezve)', category: 'Full Immersion (Steeping) Methods', description: 'Simmers powdery ultra-fine grounds with water in a Cezve pot over heat, served unfiltered.', icon: 'fireplace', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'dallah', name: 'Arabic Coffee (Dallah)', category: 'Full Immersion (Steeping) Methods', description: 'Lightly roasted coffee boiled with cardamom and spices in a traditional Dallah pot, served in small cups.', icon: 'emoji_food_beverage', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'jebena', name: 'Ethiopian Coffee (Jebena)', category: 'Full Immersion (Steeping) Methods', description: 'Freshly roasted and ground coffee simmered in a traditional clay Jebena pot over coals.', icon: 'soup_kitchen', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'tubruk', name: 'Cowboy Coffee / Tubruk', category: 'Full Immersion (Steeping) Methods', description: 'Rustic method where boiling water is poured directly over grounds in a pot or cup, enjoyed unfiltered.', icon: 'local_fire_department', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+
+    // 4. Vacuum, Special & Percolation Methods
+    { id: 'cold_drip', name: 'Cold Drip (Kyoto Tower)', category: 'Vacuum, Special & Percolation Methods', description: 'Uses a glass tower to slowly drip ice water drop-by-drop over 4-12 hours for a clear, complex concentrate.', icon: 'opacity', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'siphon', name: 'Siphon (Vacuum Pot)', category: 'Vacuum, Special & Percolation Methods', description: 'Two-chamber system using vapor pressure to push water up and vacuum drawdown to pull clean coffee back down.', icon: 'science', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'sock_coffee', name: 'Sock Coffee (Chorreador)', category: 'Vacuum, Special & Percolation Methods', description: 'Filters hot water through a cotton or muslin cloth bag suspended on a wooden stand.', icon: 'dry_cleaning', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'percolator', name: 'Percolator', category: 'Vacuum, Special & Percolation Methods', description: 'Continuous cycling of boiling water up a tube and over coarse grounds for a robust cup.', icon: 'loop', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'clover', name: 'Clover Coffee Machine', category: 'Vacuum, Special & Percolation Methods', description: 'Commercial system combining full immersion brewing with automated vacuum-press extraction.', icon: 'precision_manufacturing', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+
+    // 5. Hybrid & Portable Methods
+    { id: 'hario_switch', name: 'Hario Switch', category: 'Hybrid & Portable Methods', description: 'Hybrid dripper allowing coffee to steep completely before a manual valve is clicked open to release liquid.', icon: 'toggle_on', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'clever', name: 'Clever Dripper', category: 'Hybrid & Portable Methods', description: 'Immersion dripper with controlled drawdown valve for clean, balanced, full-bodied coffee.', icon: 'filter_list', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP },
+    { id: 'portable_all_in_one', name: 'All-in-One Portable', category: 'Hybrid & Portable Methods', description: 'Compact travel kits packing hand grinder, drip filter, and drinking tumbler into a single unit.', icon: 'backpack', created_at: SEED_TIMESTAMP, updated_at: SEED_TIMESTAMP }
 ];
 
 const buildRecipe = (seed: RecipeSeed): Recipe => ({
@@ -90,11 +113,12 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium-Fine',
         total_water: 288,
         steps: [
-            { label: 'Bloom', duration: 35, target: 50, instruction: 'Pour to 50g and gently swirl until all grounds are wet.' },
-            { label: 'First Pour', duration: 35, target: 170, instruction: 'Pour in slow circles, keeping the slurry height stable.' },
-            { label: 'Settle', duration: 20, instruction: 'Let the bed drop slightly without drying out.' },
-            { label: 'Final Pour', duration: 35, target: 288, instruction: 'Pour to final weight, then give one light swirl.' },
-            { label: 'Drawdown', duration: 55, instruction: 'Let the brew drain. Target total time is around 3:00.' }
+            { label: 'Bloom Pour', duration: 15, target: 50, instruction: 'Pour 50g water evenly over coffee.' },
+            { label: 'Bloom Rest Interval', duration: 20, instruction: 'Gently swirl and let grounds bloom for 20s.' },
+            { label: 'First Main Pour', duration: 20, target: 170, instruction: 'Pour in slow circles to 170g.' },
+            { label: 'Settle / Rest Interval', duration: 15, instruction: 'Let coffee bed drop slightly.' },
+            { label: 'Final Pour', duration: 20, target: 288, instruction: 'Pour to final 288g weight.' },
+            { label: 'Final Drawdown', duration: 55, instruction: 'Let the brew drain completely. Target total time ~3:00.' }
         ]
     }),
     buildRecipe({
@@ -113,12 +137,16 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium-Fine',
         total_water: 300,
         steps: [
-            { label: 'Bloom', duration: 45, target: 55, instruction: 'Saturate evenly and let the bloom expand fully.' },
-            { label: 'Pulse 1', duration: 20, target: 120, instruction: 'Pour a narrow spiral from center outward.' },
-            { label: 'Pulse 2', duration: 20, target: 185, instruction: 'Repeat with a calm, even stream.' },
-            { label: 'Pulse 3', duration: 20, target: 245, instruction: 'Keep the stream low to reduce splashing.' },
-            { label: 'Finish', duration: 25, target: 300, instruction: 'Pour to final weight and swirl once.' },
-            { label: 'Drawdown', duration: 60, instruction: 'Let drain. If sour, grind finer; if dry, grind coarser.' }
+            { label: 'Bloom Pour', duration: 15, target: 55, instruction: 'Saturate grounds evenly with 55g water.' },
+            { label: 'Bloom Rest Interval', duration: 30, instruction: 'Let bloom expand fully.' },
+            { label: 'Pulse 1 Pour', duration: 10, target: 120, instruction: 'Pour narrow spiral to 120g.' },
+            { label: 'Rest Interval 1', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Pulse 2 Pour', duration: 10, target: 185, instruction: 'Pour even stream to 185g.' },
+            { label: 'Rest Interval 2', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Pulse 3 Pour', duration: 10, target: 245, instruction: 'Pour to 245g.' },
+            { label: 'Rest Interval 3', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Finish Pour', duration: 15, target: 300, instruction: 'Pour to 300g final weight.' },
+            { label: 'Final Drawdown', duration: 60, instruction: 'Let drain completely.' }
         ]
     }),
     buildRecipe({
@@ -137,12 +165,16 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium-Coarse',
         total_water: 300,
         steps: [
-            { label: 'Sweetness Pour', duration: 45, target: 60, instruction: 'Pour 60g slowly to saturate the bed.' },
-            { label: 'Balance Pour', duration: 45, target: 120, instruction: 'Pour another 60g and let it drain halfway.' },
-            { label: 'Strength Pour 1', duration: 35, target: 180, instruction: 'Pour 60g with a slightly faster stream.' },
-            { label: 'Strength Pour 2', duration: 35, target: 240, instruction: 'Repeat when the water level drops.' },
-            { label: 'Strength Pour 3', duration: 35, target: 300, instruction: 'Finish to final weight and avoid heavy swirling.' },
-            { label: 'Drawdown', duration: 55, instruction: 'Target total time is 3:30 to 4:00.' }
+            { label: 'Sweetness Pour', duration: 15, target: 60, instruction: 'Pour 60g slowly to saturate bed.' },
+            { label: 'Bloom Rest Interval', duration: 30, instruction: 'Wait 30s for bloom & drawdown.' },
+            { label: 'Balance Pour', duration: 15, target: 120, instruction: 'Pour 60g (to 120g).' },
+            { label: 'Rest Interval 1', duration: 30, instruction: 'Let water drain halfway.' },
+            { label: 'Strength Pour 1', duration: 15, target: 180, instruction: 'Pour 60g (to 180g).' },
+            { label: 'Rest Interval 2', duration: 20, instruction: 'Wait for water level to drop.' },
+            { label: 'Strength Pour 2', duration: 15, target: 240, instruction: 'Pour 60g (to 240g).' },
+            { label: 'Rest Interval 3', duration: 20, instruction: 'Wait for water level to drop.' },
+            { label: 'Strength Pour 3', duration: 15, target: 300, instruction: 'Finish to 300g.' },
+            { label: 'Final Drawdown', duration: 55, instruction: 'Target total time 3:30 - 4:00.' }
         ]
     }),
     buildRecipe({
@@ -161,11 +193,12 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium-Fine',
         total_water: 255,
         steps: [
-            { label: 'Bloom', duration: 40, target: 45, instruction: 'Pour gently and avoid stirring.' },
-            { label: 'Center Pour', duration: 35, target: 150, instruction: 'Pour mostly in the center with small circles.' },
-            { label: 'Pause', duration: 25, instruction: 'Let the bed settle naturally.' },
-            { label: 'Finish Pour', duration: 30, target: 255, instruction: 'Pour to final weight with low stream height.' },
-            { label: 'Drawdown', duration: 60, instruction: 'Let drain without swirling.' }
+            { label: 'Bloom Pour', duration: 15, target: 45, instruction: 'Pour 45g gently.' },
+            { label: 'Bloom Rest Interval', duration: 25, instruction: 'Let grounds bloom.' },
+            { label: 'Center Pour', duration: 20, target: 150, instruction: 'Pour in center to 150g.' },
+            { label: 'Pause / Rest Interval', duration: 25, instruction: 'Let bed settle naturally.' },
+            { label: 'Finish Pour', duration: 15, target: 255, instruction: 'Pour to final 255g weight.' },
+            { label: 'Final Drawdown', duration: 60, instruction: 'Let drain without swirling.' }
         ]
     }),
     buildRecipe({
@@ -185,10 +218,11 @@ export const RECIPE_SEEDS: Recipe[] = [
         total_water: 360,
         steps: [
             { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Rinse paper filter and pre-heat V60 with hot water, then discard water.' },
-            { label: 'Pre-wet & Excavate', duration: 35, target: 66, instruction: 'Add 22g coffee, flatten bed. Pre-wet with 66g water (~3x weight). Gently excavate to wet all grounds within 10s. Wait until 0:45.' },
-            { label: 'Main Pour', duration: 60, target: 360, instruction: 'At 0:45, start main pour until 360g total water. Gently stir slurry edges to stop grounds from clinging to sides.' },
-            { label: 'Bed Swirl', duration: 15, target: 360, instruction: 'At 1:45, swirl the V60 funnel gently to flatten the coffee bed for an even drawdown.' },
-            { label: 'Drawdown', duration: 60, instruction: 'Allow coffee to drain completely. Drawdown should finish within 3:00 total brew time.' }
+            { label: 'Pre-wet Bloom', duration: 15, target: 66, instruction: 'Add 22g coffee. Pre-wet with 66g water (~3x weight) and excavate.' },
+            { label: 'Bloom Rest Interval', duration: 20, instruction: 'Wait for grounds to bloom until 0:45.' },
+            { label: 'Main Pour', duration: 60, target: 360, instruction: 'At 0:45, start main pour until 360g total water.' },
+            { label: 'Bed Swirl & Rest', duration: 15, instruction: 'At 1:45, swirl V60 funnel gently to flatten coffee bed.' },
+            { label: 'Final Drawdown', duration: 60, instruction: 'Allow coffee to drain completely (target ~3:00).' }
         ]
     }),
     buildRecipe({
@@ -207,12 +241,13 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium-Fine',
         total_water: 500,
         steps: [
-            { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Rinse paper filter and pre-heat V60 with boiling water, then discard water.' },
-            { label: 'Pre-wet & Swirl', duration: 35, target: 60, instruction: 'Add 30g coffee, create a well in the middle. Pre-wet with 60g water (~2x weight). Swirl brewer until slurry is even. Wait until 0:45.' },
-            { label: 'First Main Pour', duration: 30, target: 300, instruction: 'At 0:45, complete first main pour up to 300g within 30s (by 1:15).' },
-            { label: 'Second Main Pour', duration: 30, target: 500, instruction: 'At 1:15, gently complete second main pour up to 500g within 30s (by 1:45).' },
-            { label: 'Stir & Swirl', duration: 15, target: 500, instruction: 'Stir gently clockwise and anticlockwise to kick grounds from sides. Gently swirl brewer to flatten coffee bed.' },
-            { label: 'Drawdown', duration: 90, instruction: 'Allow coffee to drain. Aim to finish drawdown by 3:30 total brew time.' }
+            { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Rinse paper filter with boiling water and discard.' },
+            { label: 'Bloom Pour', duration: 15, target: 60, instruction: 'Pre-wet with 60g water (~2x weight) and swirl.' },
+            { label: 'Bloom Rest Interval', duration: 20, instruction: 'Wait for bloom until 0:45.' },
+            { label: 'First Main Pour', duration: 30, target: 300, instruction: 'Complete first main pour up to 300g (by 1:15).' },
+            { label: 'Second Main Pour', duration: 30, target: 500, instruction: 'Complete second main pour up to 500g (by 1:45).' },
+            { label: 'Stir & Swirl', duration: 15, instruction: 'Stir gently clockwise and anticlockwise, then swirl.' },
+            { label: 'Final Drawdown', duration: 90, instruction: 'Allow coffee to drain (target 3:30).' }
         ]
     }),
     buildRecipe({
@@ -232,11 +267,16 @@ export const RECIPE_SEEDS: Recipe[] = [
         total_water: 300,
         steps: [
             { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Rinse V60 paper filter with hot water and discard.' },
-            { label: 'First Pour (40% Part 1)', duration: 45, target: 60, instruction: 'Add 20g coarse coffee. Pour 60g water in a steady spiral. Wait for water to completely drain (45s).' },
-            { label: 'Second Pour (40% Part 2)', duration: 45, target: 120, instruction: 'At 0:45, pour 60g (to 120g total). Wait 45s for drawdown.' },
-            { label: 'Third Pour (60% Part 1)', duration: 45, target: 180, instruction: 'At 1:30, pour 60g (to 180g total). Wait 45s for drawdown.' },
-            { label: 'Fourth Pour (60% Part 2)', duration: 45, target: 240, instruction: 'At 2:15, pour 60g (to 240g total). Wait 45s for drawdown.' },
-            { label: 'Fifth Pour (60% Part 3)', duration: 45, target: 300, instruction: 'At 3:00, pour final 60g (to 300g total). Allow coffee to drain completely by 3:30.' }
+            { label: 'First Pour (40% Part 1)', duration: 15, target: 60, instruction: 'Add 20g coarse coffee. Pour 60g water in a steady 15s spiral.' },
+            { label: 'Rest Interval 1', duration: 30, instruction: 'Wait 30s for drawdown & bloom (until 0:45).' },
+            { label: 'Second Pour (40% Part 2)', duration: 15, target: 120, instruction: 'Pour 60g in 15s (to 120g total).' },
+            { label: 'Rest Interval 2', duration: 30, instruction: 'Wait 30s for drawdown (until 1:30).' },
+            { label: 'Third Pour (60% Part 1)', duration: 15, target: 180, instruction: 'Pour 60g in 15s (to 180g total).' },
+            { label: 'Rest Interval 3', duration: 30, instruction: 'Wait 30s for drawdown (until 2:15).' },
+            { label: 'Fourth Pour (60% Part 2)', duration: 15, target: 240, instruction: 'Pour 60g in 15s (to 240g total).' },
+            { label: 'Rest Interval 4', duration: 30, instruction: 'Wait 30s for drawdown (until 3:00).' },
+            { label: 'Fifth Pour (60% Part 3)', duration: 10, target: 300, instruction: 'Pour final 60g in 10s (to 300g total).' },
+            { label: 'Final Drawdown', duration: 20, instruction: 'Allow coffee to drain completely by 3:30.' }
         ]
     }),
     buildRecipe({
@@ -256,12 +296,16 @@ export const RECIPE_SEEDS: Recipe[] = [
         total_water: 468,
         steps: [
             { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Rinse filter and pre-heat V60 with hot water, then discard.' },
-            { label: 'Pre-wet Bloom', duration: 60, target: 52, instruction: 'Add 26g fine coffee (sand-like). Pour 52g water in a clockwise spiral outward from center. Wait 60s.' },
-            { label: 'First Pulse Pour', duration: 25, target: 150, instruction: 'At 1:00, pour 98g in slow concentric circles from center outward (to 150g total). Pause 10-12s.' },
-            { label: 'Second Pulse Pour', duration: 25, target: 250, instruction: 'Pour 100g slowly downward in center moving outward (to 250g total). Pause 10-12s.' },
-            { label: 'Third Pulse Pour', duration: 25, target: 350, instruction: 'Pour 100g in slow circles (to 350g total). Pause 10-12s.' },
-            { label: 'Final Pulse Pour', duration: 25, target: 468, instruction: 'Pour remaining 118g water to reach 468g total weight.' },
-            { label: 'Drawdown', duration: 70, instruction: 'Allow coffee to drain. Remove dripper once it reaches an occasional drip (around 4:00 total brew time).' }
+            { label: 'Pre-wet Bloom', duration: 15, target: 52, instruction: 'Pour 52g water in a clockwise spiral.' },
+            { label: 'Bloom Rest Interval', duration: 45, instruction: 'Wait for bloom until 1:00.' },
+            { label: 'First Pulse Pour', duration: 15, target: 150, instruction: 'Pour 98g in slow concentric circles to 150g total.' },
+            { label: 'Rest Interval 1', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Second Pulse Pour', duration: 15, target: 250, instruction: 'Pour 100g in center moving outward to 250g.' },
+            { label: 'Rest Interval 2', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Third Pulse Pour', duration: 15, target: 350, instruction: 'Pour 100g in slow circles to 350g.' },
+            { label: 'Rest Interval 3', duration: 10, instruction: 'Pause 10s.' },
+            { label: 'Final Pulse Pour', duration: 15, target: 468, instruction: 'Pour remaining 118g to reach 468g total.' },
+            { label: 'Final Drawdown', duration: 70, instruction: 'Allow coffee to drain.' }
         ]
     }),
     buildRecipe({
@@ -281,9 +325,10 @@ export const RECIPE_SEEDS: Recipe[] = [
         total_water: 120,
         steps: [
             { label: 'Rinse & Pre-heat', duration: 10, instruction: 'Fold paper filter, place in V60. Rinse and pre-heat dripper with boiling water, then discard.' },
-            { label: 'Pre-wet Spiral', duration: 30, target: 36, instruction: 'Add 12g coffee, shake V60 lightly to level bed. Pour 36g boiling water in a spiral from center outward. Let pre-wet for 30s.' },
-            { label: 'Main Spiral Pour', duration: 60, target: 120, instruction: 'Pour remaining water to 120g using the same spiral motion. Avoid pouring directly on the paper filter itself.' },
-            { label: 'Drawdown', duration: 80, instruction: 'Allow coffee to drain completely into cup. Remove dripper once finished (target brew time 3:00).' }
+            { label: 'Pre-wet Spiral', duration: 10, target: 36, instruction: 'Pour 36g boiling water in a spiral.' },
+            { label: 'Bloom Rest Interval', duration: 20, instruction: 'Let pre-wet for 20s.' },
+            { label: 'Main Spiral Pour', duration: 60, target: 120, instruction: 'Pour remaining water to 120g using spiral motion.' },
+            { label: 'Final Drawdown', duration: 80, instruction: 'Allow coffee to drain completely into cup.' }
         ]
     }),
     buildRecipe({
@@ -302,12 +347,16 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Coarse (30-32 Comandante clicks)',
         total_water: 300,
         steps: [
-            { label: 'Bloom (1st Pour)', duration: 40, target: 60, instruction: 'Pour 60g in 10s starting from the center outward in a spiral, then pause.' },
-            { label: '2nd Pour', duration: 40, target: 120, instruction: 'Pour 60g in 10s starting from the center outward in a spiral, then pause.' },
-            { label: '3rd Pour', duration: 40, target: 180, instruction: 'Pour 60g in 10s starting from the center outward in a spiral, then pause.' },
-            { label: '4th Pour', duration: 40, target: 240, instruction: 'Pour 60g in 10s starting from the center outward in a spiral, then pause.' },
-            { label: '5th Pour', duration: 10, target: 300, instruction: 'Final 60g pour in 10s starting from the center outward in a spiral.' },
-            { label: 'Drawdown', duration: 30, instruction: 'Let drain. Target total brew time is 3:00 to 3:20.' }
+            { label: 'Bloom Pour (1st)', duration: 10, target: 60, instruction: 'Pour 60g in 10s starting from center outward in a spiral.' },
+            { label: 'Bloom Rest Interval', duration: 30, instruction: 'Rest and pause 30s.' },
+            { label: '2nd Pour', duration: 10, target: 120, instruction: 'Pour 60g in 10s in a spiral.' },
+            { label: 'Rest Interval 1', duration: 30, instruction: 'Rest and pause 30s.' },
+            { label: '3rd Pour', duration: 10, target: 180, instruction: 'Pour 60g in 10s in a spiral.' },
+            { label: 'Rest Interval 2', duration: 30, instruction: 'Rest and pause 30s.' },
+            { label: '4th Pour', duration: 10, target: 240, instruction: 'Pour 60g in 10s in a spiral.' },
+            { label: 'Rest Interval 3', duration: 30, instruction: 'Rest and pause 30s.' },
+            { label: '5th Pour', duration: 10, target: 300, instruction: 'Final 60g pour in 10s in a spiral.' },
+            { label: 'Final Drawdown', duration: 30, instruction: 'Allow coffee to drain completely.' }
         ]
     }),
     buildRecipe({
@@ -326,11 +375,14 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium (16 on Baratza Encore)',
         total_water: 288,
         steps: [
-            { label: 'Bloom', duration: 45, target: 70, instruction: 'Pour 70g water (or 50-90g). Stir gently with a spoon or stick to make sure all grounds are fully saturated, then pause to let the coffee bloom.' },
-            { label: 'First Pour', duration: 30, target: 140, instruction: 'Pour 70g in a calm spiral starting from the center outward. Avoid pouring too close to the paper filter edge. Keep the coffee bed wet.' },
-            { label: 'Second Pour', duration: 30, target: 210, instruction: 'Pour another 70g in a spiral pattern. Do not pour in a single place, and never let the coffee bed run completely dry to maintain heat.' },
-            { label: 'Final Pour', duration: 30, target: 288, instruction: 'Pour final 78g in a calm spiral. Give the V60 dripper a gentle swirl to flatten the coffee bed for an even drawdown.' },
-            { label: 'Drawdown', duration: 50, instruction: 'Let the water drain completely. Total brew time should be around 2:45 to 3:00 minutes.' }
+            { label: 'Bloom Pour', duration: 15, target: 70, instruction: 'Pour 70g water over coffee.' },
+            { label: 'Bloom Rest Interval', duration: 30, instruction: 'Stir gently and let bloom expand.' },
+            { label: 'First Main Pour', duration: 15, target: 140, instruction: 'Pour 70g in a calm spiral.' },
+            { label: 'Rest Interval 1', duration: 15, instruction: 'Pause briefly to let bed settle.' },
+            { label: 'Second Main Pour', duration: 15, target: 210, instruction: 'Pour another 70g in a spiral.' },
+            { label: 'Rest Interval 2', duration: 15, instruction: 'Pause0 briefly.' },
+            { label: 'Final Pour', duration: 15, target: 288, instruction: 'Pour final 78g in a calm spiral.' },
+            { label: 'Final Drawdown', duration: 50, instruction: 'Let water drain completely.' }
         ]
     }),
     buildRecipe({
@@ -349,10 +401,12 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Medium',
         total_water: 225,
         steps: [
-            { label: 'Bloom', duration: 30, target: 30, instruction: 'Tuang 30g air secara merata untuk membuang gas (blooming). Diamkan selama 30 detik.' },
-            { label: 'Tuangan Utama', duration: 60, target: 200, instruction: 'Tuang 170g air secara pelan dengan gerakan memutar stabil. Tunggu hingga genangan air hampir kering.' },
-            { label: 'Tuangan Akhir', duration: 30, target: 225, instruction: 'Tuang 25g air terakhir secara perlahan untuk melengkapi ekstraksi.' },
-            { label: 'Drawdown', duration: 30, instruction: 'Biarkan air turun seluruhnya. Target total waktu seduh idealnya adalah sekitar 2:30 menit.' }
+            { label: 'Bloom Pour', duration: 10, target: 30, instruction: 'Tuang 30g air secara merata.' },
+            { label: 'Bloom Rest Interval', duration: 20, instruction: 'Diamkan untuk blooming selama 20d.' },
+            { label: 'Tuangan Utama', duration: 40, target: 200, instruction: 'Tuang 170g air secara pelan dengan gerakan memutar.' },
+            { label: 'Rest / Tiris Interval', duration: 20, instruction: 'Tunggu hingga genangan air hampir kering.' },
+            { label: 'Tuangan Akhir', duration: 15, target: 225, instruction: 'Tuang 25g air terakhir secara perlahan.' },
+            { label: 'Final Drawdown', duration: 30, instruction: 'Biarkan air turun seluruhnya.' }
         ]
     }),
     buildRecipe({
@@ -371,12 +425,90 @@ export const RECIPE_SEEDS: Recipe[] = [
         grind_size: 'Coarse',
         total_water: 300,
         steps: [
-            { label: 'First Pour (40% Part 1)', duration: 45, target: 60, instruction: 'Pour 60g hot water in a continuous spiral motion within 10 seconds. Pause and let it drain until 0:45.' },
-            { label: 'Second Pour (40% Part 2)', duration: 45, target: 120, instruction: 'Pour 60g hot water (+60g, target 120g) in a circular motion within 10 seconds. Pause until 1:30.' },
-            { label: 'Third Pour (60% Part 1)', duration: 45, target: 180, instruction: 'Pour 60g hot water (+60g, target 180g) in a circular motion within 10 seconds. Pause until 2:15.' },
-            { label: 'Fourth Pour (60% Part 2)', duration: 45, target: 240, instruction: 'Pour 60g hot water (+60g, target 240g) in a circular motion within 10 seconds. Pause until 3:00.' },
-            { label: 'Fifth Pour (60% Part 3)', duration: 30, target: 300, instruction: 'Pour final 60g hot water (+60g, target 300g) in a circular motion within 10 seconds.' },
-            { label: 'Drawdown & Serve', duration: 30, instruction: 'Allow water to drain completely through the coffee bed. Remove V60 dripper at 3:30 and serve.' }
+            { label: 'First Pour (40% Part 1)', duration: 15, target: 60, instruction: 'Tuang 60g air dalam 15s secara memutar.' },
+            { label: 'Bloom Rest Interval', duration: 30, instruction: 'Biarkan air tiris & kopi blooming selama 30s (hingga 0:45).' },
+            { label: 'Second Pour (40% Part 2)', duration: 15, target: 120, instruction: 'Tuang +60g (target 120g) dalam 15s.' },
+            { label: 'Rest Interval 1', duration: 30, instruction: 'Biarkan air tiris selama 30s (hingga 1:30).' },
+            { label: 'Third Pour (60% Part 1)', duration: 15, target: 180, instruction: 'Tuang +60g (target 180g) dalam 15s.' },
+            { label: 'Rest Interval 2', duration: 30, instruction: 'Biarkan air tiris selama 30s (hingga 2:15).' },
+            { label: 'Fourth Pour (60% Part 2)', duration: 15, target: 240, instruction: 'Tuang +60g (target 240g) dalam 15s.' },
+            { label: 'Rest Interval 3', duration: 30, instruction: 'Biarkan air tiris selama 30s (hingga 3:00).' },
+            { label: 'Fifth Pour (60% Part 3)', duration: 10, target: 300, instruction: 'Tuang +60g (target 300g) dalam 10s.' },
+            { label: 'Final Drawdown & Serve', duration: 20, instruction: 'Biarkan air turun sepenuhnya (hingga 3:30). Angkat V60 & sajikan.' }
+        ]
+    }),
+    buildRecipe({
+        id: 'v60-kurasu-japanese-iced-pour-over',
+        method_id: 'v60',
+        name: 'Kurasu Japanese Iced Pour-Over',
+        difficulty: 'Intermediate',
+        style: 'Iced / Flash Chilled / Crisp',
+        description_short: "Kurasu Kyoto's signature Japanese-style iced V60 pour-over using flash chilling over ice.",
+        description_detailed: "Kurasu Kyoto's official iced pour-over recipe brews hot coffee directly onto 70g of ice in the server. Hot extraction unlocks rich aromatics while instant flash chilling locks in clarity and prevents oxidation.",
+        philosophy: 'Hot water extraction preserves delicate floral notes and sweetness, while immediate chilling over ice maintains bright clarity without bitterness.',
+        best_for_tags: ['Iced Coffee', 'Flash Chilled', 'Light Roast', 'Medium Roast', 'Clean Cup', 'Summer'],
+        not_recommended_tags: ['Dark Roast', 'Coarse Cold Brew Grind'],
+        ratio: '1:13.7',
+        temperature: 91,
+        grind_size: 'Medium-Fine',
+        total_water: 150,
+        steps: [
+            { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 70g ice cubes into server, attach V60, add 16g medium-fine coffee & tare scale.' },
+            { label: '1st Pour (Bloom)', duration: 10, target: 40, instruction: 'Pour 40g hot water (91°C) in 10s. Agitate slurry with spoon 2-3 times.' },
+            { label: 'Bloom Rest Interval', duration: 35, instruction: 'Allow coffee to bloom and saturate grounds until 0:45.' },
+            { label: '2nd Pour', duration: 10, target: 100, instruction: 'At 0:45, pour 60g hot water in 10s (to 100g total).' },
+            { label: 'Rest Interval 1', duration: 35, instruction: 'Wait 35s for drawdown (until 1:30).' },
+            { label: '3rd Pour', duration: 10, target: 150, instruction: 'At 1:30, pour final 50g hot water in 10s (to 150g total).' },
+            { label: 'Final Drawdown & Melt', duration: 30, instruction: 'Stir coffee bed once. Allow brew to drain into ice until 2:10.' },
+            { label: 'Stir & Serve over Fresh Ice', duration: 10, instruction: 'Swirl server until ice in server completely melts. Pour into a glass filled with fresh ice cubes & enjoy!' }
+        ]
+    }),
+    buildRecipe({
+        id: 'v60-bean-rock-iced-japanese',
+        method_id: 'v60',
+        name: 'Bean Rock V60 Iced Japanese-Style',
+        difficulty: 'Intermediate',
+        style: 'Iced / Sweet & Crisp',
+        description_short: "Bean Rock Coffee's sweet, crisp 3-pour Japanese-style iced V60 recipe.",
+        description_detailed: "A balanced Japanese-style iced V60 recipe by Bean Rock Coffee using a 1:15 total ratio (60% hot water, 40% ice in server). Uses 20g coffee brewed over 120g ice with 180g hot water poured in 3 precise phases.",
+        philosophy: "Keeping hot water at 60% (180g) and ice at 40% (120g) of total volume delivers a sweet, refreshing cup with vibrant acidity, zero bitterness, and instant flash chilling.",
+        best_for_tags: ['Iced Coffee', 'Flash Chilled', 'Sweet Profile', 'Medium Grind', 'Summer', 'Refresh'],
+        not_recommended_tags: ['Dark Roast', 'Coarse Cold Brew Grind'],
+        ratio: '1:15',
+        temperature: 95,
+        grind_size: 'Medium',
+        total_water: 180,
+        steps: [
+            { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 120g ice cubes into server, attach V60, rinse paper filter with hot water, add 20g medium coffee & tare scale.' },
+            { label: '1st Pour (Bloom)', duration: 10, target: 50, instruction: 'Pour 50g hot water (95°C) in 10s in a continuous circular motion from center outwards.' },
+            { label: 'Bloom Rest Interval', duration: 35, instruction: 'Allow coffee to bloom and saturate grounds until 0:45.' },
+            { label: '2nd Pour', duration: 10, target: 120, instruction: 'At 0:45, pour 70g hot water in 10s (to 120g total).' },
+            { label: 'Rest Interval 1', duration: 35, instruction: 'Wait 35s for drawdown until 1:30.' },
+            { label: '3rd Pour', duration: 10, target: 180, instruction: 'At 1:30, pour final 60g hot water in 10s (to 180g total).' },
+            { label: 'Final Drawdown & Serve', duration: 35, instruction: 'At 2:15, remove V60 dripper. Swirl server to melt ice completely & serve immediately!' }
+        ]
+    }),
+    buildRecipe({
+        id: 'chemex-pull-and-pour-japanese-iced',
+        method_id: 'chemex',
+        name: 'Pull & Pour Chemex Japanese Iced',
+        difficulty: 'Intermediate',
+        style: 'Iced / Clean & Crisp',
+        description_short: "Pull & Pour's signature Chemex Japanese-style iced coffee recipe.",
+        description_detailed: "A classic Japanese iced coffee recipe crafted for the Chemex by Pull & Pour. Uses 36g coffee, 305g hot water, and 270g ice in the Chemex (1:16 ratio with ~47% ice). Brewing hot coffee directly onto ice locks in bright aromatics and crisp sweetness.",
+        philosophy: "Brewing hot water over thick Chemex filters directly onto large ice cubes seals in volatile aromas instantly and produces an exceptionally clean, sparkling iced cup.",
+        best_for_tags: ['Iced Coffee', 'Flash Chilled', 'Chemex', 'Clean Cup', 'Crisp Profile', 'Medium Roast'],
+        not_recommended_tags: ['Dark Roast', 'Fine Espresso Grind'],
+        ratio: '1:16',
+        temperature: 93,
+        grind_size: 'Medium-Fine',
+        total_water: 305,
+        steps: [
+            { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 270g large ice cubes into Chemex flask, insert thick Chemex paper filter (rinsed), add 36g medium-fine coffee & tare scale.' },
+            { label: '1st Pour (Bloom)', duration: 20, target: 70, instruction: 'Pour 70g hot water (93°C) in concentric circles for 20s to fully saturate all grounds.' },
+            { label: 'Bloom Rest Interval', duration: 25, instruction: 'Allow coffee bed to bloom and release CO2 until 0:45.' },
+            { label: '2nd Pour (Main Extraction)', duration: 90, target: 305, instruction: 'At 0:45, slowly pour remaining 235g hot water in gentle concentric circles until 2:15.' },
+            { label: 'Final Drawdown & Serve', duration: 75, instruction: 'Allow coffee to fully filter through Chemex bed into ice until 3:30. Discard filter, swirl Chemex & serve over glass!' }
         ]
     }),
     buildRecipe({
