@@ -387,8 +387,7 @@ export const BrewMethodsPage = () => {
                                 <MethodImage src={selectedMethodModal.image} alt={selectedMethodModal.name} icon={selectedMethodModal.icon} size="lg" />
                             </div>
 
-                            <div className="bg-md-surface-container-low p-4 rounded-xl border border-md-outline-variant/30 space-y-2">
-                                <h4 className="typescale-label-medium text-md-on-surface-variant uppercase font-bold tracking-wider">Description & Extraction</h4>
+                            <div className="bg-md-surface-container-low p-4 rounded-xl border border-md-outline-variant/30">
                                 <p className="typescale-body-medium text-md-on-surface leading-relaxed">
                                     {selectedMethodModal.description || 'A classic coffee brewing method.'}
                                 </p>
