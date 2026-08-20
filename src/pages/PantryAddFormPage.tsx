@@ -9,14 +9,9 @@ import type { PantryCategory } from '../features/pantry/domain/entities';
 const VARIETY_OPTIONS = [
     { value: 'Arabica', label: 'Arabica' },
     { value: 'Robusta', label: 'Robusta' },
-    { value: 'Blend', label: 'Blend' },
     { value: 'Liberica', label: 'Liberica' },
     { value: 'Excelsa', label: 'Excelsa' },
-    { value: 'Catimor', label: 'Catimor' },
-    { value: 'Bourbon', label: 'Bourbon' },
-    { value: 'Caturra', label: 'Caturra' },
-    { value: 'Typica', label: 'Typica' },
-    { value: 'Geisha', label: 'Geisha' },
+    { value: 'Blend', label: 'Blend' },
     { value: 'Other', label: 'Other' }
 ];
 
@@ -123,7 +118,7 @@ export const PantryAddFormPage = () => {
                 ].filter(Boolean)
             });
 
-            navigate('/pantry');
+            navigate(-1);
         } catch (error) {
             console.error('Failed to save pantry item:', error);
             alert('Failed to save item.');
@@ -139,7 +134,7 @@ export const PantryAddFormPage = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => navigate('/pantry/add')}
+                            onClick={() => navigate(-1)}
                             className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                             aria-label="Go back"
                         >

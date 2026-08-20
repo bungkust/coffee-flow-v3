@@ -57,7 +57,7 @@ export const DrinkDetailPage = () => {
             <div className="flex min-h-screen flex-col items-center justify-center bg-md-surface p-6 text-center">
                 <Icon name="error" className="mb-4 text-5xl text-md-error" />
                 <h1 className="typescale-title-large font-bold text-md-on-surface">Drink not found</h1>
-                <button onClick={() => navigate('/drinks')} className="mt-4 font-bold text-md-primary hover:underline cursor-pointer">Back to drinks</button>
+                <button onClick={() => navigate(-1)} className="mt-4 font-bold text-md-primary hover:underline cursor-pointer">Back to previous page</button>
             </div>
         );
     }

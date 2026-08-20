@@ -43,10 +43,10 @@ export const RecipeDetailPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold text-md-on-surface">Recipe not found</h2>
                 <button
-                    onClick={() => navigate('/recipes')}
+                    onClick={() => navigate(-1)}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
-                    Back to recipes
+                    Back to previous page
                 </button>
             </div>
         );

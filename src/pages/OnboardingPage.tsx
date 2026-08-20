@@ -3,20 +3,61 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
-import { settingsService, pantryService } from '../core/services';
+import { settingsService, pantryService, brewService } from '../core/services';
 import type { UnitSystem } from '../shared/utils/brewMath';
+import type { BrewingMethod } from '../shared/domain/entities';
+
+const CATEGORIES = [
+    'Pressure Brewing Methods',
+    'Drip, Flow & Gravity Brewing Methods',
+    'Full Immersion (Steeping) Methods',
+    'Vacuum, Special & Percolation Methods',
+    'Hybrid & Portable Methods',
+] as const;
+
+const CATEGORY_ICONS: Record<string, string> = {
+    'Pressure Brewing Methods': 'speed',
+    'Drip, Flow & Gravity Brewing Methods': 'water_drop',
+    'Full Immersion (Steeping) Methods': 'waves',
+    'Vacuum, Special & Percolation Methods': 'science',
+    'Hybrid & Portable Methods': 'tune',
+};
+
+function getCategoryFallback(id: string): string {
+    if (['espresso', 'moka_pot', 'aeropress', 'keurig'].includes(id)) return 'Pressure Brewing Methods';
+    if (['v60', 'kalita', 'chemex', 'drip_machine', 'phin', 'south_indian_filter'].includes(id)) return 'Drip, Flow & Gravity Brewing Methods';
+    if (['french_press', 'cold_brew', 'turkish', 'dallah', 'jebena', 'tubruk'].includes(id)) return 'Full Immersion (Steeping) Methods';
+    if (['cold_drip', 'siphon', 'sock_coffee', 'percolator', 'clover'].includes(id)) return 'Vacuum, Special & Percolation Methods';
+    return 'Hybrid & Portable Methods';
+}
+
+const MethodImage = ({ src, alt, icon, size = "md" }: { src: string; alt: string; icon?: string; size?: "sm" | "md" | "lg" }) => {
+    const [failed, setFailed] = useState(false);
+    if (failed || !src) {
+        const iconSize = size === "sm" ? "text-2xl" : size === "md" ? "text-3xl" : "text-5xl";
+        return (
+            <div className="flex items-center justify-center w-full h-full text-md-primary">
+                <Icon name={icon || 'coffee'} className={iconSize} style={{ fontVariationSettings: "'FILL' 1" }} />
+            </div>
+        );
+    }
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className="w-full h-full object-contain p-1"
+            onError={() => setFailed(true)}
+        />
+    );
+};
 
 const VARIETY_OPTIONS = [
-    { value: 'Bourbon', label: 'Bourbon' },
-    { value: 'Typica', label: 'Typica' },
-    { value: 'Caturra', label: 'Caturra' },
-    { value: 'Gesha / Geisha', label: 'Gesha / Geisha' },
-    { value: 'Ethiopian Heirloom', label: 'Ethiopian Heirloom' },
-    { value: 'SL28 / SL34', label: 'SL28 / SL34' },
-    { value: 'Castillo', label: 'Castillo' },
-    { value: 'Pacamara', label: 'Pacamara' },
-    { value: 'Kenia', label: 'Kenia' },
-    { value: 'Other', label: 'Other' },
+    { value: 'Arabica', label: 'Arabica' },
+    { value: 'Robusta', label: 'Robusta' },
+    { value: 'Liberica', label: 'Liberica' },
+    { value: 'Excelsa', label: 'Excelsa' },
+    { value: 'Blend', label: 'Blend' },
+    { value: 'Other', label: 'Other' }
 ];
 
 const PROCESS_OPTIONS = [
@@ -47,6 +88,24 @@ export const OnboardingPage = () => {
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>([
         'v60', 'aeropress', 'french_press', 'espresso', 'moka_pot', 'kalita'
     ]);
+    const [allMethods, setAllMethods] = useState<(BrewingMethod & { image: string; category: string })[]>([]);
+
+    useEffect(() => {
+        const loadMethods = async () => {
+            try {
+                const methods = await brewService.getAllMethods();
+                const cards = methods.map((m: BrewingMethod) => ({
+                    ...m,
+                    category: m.category || getCategoryFallback(m.id),
+                    image: `/assets/methods/${m.id}.png`
+                }));
+                setAllMethods(cards);
+            } catch (err) {
+                console.error('Failed to load methods in onboarding:', err);
+            }
+        };
+        loadMethods();
+    }, []);
 
     // Step 3 State
     const [beanName, setBeanName] = useState('');
@@ -265,46 +324,55 @@ export const OnboardingPage = () => {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            {[
-                                { id: 'v60', name: 'V60', icon: 'filter_alt' },
-                                { id: 'aeropress', name: 'AeroPress', icon: 'science' },
-                                { id: 'french_press', name: 'French Press', icon: 'coffee_maker' },
-                                { id: 'chemex', name: 'Chemex', icon: 'hourglass_top' },
-                                { id: 'moka_pot', name: 'Moka Pot', icon: 'local_cafe' },
-                                { id: 'siphon', name: 'Siphon', icon: 'science_off' },
-                                { id: 'espresso', name: 'Espresso', icon: 'coffee' },
-                                { id: 'clever', name: 'Clever Dripper', icon: 'filter_list' },
-                                { id: 'cold_brew', name: 'Cold Brew', icon: 'ac_unit' },
-                                { id: 'kalita', name: 'Kalita Wave', icon: 'waves' }
-                            ].map((item) => {
-                                const isSelected = selectedEquipment.includes(item.id);
+                        <div className="space-y-6">
+                            {CATEGORIES.map((catName) => {
+                                const catItems = allMethods.filter(m => m.category === catName);
+                                if (catItems.length === 0) return null;
+
                                 return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => toggleEquipment(item.id)}
-                                        className={`group relative flex flex-col items-center justify-center p-4 rounded-2xl transition-all active:scale-[0.98] border cursor-pointer shadow-md-1 ${
-                                            isSelected
-                                                ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container'
-                                                : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface hover:bg-md-surface-container-high'
-                                        }`}
-                                    >
-                                        {isSelected && (
-                                            <div className="absolute top-2.5 right-2.5 text-md-primary">
-                                                <Icon name="check_circle" className="text-lg" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                    <section key={catName} className="space-y-2.5">
+                                        <div className="flex items-center gap-2 border-b border-md-outline-variant/20 pb-1.5">
+                                            <div className="size-6 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center">
+                                                <Icon name={CATEGORY_ICONS[catName] || 'coffee'} className="text-sm" />
                                             </div>
-                                        )}
-                                        <div className={`size-12 mb-2 rounded-full flex items-center justify-center transition-colors ${
-                                            isSelected
-                                                ? 'bg-md-primary text-md-on-primary shadow-sm'
-                                                : 'bg-md-surface-container-highest text-md-on-surface-variant group-hover:text-md-primary'
-                                        }`}>
-                                            <Icon name={item.icon} className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                            <h2 className="typescale-label-large font-bold text-md-on-surface-variant uppercase tracking-wider">
+                                                {catName}
+                                            </h2>
                                         </div>
-                                        <span className={`typescale-title-small font-bold text-center ${isSelected ? 'text-md-on-secondary-container' : 'text-md-on-surface'}`}>
-                                            {item.name}
-                                        </span>
-                                    </button>
+
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {catItems.map((item) => {
+                                                const isSelected = selectedEquipment.includes(item.id);
+                                                return (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => toggleEquipment(item.id)}
+                                                        className={`group relative flex flex-col items-center justify-center p-3.5 rounded-xl transition-all active:scale-[0.98] border cursor-pointer ${
+                                                            isSelected
+                                                                ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-md-1'
+                                                                : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface hover:bg-md-surface-container-high'
+                                                        }`}
+                                                    >
+                                                        {isSelected && (
+                                                            <div className="absolute top-2 right-2 text-md-primary">
+                                                                <Icon name="check_circle" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                                            </div>
+                                                        )}
+                                                        <div className={`size-14 mb-2 rounded-lg flex items-center justify-center transition-colors overflow-hidden border border-md-outline-variant/20 ${
+                                                            isSelected ? 'bg-md-primary-container' : 'bg-md-surface-container-highest'
+                                                        }`}>
+                                                            <MethodImage src={item.image} alt={item.name} icon={item.icon} size="sm" />
+                                                        </div>
+                                                        <span className={`typescale-title-small text-center line-clamp-1 ${
+                                                            isSelected ? 'text-md-on-secondary-container font-bold' : 'text-md-on-surface font-semibold'
+                                                        }`}>
+                                                            {item.name}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </section>
                                 );
                             })}
                         </div>

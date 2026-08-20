@@ -12,6 +12,7 @@
   "dependencies": {
     "@capacitor-community/sqlite": "^8.0.0",
     "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.5.0",
     "@fontsource/material-symbols-outlined": "^5.2.45",
     "clsx": "^2.1.1",

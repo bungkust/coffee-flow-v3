@@ -38,7 +38,7 @@ export const PantryAddSelectionPage = () => {
             <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigate('/pantry')}
+                        onClick={() => navigate(-1)}
                         className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                         aria-label="Go back"
                     >

@@ -287,7 +287,7 @@ export const BrewMethodsPage = () => {
                             className="typescale-label-large bg-md-secondary-container text-md-on-secondary-container px-3.5 py-1.5 rounded-full hover:bg-md-secondary-container/80 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                             <Icon name="edit" className="text-base" />
-                            Edit List
+                            Edit
                         </button>
                     </div>
 

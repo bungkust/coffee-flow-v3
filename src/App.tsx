@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { App as CapApp } from '@capacitor/app';
 
 const SplashPage = lazy(() => import('./pages/SplashPage').then(m => ({ default: m.SplashPage })));
 const WelcomePage = lazy(() => import('./pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
@@ -29,9 +30,42 @@ const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage').then(m => ({ 
 const QuickTimerPage = lazy(() => import('./pages/QuickTimerPage').then(m => ({ default: m.QuickTimerPage })));
 const RatioCalculatorPage = lazy(() => import('./pages/RatioCalculatorPage').then(m => ({ default: m.RatioCalculatorPage })));
 
+function AndroidBackButtonHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    let listener: any = null;
+    const setupListener = async () => {
+      try {
+        listener = await CapApp.addListener('backButton', () => {
+          const rootPages = ['/home', '/welcome', '/', '/onboarding'];
+          if (rootPages.includes(location.pathname)) {
+            CapApp.exitApp();
+          } else {
+            navigate(-1);
+          }
+        });
+      } catch (e) {
+        console.warn('Capacitor App backButton listener failed:', e);
+      }
+    };
+    setupListener();
+
+    return () => {
+      if (listener) {
+        listener.remove();
+      }
+    };
+  }, [navigate, location.pathname]);
+
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <AndroidBackButtonHandler />
       <Suspense fallback={
         <div className="flex min-h-screen items-center justify-center bg-background-light">
           <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>

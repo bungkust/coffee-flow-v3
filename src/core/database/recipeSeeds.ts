@@ -448,10 +448,10 @@ export const RECIPE_SEEDS: Recipe[] = [
         philosophy: 'Hot water extraction preserves delicate floral notes and sweetness, while immediate chilling over ice maintains bright clarity without bitterness.',
         best_for_tags: ['Iced Coffee', 'Flash Chilled', 'Light Roast', 'Medium Roast', 'Clean Cup', 'Summer'],
         not_recommended_tags: ['Dark Roast', 'Coarse Cold Brew Grind'],
-        ratio: '1:13.7',
+        ratio: '1:13.75',
         temperature: 91,
         grind_size: 'Medium-Fine',
-        total_water: 150,
+        total_water: 220,
         steps: [
             { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 70g ice cubes into server, attach V60, add 16g medium-fine coffee & tare scale.' },
             { label: '1st Pour (Bloom)', duration: 10, target: 40, instruction: 'Pour 40g hot water (91°C) in 10s. Agitate slurry with spoon 2-3 times.' },
@@ -477,7 +477,7 @@ export const RECIPE_SEEDS: Recipe[] = [
         ratio: '1:15',
         temperature: 95,
         grind_size: 'Medium',
-        total_water: 180,
+        total_water: 300,
         steps: [
             { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 120g ice cubes into server, attach V60, rinse paper filter with hot water, add 20g medium coffee & tare scale.' },
             { label: '1st Pour (Bloom)', duration: 10, target: 50, instruction: 'Pour 50g hot water (95°C) in 10s in a continuous circular motion from center outwards.' },
@@ -502,7 +502,7 @@ export const RECIPE_SEEDS: Recipe[] = [
         ratio: '1:16',
         temperature: 93,
         grind_size: 'Medium-Fine',
-        total_water: 305,
+        total_water: 575,
         steps: [
             { label: 'Prep Ice & Tare Scale', duration: 10, instruction: 'Place 270g large ice cubes into Chemex flask, insert thick Chemex paper filter (rinsed), add 36g medium-fine coffee & tare scale.' },
             { label: '1st Pour (Bloom)', duration: 20, target: 70, instruction: 'Pour 70g hot water (93°C) in concentric circles for 20s to fully saturate all grounds.' },
