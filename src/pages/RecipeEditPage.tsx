@@ -104,7 +104,7 @@ export const RecipeEditPage = () => {
         setError('');
         try {
             await brewService.saveRecipe(recipe);
-            navigate(`/recipes/${recipe.method_id}`);
+            navigate(`/recipes/${recipe.id}`);
         } catch (err) {
             console.error('Error saving recipe:', err);
             alert('Failed to save recipe');
@@ -416,7 +416,7 @@ export const RecipeEditPage = () => {
             </main>
 
             {/* Sticky Bottom Save Action */}
-            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
+            <div className="fixed bottom-20 left-0 right-0 z-[60] mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
                 <Button
                     variant="filled"
                     size="lg"

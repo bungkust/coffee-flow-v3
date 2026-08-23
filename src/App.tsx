@@ -35,7 +35,7 @@ function AndroidBackButtonHandler() {
   const location = useLocation();
 
   useEffect(() => {
-    let listener: any = null;
+    let listener: { remove: () => Promise<void> } | null = null;
     const setupListener = async () => {
       try {
         listener = await CapApp.addListener('backButton', () => {
