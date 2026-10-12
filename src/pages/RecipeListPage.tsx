@@ -379,7 +379,6 @@ export const RecipeListPage = () => {
                         steps,
                         is_custom: true,
                         is_favorite: false,
-                        version: 1,
                         created_at: now,
                         updated_at: now,
                     };

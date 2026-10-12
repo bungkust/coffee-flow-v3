@@ -44,7 +44,6 @@ export const RecipeEditPage = () => {
                             best_for_tags: prefill.best_for_tags || [],
                             not_recommended_tags: prefill.not_recommended_tags || [],
                             is_custom: true,
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                             steps: prefill.steps && prefill.steps.length > 0 ? prefill.steps : [
@@ -68,7 +67,6 @@ export const RecipeEditPage = () => {
                             best_for_tags: [],
                             not_recommended_tags: [],
                             is_custom: true,
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                             steps: [

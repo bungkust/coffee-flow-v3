@@ -23,15 +23,13 @@ export interface PantryItem {
     category: PantryCategory;
     brand?: string;
     description?: string;
-    remaining_stock?: number; // 0-100 percentage (Legacy)
     quantity?: number; // Universal numerical amount
     unit?: 'g' | 'ml' | 'pcs' | '%'; // Type of measurement
-    is_low_stock?: boolean;
+    is_low_stock?: boolean; // Derived from quantity + unit
     roast_date?: string; // ISO date string for beans
     purchase_date?: string; // ISO date string
     tags_json?: string[]; // JSON array of strings
     icon?: string; // Material icon name
-    is_active: boolean;
     created_at: string;
     updated_at: string;
     deleted_at?: string;

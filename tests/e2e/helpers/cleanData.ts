@@ -6,6 +6,15 @@ import { Page } from '@playwright/test';
  */
 export async function resetAppState(page: Page) {
   await page.goto('/');
+
+  // main.tsx only mounts React after DB init + seed complete, so a mounted
+  // root means the startup saveToLocalStore() has settled. Deleting IndexedDB
+  // before that lets the in-flight write re-create the database with stale data.
+  await page.waitForFunction(() => {
+    const root = document.getElementById('root');
+    return !!root && root.children.length > 0;
+  });
+
   await page.evaluate(async () => {
     localStorage.clear();
     sessionStorage.clear();
@@ -15,7 +24,12 @@ export async function resetAppState(page: Page) {
         const dbs = await window.indexedDB.databases();
         for (const db of dbs) {
           if (db.name) {
-            window.indexedDB.deleteDatabase(db.name);
+            await new Promise<void>((resolve) => {
+              const request = window.indexedDB.deleteDatabase(db.name);
+              request.onsuccess = () => resolve();
+              request.onerror = () => resolve();
+              request.onblocked = () => resolve();
+            });
           }
         }
       } catch (e) {

@@ -14,7 +14,7 @@ export class BackupService {
 
     async getLastSuccessfulBackup(): Promise<Backup | null> {
         const backups = await this.repo.findAll();
-        return backups.find(b => b.status === 'Success') || null;
+        return backups[0] || null;
     }
 
     async performBackup(): Promise<Backup> {
@@ -25,8 +25,7 @@ export class BackupService {
             id: crypto.randomUUID(),
             created_at: new Date().toISOString(),
             size_bytes: size,
-            location: 'Local Snapshot',
-            status: 'Success'
+            location: 'Local Snapshot'
         };
 
         localStorage.setItem(`coffee_flow_backup_${newBackup.id}`, snapshot);
@@ -88,8 +87,7 @@ export class BackupService {
             id: crypto.randomUUID(),
             created_at: new Date().toISOString(),
             size_bytes: size,
-            location: 'Imported File',
-            status: 'Success'
+            location: 'Imported File'
         };
 
         localStorage.setItem(`coffee_flow_backup_${importedBackup.id}`, jsonContent);

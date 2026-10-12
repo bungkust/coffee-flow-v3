@@ -27,7 +27,6 @@ export class PantryService {
             id: crypto.randomUUID(),
             name,
             category,
-            is_active: true,
             created_at: now,
             updated_at: now,
             ...data

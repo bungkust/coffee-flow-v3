@@ -386,7 +386,6 @@ export const DrinkMenuPage = () => {
                         category: isCold ? 'cold' : 'hot',
                         ingredients_json: JSON.stringify(ingredients.length > 0 ? ingredients : ['1 shot espresso', '120ml milk']),
                         instructions_json: JSON.stringify(instructions.length > 0 ? instructions : ['Prepare ingredients', 'Mix and serve']),
-                        version: 1,
                     };
                     
                     setIsImportModalOpen(false);
@@ -407,7 +406,6 @@ export const DrinkMenuPage = () => {
                             category: (data.category as string) === 'cold' ? 'cold' : 'hot',
                             ingredients_json: JSON.stringify(parsedIngredients),
                             instructions_json: JSON.stringify(parsedInstructions),
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                         });
@@ -418,7 +416,6 @@ export const DrinkMenuPage = () => {
                             category: 'hot',
                             ingredients_json: '[]',
                             instructions_json: '[]',
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                         });

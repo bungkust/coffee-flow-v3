@@ -122,14 +122,12 @@ test.describe('Brewing Calculation & Unsaved Log Integration Test Suite', () => 
     await page.waitForURL('**/brew-flow');
 
     // 3. Click "Start Brew" button on BrewFlowPage to activate timer engine
-    const initialStartBtn = page.getByRole('button', { name: 'Start Brew' });
-    if (await initialStartBtn.isVisible()) {
-      await initialStartBtn.click();
-      await page.waitForTimeout(200);
-    }
+    await page.getByRole('button', { name: 'Start Brew' }).click();
+    await page.waitForTimeout(200);
 
     // 4. Fast-forward brew steps until timer completes (Done! screen)
-    for (let step = 0; step < 12; step++) {
+    await page.getByRole('button', { name: /^Skip$/i }).waitFor({ state: 'visible' });
+    for (let step = 0; step < 20; step++) {
       if (await page.getByText('Done!').isVisible()) break;
 
       const modalConfirmBtn = page.locator('.fixed.inset-0').getByRole('button', { name: /Skip Step/i });
@@ -193,14 +191,12 @@ test.describe('Brewing Calculation & Unsaved Log Integration Test Suite', () => 
     await page.waitForURL('**/brew-flow');
 
     // Activate timer engine
-    const initialStartBtn = page.getByRole('button', { name: 'Start Brew' });
-    if (await initialStartBtn.isVisible()) {
-      await initialStartBtn.click();
-      await page.waitForTimeout(200);
-    }
+    await page.getByRole('button', { name: 'Start Brew' }).click();
+    await page.waitForTimeout(200);
 
     // 3. Fast-forward brew steps until Done! screen
-    for (let step = 0; step < 12; step++) {
+    await page.getByRole('button', { name: /^Skip$/i }).waitFor({ state: 'visible' });
+    for (let step = 0; step < 20; step++) {
       if (await page.getByText('Done!').isVisible()) break;
 
       const modalConfirmBtn = page.locator('.fixed.inset-0').getByRole('button', { name: /Skip Step/i });

@@ -5,23 +5,27 @@ export class SQLiteSettingsRepository {
         return dbService.getDb();
     }
 
+    private async set(key: string, value: string): Promise<void> {
+        await this.db.run('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)', [key, value]);
+        await dbService.saveToLocalStore();
+    }
+
     async getAppUnit(): Promise<'metric' | 'imperial'> {
         const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['app_unit']);
         return (result.values?.[0]?.value as 'metric' | 'imperial') || 'metric';
     }
 
     async setAppUnit(unit: 'metric' | 'imperial'): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['app_unit', unit, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('app_unit', unit);
     }
 
     async getUserName(): Promise<string> {
         const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_name']);
         return result.values?.[0]?.value || '';
+    }
+
+    async setUserName(name: string): Promise<void> {
+        await this.set('user_name', name);
     }
 
     async getUserId(): Promise<string> {
@@ -30,21 +34,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserId(id: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_id', id, now]
-        );
-        await dbService.saveToLocalStore();
-    }
-
-    async setUserName(name: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_name', name, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_id', id);
     }
 
     async getUserExperienceLevel(): Promise<string> {
@@ -53,12 +43,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserExperienceLevel(level: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_experience_level', level, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_experience_level', level);
     }
 
     async getUserTasteProfile(): Promise<string[]> {
@@ -71,13 +56,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserTasteProfile(profile: string[]): Promise<void> {
-        const now = new Date().toISOString();
-        const json = JSON.stringify(profile);
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_taste_profile', json, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_taste_profile', JSON.stringify(profile));
     }
 
     async getUserBrewingGoal(): Promise<string> {
@@ -86,12 +65,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserBrewingGoal(goal: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_brewing_goal', goal, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_brewing_goal', goal);
     }
 
     async getUserDailyCups(): Promise<string> {
@@ -100,12 +74,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserDailyCups(cups: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_daily_cups', cups, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_daily_cups', cups);
     }
 
     async getUserPreferredMethods(): Promise<string[]> {
@@ -118,13 +87,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserPreferredMethods(methods: string[]): Promise<void> {
-        const now = new Date().toISOString();
-        const json = JSON.stringify(methods);
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_preferred_methods', json, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_preferred_methods', JSON.stringify(methods));
     }
 
     async getUserPreferredDrinks(): Promise<string[]> {
@@ -137,13 +100,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setUserPreferredDrinks(drinks: string[]): Promise<void> {
-        const now = new Date().toISOString();
-        const json = JSON.stringify(drinks);
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['user_preferred_drinks', json, now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('user_preferred_drinks', JSON.stringify(drinks));
     }
 
     async getNotificationsEnabled(): Promise<boolean> {
@@ -152,12 +109,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setNotificationsEnabled(enabled: boolean): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['notifications_enabled', String(enabled), now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('notifications_enabled', String(enabled));
     }
 
     async getTimerFeedbackEnabled(): Promise<boolean> {
@@ -166,12 +118,7 @@ export class SQLiteSettingsRepository {
     }
 
     async setTimerFeedbackEnabled(enabled: boolean): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-            ['timer_feedback_enabled', String(enabled), now]
-        );
-        await dbService.saveToLocalStore();
+        await this.set('timer_feedback_enabled', String(enabled));
     }
 
     async clearUserData(): Promise<void> {

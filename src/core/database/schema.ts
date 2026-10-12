@@ -1,12 +1,5 @@
-export const ENHANCED_SCHEMA = `
-  -- 1. Schema Versioning
-  CREATE TABLE IF NOT EXISTS schema_migrations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    version INTEGER NOT NULL,
-    applied_at TEXT NOT NULL
-  );
-
-  -- 2. Brewing Methods
+export const BASE_SCHEMA = `
+  -- 1. Brewing Methods
   CREATE TABLE IF NOT EXISTS brewing_methods (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -18,9 +11,7 @@ export const ENHANCED_SCHEMA = `
     deleted_at TEXT
   );
 
-  CREATE INDEX IF NOT EXISTS idx_methods_name ON brewing_methods(name);
-
-  -- 3. Recipes
+  -- 2. Recipes
   CREATE TABLE IF NOT EXISTS recipes (
     id TEXT PRIMARY KEY,
     method_id TEXT NOT NULL,
@@ -30,14 +21,13 @@ export const ENHANCED_SCHEMA = `
     temperature INTEGER,
     total_water INTEGER,
     is_custom INTEGER DEFAULT 0,
-    version INTEGER DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT,
     FOREIGN KEY (method_id) REFERENCES brewing_methods(id) ON DELETE CASCADE
   );
 
-  -- 4. Recipe Steps
+  -- 3. Recipe Steps
   CREATE TABLE IF NOT EXISTS recipe_steps (
     id TEXT PRIMARY KEY,
     recipe_id TEXT,
@@ -51,7 +41,7 @@ export const ENHANCED_SCHEMA = `
     UNIQUE(recipe_id, step_order)
   );
 
-  -- 5. Brew Logs (Journal)
+  -- 4. Brew Logs (Journal)
   CREATE TABLE IF NOT EXISTS brew_logs (
     id TEXT PRIMARY KEY,
     recipe_id TEXT NOT NULL,
@@ -64,22 +54,19 @@ export const ENHANCED_SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_brew_logs_date ON brew_logs(brewed_at);
 
-  -- 6. Drinks
+  -- 5. Drinks
   CREATE TABLE IF NOT EXISTS drinks (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     category TEXT CHECK(category IN ('hot','cold')),
     ingredients_json TEXT NOT NULL,
     instructions_json TEXT NOT NULL,
-    version INTEGER DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT
   );
 
-  CREATE INDEX IF NOT EXISTS idx_drinks_name ON drinks(name);
-
-  -- 7. Drink Logs
+  -- 6. Drink Logs
   CREATE TABLE IF NOT EXISTS drink_logs (
     id TEXT PRIMARY KEY,
     drink_id TEXT NOT NULL,
@@ -90,40 +77,37 @@ export const ENHANCED_SCHEMA = `
     FOREIGN KEY (drink_id) REFERENCES drinks(id) ON DELETE SET NULL
   );
 
-  -- 8. App Settings (Local Config)
+  -- 7. App Settings (Local Config)
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    value TEXT NOT NULL
   );
 
-  -- 9. Performance Index
+  -- 8. Performance Index
   CREATE INDEX IF NOT EXISTS idx_recipes_method ON recipes(method_id);
   CREATE INDEX IF NOT EXISTS idx_steps_recipe ON recipe_steps(recipe_id);
   CREATE INDEX IF NOT EXISTS idx_brew_logs_recipe ON brew_logs(recipe_id);
 
-  -- 10. Backups
+  -- 9. Backups
   CREATE TABLE IF NOT EXISTS backups (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL,
     size_bytes INTEGER NOT NULL,
-    location TEXT NOT NULL,
-    status TEXT NOT NULL
+    location TEXT NOT NULL
   );
-  -- 11. Pantry Items
+  -- 10. Pantry Items
   CREATE TABLE IF NOT EXISTS pantry_items (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     category TEXT NOT NULL,
     brand TEXT,
     description TEXT,
-    remaining_stock INTEGER,
-    is_low_stock INTEGER DEFAULT 0,
+    quantity INTEGER,
+    unit TEXT,
     roast_date TEXT,
     purchase_date TEXT,
     tags_json TEXT,
     icon TEXT,
-    is_active INTEGER DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT
@@ -133,7 +117,7 @@ export const ENHANCED_SCHEMA = `
 export const MIGRATIONS = [
   {
     version: 1,
-    sql: ENHANCED_SCHEMA
+    sql: BASE_SCHEMA
   },
   {
     version: 2,
@@ -163,40 +147,6 @@ export const MIGRATIONS = [
     `
   },
   {
-    version: 5,
-    sql: `
-      CREATE TABLE IF NOT EXISTS backups (
-        id TEXT PRIMARY KEY,
-        created_at TEXT NOT NULL,
-        size_bytes INTEGER NOT NULL,
-        location TEXT NOT NULL,
-        status TEXT NOT NULL
-      );
-    `
-  },
-  {
-    version: 6,
-    sql: `
-      CREATE TABLE IF NOT EXISTS pantry_items (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        brand TEXT,
-        description TEXT,
-        remaining_stock INTEGER,
-        is_low_stock INTEGER DEFAULT 0,
-        roast_date TEXT,
-        purchase_date TEXT,
-        tags_json TEXT,
-        icon TEXT,
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        deleted_at TEXT
-      );
-    `
-  },
-  {
     version: 7,
     sql: `
       ALTER TABLE brew_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
@@ -207,7 +157,6 @@ export const MIGRATIONS = [
     sql: `
       ALTER TABLE pantry_items ADD COLUMN quantity INTEGER;
       ALTER TABLE pantry_items ADD COLUMN unit TEXT;
-      UPDATE pantry_items SET quantity = remaining_stock, unit = '%' WHERE remaining_stock IS NOT NULL;
     `
   },
   {
@@ -260,12 +209,6 @@ export const MIGRATIONS = [
     version: 11,
     sql: `
       ALTER TABLE drinks ADD COLUMN image_url TEXT;
-    `
-  },
-  {
-    version: 12,
-    sql: `
-      ALTER TABLE brewing_methods ADD COLUMN category TEXT;
     `
   }
 ];

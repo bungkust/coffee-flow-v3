@@ -8,6 +8,7 @@ interface IconProps extends React.HTMLAttributes<HTMLSpanElement> {
 export const Icon = ({ name, className, ...props }: IconProps) => {
     return (
         <span
+            aria-hidden="true"
             className={twMerge(
                 'material-symbols-outlined select-none',
                 className

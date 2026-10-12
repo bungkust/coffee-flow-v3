@@ -80,7 +80,6 @@ const buildRecipe = (seed: RecipeSeed): Recipe => ({
     total_water: seed.total_water,
     is_custom: false,
     is_favorite: false,
-    version: 1,
     created_at: SEED_TIMESTAMP,
     updated_at: SEED_TIMESTAMP,
     steps: seed.steps.map((step, index) => ({

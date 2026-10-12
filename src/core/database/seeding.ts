@@ -103,15 +103,14 @@ const seedDrinks = async () => {
     for (const drink of drinks) {
         await db.run(
             `INSERT OR IGNORE INTO drinks
-             (id, name, category, ingredients_json, instructions_json, version, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             (id, name, category, ingredients_json, instructions_json, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 drink.id,
                 drink.name,
                 drink.category,
                 JSON.stringify(drink.ingredients),
                 JSON.stringify(drink.instructions),
-                1,
                 now,
                 now
             ]

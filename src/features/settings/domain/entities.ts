@@ -3,5 +3,4 @@ export interface Backup {
     created_at: string;
     size_bytes: number;
     location: string;
-    status: 'Success' | 'Failed';
 }

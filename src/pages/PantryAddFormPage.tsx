@@ -118,7 +118,7 @@ export const PantryAddFormPage = () => {
                 ].filter(Boolean)
             });
 
-            navigate(-1);
+            navigate('/pantry');
         } catch (error) {
             console.error('Failed to save pantry item:', error);
             alert('Failed to save item.');

@@ -43,7 +43,6 @@ export interface Recipe {
     not_recommended_tags?: string[];
     is_custom: boolean;
     is_favorite?: boolean;
-    version: number;
     steps: BrewStep[];
     created_at: string;
     updated_at: string;
@@ -87,7 +86,6 @@ export interface Drink {
     ingredients_json: string;
     instructions_json: string;
     image_url?: string;
-    version: number;
     created_at: string;
     updated_at: string;
     deleted_at?: string;
@@ -117,5 +115,4 @@ export interface DrinkStats {
 export interface AppSetting {
     key: string;
     value: string;
-    updated_at: string;
 }

@@ -8,7 +8,6 @@ interface DrinkRow {
     ingredients_json: string;
     instructions_json: string;
     image_url: string | null;
-    version: number;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -22,7 +21,6 @@ function toDomainDrink(row: DrinkRow): Drink {
         ingredients_json: row.ingredients_json,
         instructions_json: row.instructions_json,
         image_url: row.image_url ?? undefined,
-        version: row.version,
         created_at: row.created_at,
         updated_at: row.updated_at,
         deleted_at: row.deleted_at ?? undefined,
@@ -49,8 +47,8 @@ export class SQLiteDrinkRepository {
         const now = new Date().toISOString();
         await this.db.run(
             `INSERT OR REPLACE INTO drinks
-             (id, name, category, ingredients_json, instructions_json, image_url, version, created_at, updated_at, deleted_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (id, name, category, ingredients_json, instructions_json, image_url, created_at, updated_at, deleted_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 drink.id,
                 drink.name,
@@ -58,7 +56,6 @@ export class SQLiteDrinkRepository {
                 drink.ingredients_json,
                 drink.instructions_json,
                 drink.image_url || null,
-                drink.version || 1,
                 drink.created_at || now,
                 now,
                 drink.deleted_at ?? null

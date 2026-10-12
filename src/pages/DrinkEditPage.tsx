@@ -32,7 +32,6 @@ export const DrinkEditPage = () => {
                             category: prefill.category || 'hot',
                             ingredients_json: prefill.ingredients_json || '[]',
                             instructions_json: prefill.instructions_json || '[]',
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                         });
@@ -43,7 +42,6 @@ export const DrinkEditPage = () => {
                             category: 'hot',
                             ingredients_json: '[]',
                             instructions_json: '[]',
-                            version: 1,
                             created_at: now,
                             updated_at: now,
                         });

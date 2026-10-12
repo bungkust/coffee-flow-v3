@@ -16,6 +16,7 @@ export const BrewFlowPage = () => {
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const isAutoSavedRef = useRef(false);
+    const hasHydratedRef = useRef(false);
 
     const feedbackEnabledRef = useRef(feedbackEnabled);
     useEffect(() => {
@@ -53,10 +54,12 @@ export const BrewFlowPage = () => {
     }, []);
 
     useEffect(() => {
+        if (hasHydratedRef.current) return;
+        hasHydratedRef.current = true;
+
         if (!activeRecipe) {
             const restored = hydrateBrew();
             if (!restored) navigate('/brew-methods');
-            return;
         }
     }, [activeRecipe, hydrateBrew, navigate]);
 

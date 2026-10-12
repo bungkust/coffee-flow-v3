@@ -19,6 +19,7 @@ test.describe('Exhaustive Gear Creation Test Suite (Positive & Negative Combinat
     // Verify Navigation to Pantry Page
     await page.waitForURL('**/pantry**');
     await expect(page).toHaveURL(/.*pantry/);
+    await page.getByText('Gear', { exact: true }).click();
     await expect(page.getByText('Hario V60 02 White')).toBeVisible();
   });
 
@@ -33,6 +34,7 @@ test.describe('Exhaustive Gear Creation Test Suite (Positive & Negative Combinat
     // Verify Navigation
     await page.waitForURL('**/pantry**');
     await expect(page).toHaveURL(/.*pantry/);
+    await page.getByText('Gear', { exact: true }).click();
     await expect(page.getByText('Ode Brew Grinder Gen 2')).toBeVisible();
   });
 
@@ -46,6 +48,7 @@ test.describe('Exhaustive Gear Creation Test Suite (Positive & Negative Combinat
     // Verify Navigation
     await page.waitForURL('**/pantry**');
     await expect(page).toHaveURL(/.*pantry/);
+    await page.getByText('Gear', { exact: true }).click();
     await expect(page.getByText('Linea Micra')).toBeVisible();
   });
 

@@ -17,7 +17,7 @@ export const PantryPage = () => {
     const [selectedBean, setSelectedBean] = useState<PantryItem | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const getStockPercent = (item: PantryItem) => Math.min(100, Math.max(0, item.quantity ?? item.remaining_stock ?? 0));
+    const getStockPercent = (item: PantryItem) => Math.min(100, Math.max(0, item.quantity ?? 0));
 
     useEffect(() => {
         loadData();
@@ -152,7 +152,7 @@ export const PantryPage = () => {
                                                 <div className="mt-4">
                                                     <div className="flex justify-between items-end mb-1.5">
                                                         <span className="text-xs font-semibold text-gray-500">Remaining Stock</span>
-                                                        <span className="text-xs font-bold text-primary">{item.quantity !== undefined && item.quantity !== null ? `${item.quantity}${item.unit || ''}` : `${item.remaining_stock ?? 0}%`}</span>
+                                                        <span className="text-xs font-bold text-primary">{item.quantity != null ? `${item.quantity}${item.unit || ''}` : '0%'}</span>
                                                     </div>
                                                     {((item.quantity === undefined || item.quantity === null) || item.unit === '%') && (
                                                         <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -192,7 +192,7 @@ export const PantryPage = () => {
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
                                                     <span className={`text-xs font-bold ${item.is_low_stock ? 'text-red-500' : 'text-gray-600'}`}>
-                                                        {item.quantity !== undefined && item.quantity !== null ? `${item.quantity}${item.unit || ''}` : `${item.remaining_stock ?? 0}%`}
+                                                        {item.quantity != null ? `${item.quantity}${item.unit || ''}` : '0%'}
                                                     </span>
                                                     {((item.quantity === undefined || item.quantity === null) || item.unit === '%') && (
                                                         <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -364,7 +364,7 @@ export const PantryPage = () => {
                                     <Icon name="scale" className="text-primary mb-2 text-[20px]" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Stock Left</span>
                                     <span className="text-sm font-bold text-[#181411]">
-                                        {selectedBean.quantity !== undefined && selectedBean.quantity !== null ? `${selectedBean.quantity}${selectedBean.unit || ''}` : `${selectedBean.remaining_stock ?? 0}%`}
+                                        {selectedBean.quantity != null ? `${selectedBean.quantity}${selectedBean.unit || ''}` : '0%'}
                                     </span>
                                 </div>
                             </div>

@@ -19,7 +19,6 @@ interface BackupRow {
     created_at: string;
     size_bytes: number;
     location: string;
-    status: string;
 }
 
 function toDomainBackup(row: BackupRow): Backup {
@@ -28,7 +27,6 @@ function toDomainBackup(row: BackupRow): Backup {
         created_at: row.created_at,
         size_bytes: row.size_bytes,
         location: row.location,
-        status: row.status as Backup['status'],
     };
 }
 
@@ -44,8 +42,8 @@ export class SQLiteBackupRepository {
 
     async save(backup: Backup): Promise<void> {
         await this.db.run(
-            `INSERT OR REPLACE INTO backups (id, created_at, size_bytes, location, status) VALUES (?, ?, ?, ?, ?)`,
-            [backup.id, backup.created_at, backup.size_bytes, backup.location, backup.status]
+            `INSERT OR REPLACE INTO backups (id, created_at, size_bytes, location) VALUES (?, ?, ?, ?)`,
+            [backup.id, backup.created_at, backup.size_bytes, backup.location]
         );
         await dbService.saveToLocalStore();
     }

@@ -103,12 +103,9 @@ User action (page)
 │  name            │     │  value           │
 │  category        │     └──────────────────┘
 │  brand           │
-│  remaining_stock │
 │  quantity        │
 │  unit            │
-│  is_low_stock    │
 │  tags_json       │
-│  is_active       │
 └──────────────────┘
 ```
 
@@ -208,8 +205,8 @@ HomePage
 | Save log | `brew_logs` (INSERT) + `pantry_items` (UPDATE stock) |
 
 **Stock Deduction when log is saved:**
-- Bean: `remaining_stock -= coffeeConsumed` (only if beanId + coffeeConsumed valid)
-- Filter: `remaining_stock -= 1` (only if filterId exists)
+- Bean: `quantity -= coffeeConsumed` (only if beanId + coffeeConsumed valid)
+- Filter: `quantity -= 1` (only if filterId exists)
 
 ### 5.2 Drink Flow
 

@@ -15,25 +15,9 @@ This document defines all SQLite tables in CoffeeFlow, including columns, data t
 
 ## 2. Tables
 
-### 2.1 schema_migrations
+### 2.1 Schema Versioning
 
-Tracks which schema versions have been applied.
-
-```sql
-CREATE TABLE IF NOT EXISTS schema_migrations (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  version INTEGER NOT NULL,
-  applied_at TEXT NOT NULL
-);
-```
-
-| Column | Type | Constraint | Notes |
-|---|---|---|---|
-| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | — |
-| `version` | `INTEGER` | `NOT NULL` | Migration version number |
-| `applied_at` | `TEXT` | `NOT NULL` | ISO timestamp |
-
-**Repository:** None — managed directly by `dbService`.
+Tracked via `PRAGMA user_version` — no separate table. `dbService` runs `MIGRATIONS` whose `version` is greater than the current `user_version`.
 
 ---
 
@@ -63,8 +47,6 @@ CREATE TABLE IF NOT EXISTS brewing_methods (
 | `updated_at` | `TEXT NOT NULL` | ISO timestamp |
 | `deleted_at` | `TEXT` | Soft delete (nullable) |
 
-**Index:** `idx_methods_name ON brewing_methods(name)`
-
 **Seed data:** 10 methods (`BREWING_METHOD_SEEDS` in `recipeSeeds.ts`)
 
 **Repository:** No dedicated repository — accessed via `BrewService` or raw queries.
@@ -93,7 +75,6 @@ CREATE TABLE IF NOT EXISTS recipes (
   philosophy TEXT,
   best_for_tags TEXT,
   not_recommended_tags TEXT,
-  version INTEGER DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   deleted_at TEXT,
@@ -119,7 +100,6 @@ CREATE TABLE IF NOT EXISTS recipes (
 | `philosophy` | `TEXT` | Principle behind the recipe |
 | `best_for_tags` | `TEXT` | JSON array: `["Light Roast","Washed"]` |
 | `not_recommended_tags` | `TEXT` | JSON array: `["Dark Roast"]` |
-| `version` | `INTEGER DEFAULT 1` | Recipe version |
 | `created_at` | `TEXT NOT NULL` | ISO timestamp |
 | `updated_at` | `TEXT NOT NULL` | ISO timestamp |
 | `deleted_at` | `TEXT` | Soft delete |
@@ -258,7 +238,6 @@ CREATE TABLE IF NOT EXISTS drinks (
   category TEXT CHECK(category IN ('hot','cold')),
   ingredients_json TEXT NOT NULL,
   instructions_json TEXT NOT NULL,
-  version INTEGER DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   deleted_at TEXT
@@ -272,12 +251,9 @@ CREATE TABLE IF NOT EXISTS drinks (
 | `category` | `TEXT CHECK` | "hot" \| "cold" |
 | `ingredients_json` | `TEXT NOT NULL` | JSON array: `["18g coffee","36g yield"]` |
 | `instructions_json` | `TEXT NOT NULL` | JSON array: `["Dose and tamp...","Pull shot..."]` |
-| `version` | `INTEGER DEFAULT 1` | — |
 | `created_at` | `TEXT NOT NULL` | ISO timestamp |
 | `updated_at` | `TEXT NOT NULL` | ISO timestamp |
 | `deleted_at` | `TEXT` | Soft delete |
-
-**Index:** `idx_drinks_name ON drinks(name)`
 
 **Repository:** `SQLiteDrinkRepository`
 
@@ -398,7 +374,6 @@ CREATE TABLE IF NOT EXISTS backups (
 | `created_at` | `TEXT NOT NULL` | ISO timestamp |
 | `size_bytes` | `INTEGER NOT NULL` | Snapshot size in bytes |
 | `location` | `TEXT NOT NULL` | "Local Storage" |
-| `status` | `TEXT NOT NULL` | "Success" \| "Failed" |
 
 **Repository:** `SQLiteBackupRepository`
 
@@ -443,15 +418,12 @@ CREATE TABLE IF NOT EXISTS pantry_items (
   category TEXT NOT NULL,
   brand TEXT,
   description TEXT,
-  remaining_stock INTEGER,
   quantity INTEGER,
   unit TEXT,
-  is_low_stock INTEGER DEFAULT 0,
   roast_date TEXT,
   purchase_date TEXT,
   tags_json TEXT,
   icon TEXT,
-  is_active INTEGER DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   deleted_at TEXT
@@ -465,15 +437,12 @@ CREATE TABLE IF NOT EXISTS pantry_items (
 | `category` | `TEXT NOT NULL` | PantryCategory (see below) |
 | `brand` | `TEXT` | "Three Folks", "Hario" |
 | `description` | `TEXT` | Short description |
-| `remaining_stock` | `INTEGER` | Legacy percentage (0-100) |
 | `quantity` | `INTEGER` | Universal amount |
 | `unit` | `TEXT` | "g" \| "ml" \| "pcs" \| "%" |
-| `is_low_stock` | `INTEGER DEFAULT 0` | 1 = low stock |
 | `roast_date` | `TEXT` | ISO date, for beans |
 | `purchase_date` | `TEXT` | ISO date |
 | `tags_json` | `TEXT` | JSON array: `["Washed","Ethiopia"]` |
 | `icon` | `TEXT` | Material icon name |
-| `is_active` | `INTEGER DEFAULT 1` | 1 = active |
 | `created_at` | `TEXT NOT NULL` | ISO timestamp |
 | `updated_at` | `TEXT NOT NULL` | ISO timestamp |
 | `deleted_at` | `TEXT` | Soft delete |
@@ -486,9 +455,9 @@ CREATE TABLE IF NOT EXISTS pantry_items (
 | `findById(id)` | `SELECT * FROM pantry_items WHERE id = ? AND deleted_at IS NULL` |
 | `save(item)` | `INSERT OR REPLACE INTO pantry_items ...` |
 | `delete(id)` | `UPDATE pantry_items SET deleted_at = ? WHERE id = ?` (soft delete) |
-| `deductStock(id, amount)` | `UPDATE pantry_items SET quantity = ?, is_low_stock = ? ...` |
+| `deductStock(id, amount)` | `UPDATE pantry_items SET quantity = ?, updated_at = ? ...` |
 
-**Low stock threshold:** `quantity <= 10` → `is_low_stock = 1`
+**Low stock threshold (derived):** g/ml ≤ 50, pcs ≤ 2, % ≤ 10
 
 **Stock deduction:**
 ```typescript

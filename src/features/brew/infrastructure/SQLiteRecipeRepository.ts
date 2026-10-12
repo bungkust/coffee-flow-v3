@@ -18,7 +18,6 @@ interface RecipeRow {
     philosophy: string | null;
     best_for_tags: string | null;
     not_recommended_tags: string | null;
-    version: number;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -54,7 +53,6 @@ function toDomainRecipe(row: RecipeRow, steps: BrewStep[]): Recipe {
         philosophy: row.philosophy ?? undefined,
         best_for_tags: row.best_for_tags ? JSON.parse(row.best_for_tags) : [],
         not_recommended_tags: row.not_recommended_tags ? JSON.parse(row.not_recommended_tags) : [],
-        version: row.version,
         steps,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -122,8 +120,8 @@ export class SQLiteRecipeRepository {
 
         await this.db.run(
             `INSERT OR REPLACE INTO recipes 
-      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, version, created_at, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 recipe.id,
                 recipe.method_id,
@@ -141,7 +139,6 @@ export class SQLiteRecipeRepository {
                 recipe.philosophy ?? null,
                 JSON.stringify(recipe.best_for_tags || []),
                 JSON.stringify(recipe.not_recommended_tags || []),
-                recipe.version || 1,
                 recipe.created_at || now,
                 now
             ]
