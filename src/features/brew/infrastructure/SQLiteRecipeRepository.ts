@@ -1,4 +1,3 @@
-import type { IRecipeRepository } from '../../../shared/domain/repositories';
 import type { Recipe, EntityId, BrewStep } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
@@ -77,7 +76,7 @@ function toDomainStep(row: StepRow): BrewStep {
     };
 }
 
-export class SQLiteRecipeRepository implements IRecipeRepository {
+export class SQLiteRecipeRepository {
     private get db() {
         return dbService.getDb();
     }

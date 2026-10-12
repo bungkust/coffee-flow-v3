@@ -1,4 +1,3 @@
-import type { IDrinkRepository } from '../../../shared/domain/repositories';
 import type { Drink, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
@@ -30,7 +29,7 @@ function toDomainDrink(row: DrinkRow): Drink {
     };
 }
 
-export class SQLiteDrinkRepository implements IDrinkRepository {
+export class SQLiteDrinkRepository {
     private get db() {
         return dbService.getDb();
     }

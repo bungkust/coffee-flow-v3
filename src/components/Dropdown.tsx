@@ -1,10 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Icon } from './Icons';
 
 export interface Option {
     value: string;
     label: string;
-    description?: string;
     disabled?: boolean;
 }
 
@@ -17,10 +16,9 @@ interface DropdownProps {
     className?: string;
     buttonClassName?: string;
     icon?: string;
-    required?: boolean;
 }
 
-export const Dropdown: React.FC<DropdownProps> = ({
+export const Dropdown = ({
     label,
     options,
     value,
@@ -29,8 +27,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     className = '',
     buttonClassName = '',
     icon,
-    required = false,
-}) => {
+}: DropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +56,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
             {label && (
                 <label className="block typescale-label-medium text-md-on-surface-variant mb-1.5 flex items-center gap-2">
                     {icon && <Icon name={icon} className="text-base" />}
-                    {label} {required && <span className="text-md-error">*</span>}
+                    {label}
                 </label>
             )}
 
@@ -93,14 +90,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                                         : 'text-md-on-surface hover:bg-md-surface-container-highest'
                                 } ${option.disabled ? 'opacity-38 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
-                                <div className="flex flex-col flex-1 min-w-0 pr-1">
-                                    <span className="font-bold leading-snug">{option.label}</span>
-                                    {option.description && (
-                                        <span className="typescale-body-small text-md-on-surface-variant/80 font-normal mt-0.5 leading-snug">
-                                            {option.description}
-                                        </span>
-                                    )}
-                                </div>
+                                <span className="flex-1 min-w-0 pr-1 font-bold leading-snug">{option.label}</span>
                                 {option.value === value && (
                                     <Icon name="check" className="text-md-primary text-lg shrink-0" />
                                 )}
@@ -112,4 +102,3 @@ export const Dropdown: React.FC<DropdownProps> = ({
         </div>
     );
 };
-

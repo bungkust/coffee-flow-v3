@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { InputHTMLAttributes, ReactNode } from 'react';
 import { Icon } from './Icons';
@@ -9,7 +8,6 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     icon?: string;
     rightElement?: ReactNode;
     active?: boolean;
-    helperText?: string;
 }
 
 export const Input = ({
@@ -19,13 +17,12 @@ export const Input = ({
     icon,
     rightElement,
     active,
-    helperText,
     ...props
 }: InputProps) => {
     return (
         <div className="space-y-1.5 w-full">
             {label && (
-                <label className={clsx(
+                <label className={twMerge(
                     "typescale-label-medium transition-colors duration-200 block",
                     error ? "text-md-error" : (active ? "text-md-primary font-semibold" : "text-md-on-surface-variant")
                 )}>
@@ -59,12 +56,11 @@ export const Input = ({
                     <span className="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-md-error text-xl">error</span>
                 )}
             </div>
-            {(error || helperText) && (
-                <p className={clsx("typescale-body-small mt-1 px-1", error ? "text-md-error font-medium" : "text-md-on-surface-variant")}>
-                    {error || helperText}
+            {error && (
+                <p className="typescale-body-small mt-1 px-1 text-md-error font-medium">
+                    {error}
                 </p>
             )}
         </div>
     );
 };
-

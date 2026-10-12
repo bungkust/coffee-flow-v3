@@ -23,7 +23,10 @@ export const BrewLogPage = () => {
     const [selectedTags, setSelectedTags] = useState<string[]>(['Fruity']);
     const [customTagInput, setCustomTagInput] = useState('');
 
-    const [autoSavedLogId, setAutoSavedLogId] = useState<string | null>(null);
+    const [autoSavedLogId, setAutoSavedLogId] = useState<string | null>(
+        () => sessionStorage.getItem('coffee_flow_last_logged_id')
+    );
+    const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
     useEffect(() => {
         if (!activeRecipe) {
@@ -34,11 +37,8 @@ export const BrewLogPage = () => {
             return;
         }
 
-        const existingId = sessionStorage.getItem('coffee_flow_last_logged_id');
-        if (existingId) {
-            setAutoSavedLogId(existingId);
-        } else {
-            // Auto-save to history immediately if not yet auto-saved
+        // Auto-save to history immediately if not yet auto-saved
+        if (!autoSavedLogId) {
             brewService.logBrew(
                 activeRecipe.id,
                 4,
@@ -138,8 +138,6 @@ export const BrewLogPage = () => {
             navigate('/home');
         }
     };
-
-    const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
     const confirmDiscard = () => {
         stopBrew();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 
@@ -269,13 +269,13 @@ const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
     }];
 };
 
-export const SmartImportModal: React.FC<SmartImportModalProps> = ({
+export const SmartImportModal = ({
     isOpen,
     onClose,
     onImport,
     onSaveDirect,
     initialParsedRecipes
-}) => {
+}: SmartImportModalProps) => {
     const [mode, setMode] = useState<'offline' | 'ai'>('offline');
     const [rawInput, setRawInput] = useState('');
     const [aiJsonResponse, setAiJsonResponse] = useState('');
@@ -285,7 +285,7 @@ export const SmartImportModal: React.FC<SmartImportModalProps> = ({
     const [parseError, setParseError] = useState('');
     const [isSavingDirect, setIsSavingDirect] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen && initialParsedRecipes && initialParsedRecipes.length > 0) {
             setParsedRecipes(initialParsedRecipes);
             setSelectedIndex(null);

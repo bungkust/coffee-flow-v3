@@ -89,10 +89,6 @@ export class BrewEngine {
         this.notify();
     }
 
-    removeListener(listener: BrewEngineListener): void {
-        this.listeners = this.listeners.filter(l => l !== listener);
-    }
-
     private tick(): void {
         if (this.interval) clearInterval(this.interval);
 

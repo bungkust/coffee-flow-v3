@@ -1,29 +1,29 @@
-import type { IRecipeRepository, IBrewLogRepository } from '../../../shared/domain/repositories';
 import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, BrewingMethod, EntityId } from '../../../shared/domain/entities';
 import type { PantryService } from '../../pantry/application/PantryService';
-import { dbService } from '../../../core/database/sqlite';
+import { SQLiteRecipeRepository } from '../infrastructure/SQLiteRecipeRepository';
+import { SQLiteBrewLogRepository } from '../infrastructure/SQLiteBrewLogRepository';
+import { SQLiteBrewingMethodRepository } from '../infrastructure/SQLiteBrewingMethodRepository';
 
 export class BrewService {
-    private recipeRepo: IRecipeRepository;
-    private logRepo: IBrewLogRepository;
+    private recipeRepo: SQLiteRecipeRepository;
+    private logRepo: SQLiteBrewLogRepository;
+    private brewingMethodRepo: SQLiteBrewingMethodRepository;
     private pantryService: PantryService;
 
     constructor(
-        recipeRepo: IRecipeRepository,
-        logRepo: IBrewLogRepository,
+        recipeRepo: SQLiteRecipeRepository,
+        logRepo: SQLiteBrewLogRepository,
+        brewingMethodRepo: SQLiteBrewingMethodRepository,
         pantryService: PantryService
     ) {
         this.recipeRepo = recipeRepo;
         this.logRepo = logRepo;
+        this.brewingMethodRepo = brewingMethodRepo;
         this.pantryService = pantryService;
     }
 
     async getAllMethods(): Promise<BrewingMethod[]> {
-        const db = dbService.getDb();
-        const result = await db.query(
-            'SELECT id, name, description, icon, created_at, updated_at, deleted_at FROM brewing_methods WHERE deleted_at IS NULL ORDER BY name'
-        );
-        return (result.values || []) as BrewingMethod[];
+        return this.brewingMethodRepo.getAllMethods();
     }
 
     async getAllRecipes(): Promise<Recipe[]> {

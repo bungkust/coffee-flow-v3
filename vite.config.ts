@@ -12,8 +12,7 @@ export default defineConfig({
         manualChunks: {
           'vendor': ['react', 'react-dom', 'react-router-dom'],
           'sqlite': ['@capacitor-community/sqlite', '@capacitor/core'],
-          'ui': ['tailwind-merge'],
-          'charts': [] // reserved for future chart lib
+          'ui': ['tailwind-merge']
         }
       }
     }

@@ -1,4 +1,3 @@
-import type { IBrewLogRepository } from '../../../shared/domain/repositories';
 import type { BrewLog, BrewLogWithRecipe, BrewStats, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
@@ -49,14 +48,9 @@ function toBrewLogWithRecipe(row: BrewLogWithRecipeRow): BrewLogWithRecipe {
     };
 }
 
-export class SQLiteBrewLogRepository implements IBrewLogRepository {
+export class SQLiteBrewLogRepository {
     private get db() {
         return dbService.getDb();
-    }
-
-    async findAllByRecipeId(recipeId: EntityId): Promise<BrewLog[]> {
-        const result = await this.db.query('SELECT * FROM brew_logs WHERE recipe_id = ? ORDER BY brewed_at DESC', [recipeId]);
-        return (result.values || []).map(toBrewLog);
     }
 
     async save(log: BrewLog): Promise<void> {
@@ -80,11 +74,6 @@ export class SQLiteBrewLogRepository implements IBrewLogRepository {
             ]
         );
         await dbService.saveToLocalStore();
-    }
-
-    async findAll(): Promise<BrewLog[]> {
-        const result = await this.db.query('SELECT * FROM brew_logs ORDER BY brewed_at DESC');
-        return (result.values || []).map(toBrewLog);
     }
 
     async update(log: BrewLog): Promise<void> {

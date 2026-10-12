@@ -1,6 +1,5 @@
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Chip } from '../components/Chip';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Toast } from '../components/Toast';
@@ -233,10 +232,10 @@ export const PlaygroundPage = () => {
                         <div className="space-y-3">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Selection Chips</h4>
                             <div className="flex flex-wrap gap-2">
-                                <Chip active>V60</Chip>
-                                <Chip variant="secondary">AeroPress</Chip>
-                                <Chip variant="outline">French Press</Chip>
-                                <Chip variant="outline">Chemex</Chip>
+                                <Button size="sm" variant="secondary" active>V60</Button>
+                                <Button size="sm" variant="ghost">AeroPress</Button>
+                                <Button size="sm" variant="ghost">French Press</Button>
+                                <Button size="sm" variant="ghost">Chemex</Button>
                             </div>
                         </div>
                     </div>

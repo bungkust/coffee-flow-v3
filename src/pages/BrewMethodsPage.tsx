@@ -147,7 +147,7 @@ export const BrewMethodsPage = () => {
             groups[cat] = [];
         });
         filteredMethods.forEach((m) => {
-            const cat = m.category && CATEGORIES.includes(m.category as any) ? m.category : getCategoryFallback(m.id);
+            const cat = m.category && (CATEGORIES as readonly string[]).includes(m.category) ? m.category : getCategoryFallback(m.id);
             if (!groups[cat]) groups[cat] = [];
             groups[cat].push(m);
         });

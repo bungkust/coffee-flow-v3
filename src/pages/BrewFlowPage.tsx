@@ -126,10 +126,6 @@ export const BrewFlowPage = () => {
 
                 if (!isAutoSavedRef.current) {
                     isAutoSavedRef.current = true;
-                    let totalSeconds = 0;
-                    for (const step of activeRecipe.steps) {
-                        totalSeconds += step.duration_seconds;
-                    }
                     brewService.logBrew(
                         activeRecipe.id,
                         5,

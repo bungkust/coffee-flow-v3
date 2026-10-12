@@ -1,9 +1,9 @@
 import { BrewService } from '../features/brew/application/BrewService';
 import { SQLiteRecipeRepository } from '../features/brew/infrastructure/SQLiteRecipeRepository';
 import { SQLiteBrewLogRepository } from '../features/brew/infrastructure/SQLiteBrewLogRepository';
+import { SQLiteBrewingMethodRepository } from '../features/brew/infrastructure/SQLiteBrewingMethodRepository';
 import { BackupService } from '../features/settings/application/BackupService';
 import { SQLiteBackupRepository } from '../features/settings/infrastructure/SQLiteBackupRepository';
-import { SettingsService } from '../features/settings/application/SettingsService';
 import { SQLiteSettingsRepository } from '../features/settings/infrastructure/SQLiteSettingsRepository';
 
 import { DrinkService } from '../features/brew/application/DrinkService';
@@ -16,6 +16,7 @@ import { SQLitePantryRepository } from '../features/pantry/infrastructure/SQLite
 // Repositories
 const recipeRepo = new SQLiteRecipeRepository();
 const logRepo = new SQLiteBrewLogRepository();
+const brewingMethodRepo = new SQLiteBrewingMethodRepository();
 const drinkLogRepo = new SQLiteDrinkLogRepository();
 const drinkRepo = new SQLiteDrinkRepository();
 const backupRepo = new SQLiteBackupRepository();
@@ -24,7 +25,7 @@ const pantryRepo = new SQLitePantryRepository();
 
 // Services
 export const pantryService = new PantryService(pantryRepo);
-export const brewService = new BrewService(recipeRepo, logRepo, pantryService);
+export const brewService = new BrewService(recipeRepo, logRepo, brewingMethodRepo, pantryService);
 export const drinkService = new DrinkService(drinkRepo, drinkLogRepo, pantryService);
 export const backupService = new BackupService(backupRepo);
-export const settingsService = new SettingsService(settingsRepo);
+export const settingsService = settingsRepo;

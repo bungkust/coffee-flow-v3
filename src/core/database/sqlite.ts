@@ -3,20 +3,10 @@ import { Capacitor } from '@capacitor/core';
 import { MIGRATIONS } from './schema';
 
 class DatabaseService {
-    private static instance: DatabaseService;
     private sqlite: SQLiteConnection | null = null;
     private db: SQLiteDBConnection | null = null;
     private isInitialized = false;
     private initPromise: Promise<void> | null = null;
-
-    private constructor() { }
-
-    static getInstance(): DatabaseService {
-        if (!DatabaseService.instance) {
-            DatabaseService.instance = new DatabaseService();
-        }
-        return DatabaseService.instance;
-    }
 
     async initialize(): Promise<void> {
         if (this.isInitialized) return;
@@ -77,7 +67,6 @@ class DatabaseService {
 
         for (const migration of MIGRATIONS) {
             if (migration.version > currentVersion) {
-                // Execute migration statements with column guards for ADD COLUMN
                 const statements = migration.sql.split(';').filter(s => s.trim());
                 for (const stmt of statements) {
                     const trimmed = stmt.trim();
@@ -105,4 +94,4 @@ class DatabaseService {
     }
 }
 
-export const dbService = DatabaseService.getInstance();
+export const dbService = new DatabaseService();

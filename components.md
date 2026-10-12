@@ -81,12 +81,14 @@ const [isOpen, setIsOpen] = useState(false);
 | `message` | `string` | required | Dialog body text |
 | `confirmText` | `string` | `"Confirm"` | Confirm button label |
 | `cancelText` | `string` | `"Cancel"` | Cancel button label |
-| `type` | `'warning' \| 'info' \| 'error'` | `"info"` | Icon + color variant |
+| `type` | `'warning' \| 'info' \| 'error' \| 'success'` | `"info"` | Icon + color variant |
+| `size` | `'sm' \| 'md' \| 'lg'` | `"sm"` | Dialog width: `max-w-sm` / `max-w-md` / `max-w-lg` |
 
 **Type variants:**
 - `"warning"` — yellow warning icon
 - `"error"` — red error icon
 - `"info"` — primary-colored info icon
+- `"success"` — green success icon
 
 **When to use:** Any destructive or irreversible action. Never use `window.confirm()` or `alert()` for user-facing confirmations.
 
@@ -132,16 +134,19 @@ import { Button } from '../components/Button';
 // Primary (default)
 <Button onClick={handleSave}>Save Recipe</Button>
 
-// Secondary (outline)
+// Secondary
 <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
 
 // Ghost (text-only)
 <Button variant="ghost" onClick={handleBack}>Back</Button>
 
-// Icon button (circular)
-<Button variant="icon" onClick={handleSettings}>
-    <Icon name="settings" className="text-[20px]" />
+// Leading icon
+<Button icon={<Icon name="save" className="text-[20px]" />} onClick={handleSave}>
+    Save
 </Button>
+
+// Toggle chip (active)
+<Button size="sm" variant="secondary" active>Selected</Button>
 
 // Sizes
 <Button size="sm">Small</Button>
@@ -156,19 +161,21 @@ import { Button } from '../components/Button';
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `variant` | `'primary' \| 'secondary' \| 'ghost' \| 'icon'` | `"primary"` | Visual style |
-| `size` | `'sm' \| 'md' \| 'lg'` | `"md"` | Button size (ignored for `icon` variant) |
+| `variant` | `'filled' \| 'secondary' \| 'ghost'` | `"filled"` | Visual style |
+| `size` | `'sm' \| 'md' \| 'lg'` | `"md"` | Button size |
+| `active` | `boolean` | `false` | Selected/toggle highlight (secondary-container). Use for filter chips |
+| `icon` | `ReactNode` | — | Optional leading icon element |
 | `disabled` | `boolean` | — | Disables the button with opacity + cursor |
 | `children` | `ReactNode` | required | Button content |
 | All `ButtonHTMLAttributes` | — | — | Passes through `onClick`, `type`, `className`, etc. |
 
 **Variant styles:**
-- `primary`: filled coffee brown, white text, shadow
-- `secondary`: transparent with primary border
+- `filled` (default): filled coffee brown, white text
+- `secondary`: secondary-container with on-secondary-container text
 - `ghost`: transparent with gray hover
-- `icon`: circular, `size-10`, no padding
+- `active`: secondary-container highlight (toggle/selected state)
 
-**When to use:** Any clickable action. If the existing variants don't match your needs, extend this component rather than creating a new one.
+**When to use:** Any clickable action, including toggle/filter chips — use `active` + `size="sm"` for selection chips. If the existing variants don't match your needs, extend this component rather than creating a new one.
 
 ---
 
@@ -284,7 +291,6 @@ import { Dropdown } from '../components/Dropdown';
 | `className` | `string` | `""` | Wrapper div classes |
 | `buttonClassName` | `string` | `""` | Button trigger classes (e.g. `"py-3 bg-gray-50 border-gray-100"`) |
 | `icon` | `string?` | — | Material icon name in label |
-| `required` | `boolean` | `false` | Shows red asterisk in label |
 
 **When to use:** Any selection from a finite list of options. Don't use for search/filter inputs — use `Input` with `icon="search"` instead.
 
@@ -328,38 +334,24 @@ import { Card } from '../components/Card';
 
 ## Chip
 
-**File:** `src/components/Chip.tsx`
-
-Filter/selection chip button with active state.
+*Deprecated — merged into `Button`.* The `Chip` component has been removed to avoid a redundant button primitive. Use `Button` with the `active` prop for filter/toggle chips:
 
 ```tsx
-import { Chip } from '../components/Chip';
+import { Button } from '../components/Button';
 
-// Outline (default)
-<Chip onClick={() => setActive('All')}>All</Chip>
+// Selected (active)
+<Button size="sm" variant="secondary" active>Favorites</Button>
 
-// Active (filled primary)
-<Chip active onClick={() => setActive('Favorites')}>Favorites</Chip>
+// Unselected
+<Button size="sm" variant="ghost">All</Button>
 
-// Secondary variant
-<Chip variant="secondary">Light Roast</Chip>
+// With a leading icon
+<Button size="sm" variant="ghost" icon={<Icon name="check" className="text-[16px]" />}>
+    Light Roast
+</Button>
 ```
 
-**Props:**
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `active` | `boolean` | — | When true, uses primary filled style |
-| `variant` | `'primary' \| 'secondary' \| 'outline'` | `"outline"` | Visual style (overridden by `active`) |
-| `children` | `ReactNode` | required | Chip label |
-| All `ButtonHTMLAttributes` | — | — | Passes through `onClick`, `disabled`, etc. |
-
-**Variant styles:**
-- `primary`: filled coffee brown, white text
-- `secondary`: subtle background with primary text
-- `outline`: white with gray border
-
-**When to use:** Filter chips on list pages (e.g. recipe filters: All, Favorites, Personal, Community). Not for standalone toggle buttons — use `Button` instead.
+**When to use:** Filter chips on list pages (e.g. recipe filters: All, Favorites, Personal, Community) — use `size="sm"` with `active` for the selected look. Not for standalone toggle buttons — use `Button` instead.
 
 ---
 
@@ -404,7 +396,7 @@ import { Badge } from '../components/Badge';
 
 **Default size:** `px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider`
 
-**When to use:** Method labels, difficulty levels, status indicators. Not for interactive elements — use `Chip` instead.
+**When to use:** Method labels, difficulty levels, status indicators. Not for interactive elements — use `Button` instead.
 
 ---
 
@@ -542,7 +534,7 @@ const [isImportOpen, setIsImportOpen] = useState(false);
 | Text input | `Input` | Forms, search |
 | Select from list | `Dropdown` | Method, category, difficulty |
 | White card wrapper | `Card` | List items, content blocks |
-| Filter chip | `Chip` | Recipe filters, tag selection |
+| Filter chip | `Button` (active) | Recipe filters, tag selection |
 | Status label | `Badge` | Method, difficulty, stock status |
 | Percentage bar | `ProgressBar` | Stock level, brew progress |
 | Bottom navigation | `BottomNav` | Every main screen |

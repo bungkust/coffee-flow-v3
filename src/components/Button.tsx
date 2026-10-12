@@ -1,11 +1,13 @@
 import { twMerge } from 'tailwind-merge';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant = 'filled' | 'tonal' | 'outlined' | 'text' | 'elevated' | 'primary' | 'secondary' | 'ghost' | 'icon';
+export type ButtonVariant = 'filled' | 'secondary' | 'ghost';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
     size?: 'sm' | 'md' | 'lg';
+    active?: boolean;
+    icon?: ReactNode;
     children: ReactNode;
 }
 
@@ -13,6 +15,8 @@ export const Button = ({
     className,
     variant = 'filled',
     size = 'md',
+    active = false,
+    icon,
     children,
     ...props
 }: ButtonProps) => {
@@ -20,14 +24,8 @@ export const Button = ({
 
     const variants: Record<ButtonVariant, string> = {
         filled: 'bg-md-primary text-md-on-primary hover:bg-md-primary/90 font-medium shadow-none',
-        primary: 'bg-md-primary text-md-on-primary hover:bg-md-primary/90 font-medium shadow-none', // Legacy alias
-        tonal: 'bg-md-primary-container text-md-on-primary-container hover:bg-md-primary-container/80 font-medium',
-        secondary: 'bg-md-secondary-container text-md-on-secondary-container hover:bg-md-secondary-container/80 font-medium', // Legacy alias
-        outlined: 'bg-transparent border border-md-outline text-md-primary hover:bg-md-primary/10 font-medium',
-        text: 'bg-transparent text-md-primary hover:bg-md-primary/10 font-medium',
-        ghost: 'bg-transparent text-md-on-surface-variant hover:bg-md-surface-container-highest font-medium', // Legacy alias
-        elevated: 'bg-md-surface-container-low text-md-primary shadow-md-1 hover:shadow-md-2 hover:bg-md-surface-container-high font-medium',
-        icon: 'rounded-full flex items-center justify-center p-0 text-md-on-surface-variant hover:bg-md-surface-container-highest text-2xl',
+        secondary: 'bg-md-secondary-container text-md-on-secondary-container hover:bg-md-secondary-container/80 font-medium',
+        ghost: 'bg-transparent text-md-on-surface-variant hover:bg-md-surface-container-highest font-medium',
     };
 
     const sizes = {
@@ -36,21 +34,19 @@ export const Button = ({
         lg: 'h-14 px-8 text-base rounded-full tracking-wide font-semibold',
     };
 
-    const resolvedVariant = variants[variant] || variants.filled;
-
     return (
         <button
             className={twMerge(
                 baseStyles,
-                resolvedVariant,
-                variant !== 'icon' && sizes[size],
-                variant === 'icon' && 'size-10 rounded-full',
+                variants[variant],
+                sizes[size],
+                active && 'bg-md-secondary-container text-md-on-secondary-container shadow-sm border-none',
                 className
             )}
             {...props}
         >
+            {icon}
             {children}
         </button>
     );
 };
-

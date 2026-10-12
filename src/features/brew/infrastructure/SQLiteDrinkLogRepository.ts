@@ -1,4 +1,3 @@
-import type { IDrinkLogRepository } from '../../../shared/domain/repositories';
 import type { DrinkLog, DrinkLogWithDrink, DrinkStats, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
@@ -35,19 +34,9 @@ function toDomainDrinkLogWithDrink(row: DrinkLogWithDrinkRow): DrinkLogWithDrink
     };
 }
 
-export class SQLiteDrinkLogRepository implements IDrinkLogRepository {
+export class SQLiteDrinkLogRepository {
     private get db() {
         return dbService.getDb();
-    }
-
-    async findAll(): Promise<DrinkLog[]> {
-        const result = await this.db.query('SELECT * FROM drink_logs ORDER BY logged_at DESC');
-        return (result.values || []).map(toDomainDrinkLog);
-    }
-
-    async findAllByDrinkId(drinkId: EntityId): Promise<DrinkLog[]> {
-        const result = await this.db.query('SELECT * FROM drink_logs WHERE drink_id = ? ORDER BY logged_at DESC', [drinkId]);
-        return (result.values || []).map(toDomainDrinkLog);
     }
 
     async save(log: DrinkLog): Promise<void> {

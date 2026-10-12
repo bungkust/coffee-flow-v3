@@ -1,13 +1,14 @@
-import type { IDrinkLogRepository, IDrinkRepository } from '../../../shared/domain/repositories';
 import type { Drink, DrinkLog, DrinkLogWithDrink, DrinkStats, EntityId } from '../../../shared/domain/entities';
 import type { PantryService } from '../../pantry/application/PantryService';
+import { SQLiteDrinkRepository } from '../infrastructure/SQLiteDrinkRepository';
+import { SQLiteDrinkLogRepository } from '../infrastructure/SQLiteDrinkLogRepository';
 
 export class DrinkService {
-    private drinkRepo: IDrinkRepository;
-    private logRepo: IDrinkLogRepository;
+    private drinkRepo: SQLiteDrinkRepository;
+    private logRepo: SQLiteDrinkLogRepository;
     private pantryService: PantryService;
 
-    constructor(drinkRepo: IDrinkRepository, logRepo: IDrinkLogRepository, pantryService: PantryService) {
+    constructor(drinkRepo: SQLiteDrinkRepository, logRepo: SQLiteDrinkLogRepository, pantryService: PantryService) {
         this.drinkRepo = drinkRepo;
         this.logRepo = logRepo;
         this.pantryService = pantryService;
@@ -19,10 +20,6 @@ export class DrinkService {
 
     async getDrink(id: EntityId): Promise<Drink | null> {
         return this.drinkRepo.findById(id);
-    }
-
-    async getAllLogs(): Promise<DrinkLog[]> {
-        return this.logRepo.findAll();
     }
 
     async getRecentLogsWithDrinks(): Promise<DrinkLogWithDrink[]> {
@@ -59,35 +56,31 @@ export class DrinkService {
         try {
             const ingredients = JSON.parse(drink.ingredients_json || '[]');
             
-            // Parse ingredients and deduct stock
+            // Fetch pantry once
+            const pantryItems = await this.pantryService.getPantryItems();
+            const beanItem = pantryItems.find(b => b.category === 'beans');
+            const milkItem = pantryItems.find(m => m.category === 'milk');
+            const GRAMS_PER_SHOT = 18;
+
             for (const ingredient of ingredients) {
                 if (typeof ingredient !== 'string') continue;
-                
-                // Match patterns like "18g coffee", "120ml milk", "1 espresso shot"
+
                 const coffeeMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*g\s*(?:coffee|espresso)/i);
                 const milkMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*ml\s*(?:milk|steamed milk)/i);
-                const waterMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*ml\s*(?:water)/i);
-                const shotMatch = ingredient.match(/(\d+)\s*(?:espresso\s*)?shot/i);
-                
+                const waterMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*(?:ml|g)?\s*(?:water|hot water)/i);
+                const shotMatch = ingredient.match(/(\d+)\s*shot/i);
+
                 if (coffeeMatch) {
                     const grams = parseFloat(coffeeMatch[1]);
-                    // Find bean item and deduct
-                    const beans = await this.pantryService.getPantryItems();
-                    const beanItem = beans.find(b => b.category === 'beans');
                     if (beanItem) await this.pantryService.deductStock(beanItem.id, grams);
                 } else if (milkMatch) {
                     const ml = parseFloat(milkMatch[1]);
-                    const milks = await this.pantryService.getPantryItems();
-                    const milkItem = milks.find(m => m.category === 'milk');
                     if (milkItem) await this.pantryService.deductStock(milkItem.id, ml);
                 } else if (waterMatch) {
                     // Water typically not tracked in pantry
                 } else if (shotMatch) {
                     const shots = parseInt(shotMatch[1]);
-                    const gramsPerShot = 18;
-                    const beans = await this.pantryService.getPantryItems();
-                    const beanItem = beans.find(b => b.category === 'beans');
-                    if (beanItem) await this.pantryService.deductStock(beanItem.id, shots * gramsPerShot);
+                    if (beanItem) await this.pantryService.deductStock(beanItem.id, shots * GRAMS_PER_SHOT);
                 }
             }
         } catch (error) {
