@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
+import { Dropdown } from '../components/Dropdown';
 import { pantryService } from '../core/services';
+import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, parseBeanTags, formatBeanTags } from '../features/pantry/domain/beanOptions';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
 export const PantryEditPage = () => {
@@ -12,6 +14,7 @@ export const PantryEditPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [beanFields, setBeanFields] = useState({ origin: '', variety: '', process: '', altitude: '', roastLevel: '', roastDate: '' });
 
     useEffect(() => {
         const loadItem = async () => {
@@ -28,6 +31,13 @@ export const PantryEditPage = () => {
         loadItem();
     }, [id]);
 
+    useEffect(() => {
+        if (item && item.category === 'beans') {
+            const { fields } = parseBeanTags(item.tags_json || []);
+            setBeanFields({ ...fields, roastDate: item.roast_date || '' });
+        }
+    }, [item]);
+
     const handleSave = async () => {
         if (!item) return;
         if (!item.name.trim()) {
@@ -37,10 +47,13 @@ export const PantryEditPage = () => {
         setSaving(true);
         setError('');
         try {
-            await pantryService.updatePantryItem({
-                ...item,
-                updated_at: new Date().toISOString()
-            });
+            const updated: PantryItem = { ...item, updated_at: new Date().toISOString() };
+            if (item.category === 'beans') {
+                const { preserved } = parseBeanTags(item.tags_json || []);
+                updated.roast_date = beanFields.roastDate.trim() || undefined;
+                updated.tags_json = [...formatBeanTags(beanFields), ...preserved];
+            }
+            await pantryService.updatePantryItem(updated);
             navigate('/pantry');
         } catch (err) {
             console.error('Failed to save pantry item:', err);
@@ -147,6 +160,63 @@ export const PantryEditPage = () => {
                         />
                     </Field>
                 </div>
+
+                {item.category === 'beans' && (
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                        <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Bean Details</h2>
+
+                        <Field label="Origin">
+                            <input
+                                value={beanFields.origin}
+                                onChange={(event) => setBeanFields({ ...beanFields, origin: event.target.value })}
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                            />
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Dropdown
+                                label="Variety"
+                                value={beanFields.variety}
+                                options={VARIETY_OPTIONS}
+                                onChange={(val) => setBeanFields({ ...beanFields, variety: val })}
+                                placeholder="Select"
+                            />
+                            <Dropdown
+                                label="Process"
+                                value={beanFields.process}
+                                options={PROCESS_OPTIONS}
+                                onChange={(val) => setBeanFields({ ...beanFields, process: val })}
+                                placeholder="Select"
+                            />
+                        </div>
+
+                        <Field label="Altitude">
+                            <input
+                                value={beanFields.altitude}
+                                onChange={(event) => setBeanFields({ ...beanFields, altitude: event.target.value })}
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                            />
+                        </Field>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Dropdown
+                                label="Roast Level"
+                                value={beanFields.roastLevel}
+                                options={ROAST_LEVEL_OPTIONS}
+                                onChange={(val) => setBeanFields({ ...beanFields, roastLevel: val })}
+                                placeholder="Select"
+                            />
+                            <Field label="Roast Date">
+                                <input
+                                    type="date"
+                                    value={beanFields.roastDate}
+                                    onChange={(event) => setBeanFields({ ...beanFields, roastDate: event.target.value })}
+                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                                />
+                            </Field>
+                        </div>
+                    </div>
+                )}
             </main>
 
             {/* Sticky Bottom Actions */}

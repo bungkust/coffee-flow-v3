@@ -11,9 +11,7 @@ export const WelcomePage = () => {
     useEffect(() => {
         const checkDone = async () => {
             try {
-                const name = await settingsService.getUserName();
-                const methods = await settingsService.getUserPreferredMethods();
-                if (name && name.trim().length > 0 && methods && methods.length >= 1) {
+                if (await settingsService.isOnboardingComplete()) {
                     navigate('/home', { replace: true });
                 }
             } catch {
@@ -78,12 +76,6 @@ export const WelcomePage = () => {
                     <Icon name="cloud_sync" className="text-xl text-md-primary" />
                     <span>Restore Backup Data</span>
                 </button>
-
-                <div className="pt-2 flex justify-center gap-4 typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider">
-                    <button onClick={() => alert('Terms: CoffeeFlow is a local-first brewing companion.')} className="hover:text-md-primary cursor-pointer">Terms</button>
-                    <span>•</span>
-                    <button onClick={() => alert('Privacy: CoffeeFlow stores data locally unless you export a backup.')} className="hover:text-md-primary cursor-pointer">Privacy</button>
-                </div>
             </div>
         </div>
     );

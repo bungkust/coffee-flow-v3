@@ -121,6 +121,12 @@ export class SQLiteSettingsRepository {
         await this.set('timer_feedback_enabled', String(enabled));
     }
 
+    async isOnboardingComplete(): Promise<boolean> {
+        const name = await this.getUserName();
+        const methods = await this.getUserPreferredMethods();
+        return name.trim().length > 0 && methods.length >= 1;
+    }
+
     async clearUserData(): Promise<void> {
         await this.db.run('DELETE FROM brew_logs');
         await this.db.run('DELETE FROM drink_logs');

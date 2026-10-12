@@ -7,31 +7,12 @@ export const SplashPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const checkOnboardingState = async () => {
-            try {
-                const name = await settingsService.getUserName();
-                const methods = await settingsService.getUserPreferredMethods();
-
-                const hasCompletedName = name && name.trim().length > 0;
-                const hasCompletedEquipment = methods && methods.length >= 1;
-
-                const timer = setTimeout(() => {
-                    if (hasCompletedName && hasCompletedEquipment) {
-                        navigate('/home');
-                    } else {
-                        navigate('/welcome');
-                    }
-                }, 2800);
-
-                return () => clearTimeout(timer);
-            } catch (err) {
-                console.error("Failed to check onboarding state", err);
-                const timer = setTimeout(() => navigate('/welcome'), 2800);
-                return () => clearTimeout(timer);
-            }
-        };
-
-        checkOnboardingState();
+        const timer = setTimeout(() => {
+            settingsService.isOnboardingComplete()
+                .then((done) => navigate(done ? '/home' : '/welcome'))
+                .catch(() => navigate('/welcome'));
+        }, 2800);
+        return () => clearTimeout(timer);
     }, [navigate]);
 
     return (

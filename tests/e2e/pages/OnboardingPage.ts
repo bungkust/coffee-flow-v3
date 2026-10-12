@@ -9,6 +9,7 @@ export class OnboardingPage {
   readonly skipButton: Locator;
   readonly beanNameInput: Locator;
   readonly roasteryInput: Locator;
+  readonly beanQuantityInput: Locator;
   readonly originInput: Locator;
   readonly altitudeInput: Locator;
   readonly tastingNotesInput: Locator;
@@ -21,6 +22,7 @@ export class OnboardingPage {
     this.skipButton = page.getByRole('button', { name: 'Skip' });
     this.beanNameInput = page.getByPlaceholder(/Aroma Nativo|Holiday Blend/i);
     this.roasteryInput = page.getByPlaceholder(/Cap Kadal/i);
+    this.beanQuantityInput = page.getByPlaceholder(/e\.g\. 250/i);
     this.originInput = page.getByPlaceholder(/Temanggung/i);
     this.altitudeInput = page.getByPlaceholder(/1700 masl/i);
     this.tastingNotesInput = page.getByPlaceholder(/Peach, Berries, Jasmine/i);
@@ -61,6 +63,7 @@ export class OnboardingPage {
 
   async completeStep2Equipment() {
     await expect(this.page.getByText('Step 2 — Equipment')).toBeVisible();
+    await this.page.getByRole('button', { name: 'V60 Pour Over' }).click();
     await this.nextButton.click();
   }
 

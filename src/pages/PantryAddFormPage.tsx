@@ -3,34 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
+import { QuantityField } from '../components/QuantityField';
 import { pantryService } from '../core/services';
+import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { PantryCategory } from '../features/pantry/domain/entities';
-
-const VARIETY_OPTIONS = [
-    { value: 'Arabica', label: 'Arabica' },
-    { value: 'Robusta', label: 'Robusta' },
-    { value: 'Liberica', label: 'Liberica' },
-    { value: 'Excelsa', label: 'Excelsa' },
-    { value: 'Blend', label: 'Blend' },
-    { value: 'Other', label: 'Other' }
-];
-
-const PROCESS_OPTIONS = [
-    { value: 'Washed', label: 'Washed' },
-    { value: 'Natural', label: 'Natural' },
-    { value: 'Honey', label: 'Honey' },
-    { value: 'Full Washed', label: 'Full Washed' },
-    { value: 'Semi Washed', label: 'Semi Washed' },
-    { value: 'Anaerobic', label: 'Anaerobic' },
-    { value: 'Experimental', label: 'Experimental' },
-    { value: 'Other', label: 'Other' }
-];
-
-const ROAST_LEVEL_OPTIONS = [
-    { value: 'light', label: 'Light Roast' },
-    { value: 'medium', label: 'Medium Roast' },
-    { value: 'dark', label: 'Dark Roast' }
-];
 
 const VALID_CATEGORIES: PantryCategory[] = [
     'beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient',
@@ -97,24 +73,18 @@ export const PantryAddFormPage = () => {
         if (!name.trim()) return;
         setLoading(true);
         try {
-            const parsedQty = parseFloat(quantity);
-            const qtyNum = isNaN(parsedQty) ? undefined : parsedQty;
-
             await pantryService.addPantryItem(name.trim(), validCategory, {
                 brand: brand.trim() || undefined,
                 roast_date: roastDate || undefined,
                 description: description.trim() || undefined,
-                quantity: qtyNum,
+                quantity: parseQuantity(quantity),
                 unit: unit,
                 tags_json: [
-                    origin.trim(),
-                    variety.trim(),
-                    process.trim(),
-                    altitude.trim(),
-                    roastLevel,
+                    ...formatBeanTags({ origin, variety, process, altitude, roastLevel }),
                     material.trim(),
                     burrType.trim(),
-                    generalType.trim()
+                    generalType.trim(),
+                    ...buildBlendTags(beanType === 'blend' ? blendComponents : [])
                 ].filter(Boolean)
             });
 
@@ -174,19 +144,12 @@ export const PantryAddFormPage = () => {
                         {!info.isGear && (
                             <div className="space-y-1.5">
                                 <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Quantity / Amount</label>
-                                <div className="flex bg-md-surface-container-high border border-md-outline-variant/30 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-md-primary/40">
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(e.target.value)}
-                                        placeholder={unit === 'g' ? 'e.g. 250' : unit === 'ml' ? 'e.g. 1000' : 'e.g. 100'}
-                                        className="flex-1 px-4 py-3 bg-transparent typescale-body-medium text-md-on-surface placeholder:text-md-on-surface-variant/70 outline-none"
-                                    />
-                                    <div className="bg-md-surface-container-highest border-l border-md-outline-variant/30 px-4 py-3 typescale-label-medium font-bold text-md-on-surface-variant uppercase flex items-center justify-center">
-                                        {unit}
-                                    </div>
-                                </div>
+                                <QuantityField
+                                    value={quantity}
+                                    onChange={setQuantity}
+                                    unit={unit}
+                                    placeholder={unit === 'g' ? 'e.g. 250' : unit === 'ml' ? 'e.g. 1000' : 'e.g. 100'}
+                                />
                             </div>
                         )}
                     </div>

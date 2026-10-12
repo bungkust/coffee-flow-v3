@@ -20,6 +20,7 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await onboarding.getBeanTypeButton('single_origin').click();
     await onboarding.beanNameInput.fill('Gesha Panama Reserve');
     await onboarding.roasteryInput.fill('Panama Coffee Co');
+    await onboarding.beanQuantityInput.fill('250');
     await onboarding.originInput.fill('Boquete, Panama');
     await onboarding.altitudeInput.fill('1800 masl');
     await onboarding.selectRoastLevel('Light');
@@ -32,6 +33,11 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await page.waitForURL('**/home');
     await expect(page).toHaveURL(/.*home/);
     await expect(page.getByText(/Clara/i)).toBeVisible();
+
+    // Verify bean saved with stock quantity
+    await page.goto('/pantry');
+    await expect(page.getByText('Gesha Panama Reserve')).toBeVisible();
+    await expect(page.getByText('250g')).toBeVisible();
   });
 
   test('Scenario 2: Coffee Blend + Imperial Unit + "Track my brews" Goal', async ({ page }) => {

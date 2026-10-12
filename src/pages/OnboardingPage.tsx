@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
+import { QuantityField } from '../components/QuantityField';
 import { settingsService, pantryService, brewService } from '../core/services';
+import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { UnitSystem } from '../shared/utils/brewMath';
 import type { BrewingMethod } from '../shared/domain/entities';
 
@@ -31,13 +33,12 @@ function getCategoryFallback(id: string): string {
     return 'Hybrid & Portable Methods';
 }
 
-const MethodImage = ({ src, alt, icon, size = "md" }: { src: string; alt: string; icon?: string; size?: "sm" | "md" | "lg" }) => {
+const MethodImage = ({ src, alt, icon }: { src: string; alt: string; icon?: string }) => {
     const [failed, setFailed] = useState(false);
     if (failed || !src) {
-        const iconSize = size === "sm" ? "text-2xl" : size === "md" ? "text-3xl" : "text-5xl";
         return (
             <div className="flex items-center justify-center w-full h-full text-md-primary">
-                <Icon name={icon || 'coffee'} className={iconSize} style={{ fontVariationSettings: "'FILL' 1" }} />
+                <Icon name={icon || 'coffee'} className="text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} />
             </div>
         );
     }
@@ -51,30 +52,6 @@ const MethodImage = ({ src, alt, icon, size = "md" }: { src: string; alt: string
     );
 };
 
-const VARIETY_OPTIONS = [
-    { value: 'Arabica', label: 'Arabica' },
-    { value: 'Robusta', label: 'Robusta' },
-    { value: 'Liberica', label: 'Liberica' },
-    { value: 'Excelsa', label: 'Excelsa' },
-    { value: 'Blend', label: 'Blend' },
-    { value: 'Other', label: 'Other' }
-];
-
-const PROCESS_OPTIONS = [
-    { value: 'Washed / Wet', label: 'Washed / Wet' },
-    { value: 'Natural / Dry', label: 'Natural / Dry' },
-    { value: 'Honey / Pulped Natural', label: 'Honey / Pulped Natural' },
-    { value: 'Anaerobic', label: 'Anaerobic' },
-    { value: 'Experimental / Carbonic Maceration', label: 'Experimental / Carbonic' },
-    { value: 'Other', label: 'Other' },
-];
-
-const ROAST_LEVEL_OPTIONS = [
-    { value: 'light', label: 'Light' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'dark', label: 'Dark' },
-];
-
 export const OnboardingPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<'name' | 'equipment' | 'beans'>('name');
@@ -85,9 +62,7 @@ export const OnboardingPage = () => {
     const [appUnit, setAppUnit] = useState<UnitSystem>('metric');
 
     // Step 2 State
-    const [selectedEquipment, setSelectedEquipment] = useState<string[]>([
-        'v60', 'aeropress', 'french_press', 'espresso', 'moka_pot', 'kalita'
-    ]);
+    const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
     const [allMethods, setAllMethods] = useState<(BrewingMethod & { image: string; category: string })[]>([]);
 
     useEffect(() => {
@@ -110,6 +85,7 @@ export const OnboardingPage = () => {
     // Step 3 State
     const [beanName, setBeanName] = useState('');
     const [roastery, setRoastery] = useState('');
+    const [beanQuantity, setBeanQuantity] = useState('');
     const [origin, setOrigin] = useState('');
     const [variety, setVariety] = useState('');
     const [process, setProcess] = useState('');
@@ -126,9 +102,7 @@ export const OnboardingPage = () => {
     useEffect(() => {
         const checkDone = async () => {
             try {
-                const existingName = await settingsService.getUserName();
-                const methods = await settingsService.getUserPreferredMethods();
-                if (existingName && existingName.trim().length > 0 && methods && methods.length >= 1) {
+                if (await settingsService.isOnboardingComplete()) {
                     navigate('/home', { replace: true });
                 }
             } catch {
@@ -163,13 +137,12 @@ export const OnboardingPage = () => {
                     brand: roastery.trim() || undefined,
                     roast_date: roastDate || undefined,
                     description: tastingNotes.trim() || undefined,
+                    quantity: parseQuantity(beanQuantity),
+                    unit: 'g',
                     tags_json: [
-                        origin.trim(),
-                        variety.trim(),
-                        process.trim(),
-                        altitude.trim(),
-                        roastLevel
-                    ].filter(Boolean)
+                        ...formatBeanTags({ origin, variety, process, altitude, roastLevel }),
+                        ...buildBlendTags(beanType === 'blend' ? blendComponents : [])
+                    ]
                 });
             }
             navigate('/home');
@@ -361,7 +334,7 @@ export const OnboardingPage = () => {
                                                         <div className={`size-14 mb-2 rounded-lg flex items-center justify-center transition-colors overflow-hidden border border-md-outline-variant/20 ${
                                                             isSelected ? 'bg-md-primary-container' : 'bg-md-surface-container-highest'
                                                         }`}>
-                                                            <MethodImage src={item.image} alt={item.name} icon={item.icon} size="sm" />
+                                                            <MethodImage src={item.image} alt={item.name} icon={item.icon} />
                                                         </div>
                                                         <span className={`typescale-title-small text-center line-clamp-1 ${
                                                             isSelected ? 'text-md-on-secondary-container font-bold' : 'text-md-on-surface font-semibold'
@@ -475,6 +448,12 @@ export const OnboardingPage = () => {
                                             onChange={(e) => setRoastery(e.target.value)}
                                         />
                                     </div>
+                                    <div className="space-y-1.5">
+                                        <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant" htmlFor="bean-quantity">
+                                            Quantity / Amount
+                                        </label>
+                                        <QuantityField value={beanQuantity} onChange={setBeanQuantity} unit="g" placeholder="e.g. 250" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -550,12 +529,7 @@ export const OnboardingPage = () => {
                                                             buttonClassName="py-2 rounded-lg"
                                                             label="Type"
                                                             value={comp.type}
-                                                            options={[
-                                                                { value: 'Arabica', label: 'Arabica' },
-                                                                { value: 'Robusta', label: 'Robusta' },
-                                                                { value: 'Liberica', label: 'Liberica' },
-                                                                { value: 'Excelsa', label: 'Excelsa' },
-                                                            ]}
+                                                            options={VARIETY_OPTIONS.slice(0, 4)}
                                                             onChange={(val) => {
                                                                 const newComps = [...blendComponents];
                                                                 newComps[index].type = val;
