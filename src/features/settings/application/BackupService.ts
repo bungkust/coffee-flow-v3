@@ -12,21 +12,18 @@ export class BackupService {
         return this.repo.findAll();
     }
 
-    async getLastSuccessfulBackup(): Promise<Backup | null> {
-        const backups = await this.repo.findAll();
-        return backups[0] || null;
+    private buildRecord(location: string, size: number): Backup {
+        return {
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+            size_bytes: size,
+            location
+        };
     }
 
     async performBackup(): Promise<Backup> {
         const snapshot = await this.repo.createSnapshot();
-        const size = new Blob([snapshot]).size;
-
-        const newBackup: Backup = {
-            id: crypto.randomUUID(),
-            created_at: new Date().toISOString(),
-            size_bytes: size,
-            location: 'Local Snapshot'
-        };
+        const newBackup = this.buildRecord('Local Snapshot', new Blob([snapshot]).size);
 
         localStorage.setItem(`coffee_flow_backup_${newBackup.id}`, snapshot);
         await this.repo.save(newBackup);
@@ -36,19 +33,15 @@ export class BackupService {
     async restoreBackup(id: string): Promise<void> {
         const snapshot = localStorage.getItem(`coffee_flow_backup_${id}`);
         if (!snapshot) throw new Error('Backup snapshot not found');
-        await this.repo.restoreSnapshot(snapshot);
+        await this.repo.restoreSnapshot(JSON.parse(snapshot));
     }
 
     async deleteBackup(id: string): Promise<void> {
         await this.repo.delete(id);
     }
 
-    getBackupSnapshot(id: string): string | null {
-        return localStorage.getItem(`coffee_flow_backup_${id}`);
-    }
-
     downloadBackupFile(id: string): void {
-        const snapshot = this.getBackupSnapshot(id);
+        const snapshot = localStorage.getItem(`coffee_flow_backup_${id}`);
         if (!snapshot) throw new Error('Backup snapshot not found');
 
         const dateStr = new Date().toISOString().slice(0, 10);
@@ -79,16 +72,10 @@ export class BackupService {
         }
 
         // Restore snapshot to SQLite
-        await this.repo.restoreSnapshot(jsonContent);
+        await this.repo.restoreSnapshot(parsed);
 
         // Save imported file as a new backup record in list
-        const size = new Blob([jsonContent]).size;
-        const importedBackup: Backup = {
-            id: crypto.randomUUID(),
-            created_at: new Date().toISOString(),
-            size_bytes: size,
-            location: 'Imported File'
-        };
+        const importedBackup = this.buildRecord('Imported File', new Blob([jsonContent]).size);
 
         localStorage.setItem(`coffee_flow_backup_${importedBackup.id}`, jsonContent);
         await this.repo.save(importedBackup);

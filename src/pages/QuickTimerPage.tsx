@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
+import { sendNotification } from '../shared/utils/notify';
 import { formatDuration } from '../shared/utils/brewMath';
 
 export const QuickTimerPage = () => {
@@ -18,6 +19,7 @@ export const QuickTimerPage = () => {
                     window.clearInterval(timer);
                     setRunning(false);
                     if ('vibrate' in navigator) navigator.vibrate([150, 80, 150]);
+                    void sendNotification('Timer Complete', 'Quick timer finished');
                     return 0;
                 }
                 return current - 1;

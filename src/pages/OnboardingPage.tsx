@@ -124,7 +124,6 @@ export const OnboardingPage = () => {
         if (step === 'name') {
             if (!name.trim()) return;
             await settingsService.setUserName(name.trim());
-            await settingsService.setUserBrewingGoal(brewingGoal);
             await settingsService.setAppUnit(appUnit);
             setStep('equipment');
         } else if (step === 'equipment') {

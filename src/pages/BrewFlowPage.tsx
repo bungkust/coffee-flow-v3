@@ -5,6 +5,7 @@ import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { settingsService } from '../core/services';
+import { sendNotification } from '../shared/utils/notify';
 import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
@@ -108,6 +109,8 @@ export const BrewFlowPage = () => {
         };
     }, [engineState?.isRunning, engineState?.isCompleted]);
 
+    const recipeName = activeRecipe?.name;
+
     useEffect(() => {
         if (!engineState) return;
 
@@ -125,8 +128,9 @@ export const BrewFlowPage = () => {
         if (engineState.isCompleted) {
             playFeedback(880, 0.5);
             if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+            void sendNotification('Brew Complete', `${recipeName ?? 'Brew'} is ready to serve`);
         }
-    }, [engineState, playFeedback]);
+    }, [engineState, playFeedback, recipeName]);
 
     if (!activeRecipe || !engineState) return null;
 

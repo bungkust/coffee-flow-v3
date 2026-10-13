@@ -5,14 +5,18 @@ export class SQLiteSettingsRepository {
         return dbService.getDb();
     }
 
+    private async get(key: string, fallback = ''): Promise<string> {
+        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', [key]);
+        return result.values?.[0]?.value || fallback;
+    }
+
     private async set(key: string, value: string): Promise<void> {
         await this.db.run('INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)', [key, value]);
         await dbService.saveToLocalStore();
     }
 
     async getAppUnit(): Promise<'metric' | 'imperial'> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['app_unit']);
-        return (result.values?.[0]?.value as 'metric' | 'imperial') || 'metric';
+        return ((await this.get('app_unit')) as 'metric' | 'imperial') || 'metric';
     }
 
     async setAppUnit(unit: 'metric' | 'imperial'): Promise<void> {
@@ -20,67 +24,16 @@ export class SQLiteSettingsRepository {
     }
 
     async getUserName(): Promise<string> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_name']);
-        return result.values?.[0]?.value || '';
+        return this.get('user_name');
     }
 
     async setUserName(name: string): Promise<void> {
         await this.set('user_name', name);
     }
 
-    async getUserId(): Promise<string> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_id']);
-        return result.values?.[0]?.value || '';
-    }
-
-    async setUserId(id: string): Promise<void> {
-        await this.set('user_id', id);
-    }
-
-    async getUserExperienceLevel(): Promise<string> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_experience_level']);
-        return result.values?.[0]?.value || '';
-    }
-
-    async setUserExperienceLevel(level: string): Promise<void> {
-        await this.set('user_experience_level', level);
-    }
-
-    async getUserTasteProfile(): Promise<string[]> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_taste_profile']);
-        try {
-            return JSON.parse(result.values?.[0]?.value || '[]');
-        } catch {
-            return [];
-        }
-    }
-
-    async setUserTasteProfile(profile: string[]): Promise<void> {
-        await this.set('user_taste_profile', JSON.stringify(profile));
-    }
-
-    async getUserBrewingGoal(): Promise<string> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_brewing_goal']);
-        return result.values?.[0]?.value || '';
-    }
-
-    async setUserBrewingGoal(goal: string): Promise<void> {
-        await this.set('user_brewing_goal', goal);
-    }
-
-    async getUserDailyCups(): Promise<string> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_daily_cups']);
-        return result.values?.[0]?.value || '';
-    }
-
-    async setUserDailyCups(cups: string): Promise<void> {
-        await this.set('user_daily_cups', cups);
-    }
-
     async getUserPreferredMethods(): Promise<string[]> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_preferred_methods']);
         try {
-            return JSON.parse(result.values?.[0]?.value || '[]');
+            return JSON.parse(await this.get('user_preferred_methods', '[]'));
         } catch {
             return [];
         }
@@ -91,9 +44,8 @@ export class SQLiteSettingsRepository {
     }
 
     async getUserPreferredDrinks(): Promise<string[]> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['user_preferred_drinks']);
         try {
-            return JSON.parse(result.values?.[0]?.value || '[]');
+            return JSON.parse(await this.get('user_preferred_drinks', '[]'));
         } catch {
             return [];
         }
@@ -104,8 +56,7 @@ export class SQLiteSettingsRepository {
     }
 
     async getNotificationsEnabled(): Promise<boolean> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['notifications_enabled']);
-        return result.values?.[0]?.value !== 'false';
+        return (await this.get('notifications_enabled')) !== 'false';
     }
 
     async setNotificationsEnabled(enabled: boolean): Promise<void> {
@@ -113,8 +64,7 @@ export class SQLiteSettingsRepository {
     }
 
     async getTimerFeedbackEnabled(): Promise<boolean> {
-        const result = await this.db.query('SELECT value FROM app_settings WHERE key = ?', ['timer_feedback_enabled']);
-        return result.values?.[0]?.value !== 'false';
+        return (await this.get('timer_feedback_enabled')) !== 'false';
     }
 
     async setTimerFeedbackEnabled(enabled: boolean): Promise<void> {

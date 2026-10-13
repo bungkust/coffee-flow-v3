@@ -18,10 +18,28 @@ const GOOGLE_TERMS_URL = 'https://policies.google.com/terms';
 const GOOGLE_PRIVACY_URL = 'https://policies.google.com/privacy';
 const GOOGLE_FORM_BASE_URL = 'https://docs.google.com/forms/d/1c0okral6Qh0uZZqWyp9NvhsXSqhpfsemkWGZB6HxYMs/viewform';
 
+const Toggle = ({ icon, label, checked, onToggle }: { icon: string, label: string, checked: boolean, onToggle: () => void }) => (
+    <div className="flex items-center justify-between p-4 border-b border-md-outline-variant/20">
+        <div className="flex items-center gap-3">
+            <Icon name={icon} className="text-md-primary text-xl" />
+            <span className="typescale-body-large font-medium text-md-on-surface">{label}</span>
+        </div>
+        <button
+            onClick={onToggle}
+            className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 cursor-pointer ${
+                checked ? 'bg-md-primary' : 'bg-md-surface-container-highest'
+            }`}
+        >
+            <div className={`size-4 rounded-full bg-white transition-transform duration-200 ${
+                checked ? 'translate-x-6' : 'translate-x-0'
+            }`} />
+        </button>
+    </div>
+);
+
 export const SettingsPage = () => {
     const navigate = useNavigate();
     const [appUnit, setAppUnit] = useState<'metric' | 'imperial'>('metric');
-    const [userId, setUserId] = useState('');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [timerFeedbackEnabled, setTimerFeedbackEnabled] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -38,13 +56,11 @@ export const SettingsPage = () => {
     useEffect(() => {
         Promise.all([
             settingsService.getAppUnit(),
-            settingsService.getUserId(),
             settingsService.getNotificationsEnabled(),
             settingsService.getTimerFeedbackEnabled()
         ])
-            .then(([unit, id, notifications, feedback]) => {
+            .then(([unit, notifications, feedback]) => {
                 setAppUnit(unit);
-                setUserId(id);
                 setNotificationsEnabled(notifications);
                 setTimerFeedbackEnabled(feedback);
             })
@@ -62,6 +78,9 @@ export const SettingsPage = () => {
     const handleToggleNotifications = async () => {
         const next = !notificationsEnabled;
         setNotificationsEnabled(next);
+        if (next && 'Notification' in window && Notification.permission === 'default') {
+            await Notification.requestPermission().catch(() => {});
+        }
         await settingsService.setNotificationsEnabled(next);
     };
 
@@ -125,13 +144,6 @@ export const SettingsPage = () => {
             {/* Header */}
             <PageHeader title="Settings" onBack={() => navigate(-1)} />
 
-            {/* Profile Section */}
-            <section className="px-5 flex flex-col items-center">
-                <span className="typescale-label-medium text-md-primary font-semibold my-6 uppercase tracking-wider bg-md-primary-container px-3 py-1 rounded-full">
-                    User ID: {userId || 'Not created yet'}
-                </span>
-            </section>
-
             {/* Settings Groups */}
             <div className="px-5 space-y-6">
                 {/* Data Management */}
@@ -165,38 +177,8 @@ export const SettingsPage = () => {
                 <div>
                     <h3 className="px-1 mb-2.5 typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Preferences</h3>
                     <div className="bg-md-surface-container-low rounded-xl overflow-hidden border border-md-outline-variant/30 shadow-md-1">
-                        <div className="flex items-center justify-between p-4 border-b border-md-outline-variant/20">
-                            <div className="flex items-center gap-3">
-                                <Icon name="notifications" className="text-md-primary text-xl" />
-                                <span className="typescale-body-large font-medium text-md-on-surface">Notifications</span>
-                            </div>
-                            <button
-                                onClick={handleToggleNotifications}
-                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 cursor-pointer ${
-                                    notificationsEnabled ? 'bg-md-primary' : 'bg-md-surface-container-highest'
-                                }`}
-                            >
-                                <div className={`size-4 rounded-full bg-white transition-transform duration-200 ${
-                                    notificationsEnabled ? 'translate-x-6' : 'translate-x-0'
-                                }`} />
-                            </button>
-                        </div>
-                        <div className="flex items-center justify-between p-4 border-b border-md-outline-variant/20">
-                            <div className="flex items-center gap-3">
-                                <Icon name="vibration" className="text-md-primary text-xl" />
-                                <span className="typescale-body-large font-medium text-md-on-surface">Timer Feedback</span>
-                            </div>
-                            <button
-                                onClick={handleToggleTimerFeedback}
-                                className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 cursor-pointer ${
-                                    timerFeedbackEnabled ? 'bg-md-primary' : 'bg-md-surface-container-highest'
-                                }`}
-                            >
-                                <div className={`size-4 rounded-full bg-white transition-transform duration-200 ${
-                                    timerFeedbackEnabled ? 'translate-x-6' : 'translate-x-0'
-                                }`} />
-                            </button>
-                        </div>
+                        <Toggle icon="notifications" label="Notifications" checked={notificationsEnabled} onToggle={handleToggleNotifications} />
+                        <Toggle icon="vibration" label="Timer Feedback" checked={timerFeedbackEnabled} onToggle={handleToggleTimerFeedback} />
                         <button
                             onClick={handleToggleUnit}
                             className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors cursor-pointer"
@@ -224,20 +206,18 @@ export const SettingsPage = () => {
                             </div>
                             <Icon name="chevron_right" className="text-md-on-surface-variant text-xl" />
                         </button>
-                        <button onClick={() => window.open(GOOGLE_TERMS_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Icon name="gavel" className="text-md-primary text-xl" />
-                                <span className="typescale-body-large font-medium text-md-on-surface">Terms of Use</span>
-                            </div>
-                            <Icon name="open_in_new" className="text-md-on-surface-variant text-xl" />
-                        </button>
-                        <button onClick={() => window.open(GOOGLE_PRIVACY_URL, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Icon name="shield" className="text-md-primary text-xl" />
-                                <span className="typescale-body-large font-medium text-md-on-surface">Privacy Policy</span>
-                            </div>
-                            <Icon name="open_in_new" className="text-md-on-surface-variant text-xl" />
-                        </button>
+                        {[
+                            { icon: 'gavel', label: 'Terms of Use', url: GOOGLE_TERMS_URL },
+                            { icon: 'shield', label: 'Privacy Policy', url: GOOGLE_PRIVACY_URL }
+                        ].map(link => (
+                            <button key={link.label} onClick={() => window.open(link.url, '_blank')} className="w-full flex items-center justify-between p-4 hover:bg-md-surface-container-high transition-colors border-b border-md-outline-variant/20 cursor-pointer">
+                                <div className="flex items-center gap-3">
+                                    <Icon name={link.icon} className="text-md-primary text-xl" />
+                                    <span className="typescale-body-large font-medium text-md-on-surface">{link.label}</span>
+                                </div>
+                                <Icon name="open_in_new" className="text-md-on-surface-variant text-xl" />
+                            </button>
+                        ))}
                         <div className="flex items-center justify-between p-4">
                             <div className="flex items-center gap-3">
                                 <Icon name="info" className="text-md-primary text-xl" />

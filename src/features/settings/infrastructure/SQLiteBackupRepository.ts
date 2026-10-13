@@ -67,8 +67,8 @@ export class SQLiteBackupRepository {
         });
     }
 
-    async restoreSnapshot(json: string): Promise<void> {
-        const parsed = JSON.parse(json) as { tables: Snapshot };
+    async restoreSnapshot(data: unknown): Promise<void> {
+        const parsed = data as { tables?: Snapshot };
         if (!parsed.tables) throw new Error('Invalid backup snapshot');
 
         for (const table of [...BACKUP_TABLES].reverse()) {
