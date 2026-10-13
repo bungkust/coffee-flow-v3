@@ -36,14 +36,8 @@ export const HomePage = () => {
     }, []);
 
     const formatDate = (dateStr: string) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        const diff = now.getTime() - d.getTime();
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-        if (days === 0) return 'Today';
-        if (days === 1) return 'Yesterday';
-        return `${days} days ago`;
+        const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 864e5);
+        return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(-days, 'day');
     };
 
     const getGreeting = () => {

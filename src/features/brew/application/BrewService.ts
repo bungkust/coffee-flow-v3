@@ -87,7 +87,7 @@ export class BrewService {
     }
 
     async getAllLogs(): Promise<BrewLogWithRecipe[]> {
-        return this.logRepo.getRecentWithRecipesAll();
+        return this.logRepo.getRecentWithRecipes();
     }
 
     async getLog(id: EntityId): Promise<BrewLogWithRecipe | null> {

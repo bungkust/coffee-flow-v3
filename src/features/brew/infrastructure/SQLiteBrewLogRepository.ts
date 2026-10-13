@@ -112,44 +112,29 @@ export class SQLiteBrewLogRepository {
     }
 
     async getStats(): Promise<BrewStats> {
-        const weeklyBrews = await this.db.query(
-            "SELECT COUNT(*) as count FROM brew_logs WHERE brewed_at >= date('now', '-7 days')"
-        );
-        const monthlyBrews = await this.db.query(
-            "SELECT COUNT(*) as count FROM brew_logs WHERE brewed_at >= date('now', 'start of month')"
-        );
-        const avgRating = await this.db.query(
-            "SELECT AVG(rating) as avg FROM brew_logs"
-        );
-        const beansCount = await this.db.query(
-            "SELECT COUNT(*) as count FROM pantry_items WHERE category = 'beans' AND deleted_at IS NULL"
-        );
-
+        const result = await this.db.query(`
+            SELECT
+                (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now', '-7 days')) as weeklyBrews,
+                (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now', 'start of month')) as monthlyBrews,
+                (SELECT AVG(rating) FROM brew_logs) as avgRating,
+                (SELECT COUNT(*) FROM pantry_items WHERE category = 'beans' AND deleted_at IS NULL) as beansCount
+        `);
+        const row = result.values?.[0] as { weeklyBrews: number, monthlyBrews: number, avgRating: number | null, beansCount: number } | undefined;
         return {
-            weeklyBrews: weeklyBrews.values?.[0].count || 0,
-            monthlyBrews: monthlyBrews.values?.[0].count || 0,
-            avgRating: parseFloat((avgRating.values?.[0].avg || 0).toFixed(1)),
-            beansCount: beansCount.values?.[0].count || 0
+            weeklyBrews: row?.weeklyBrews || 0,
+            monthlyBrews: row?.monthlyBrews || 0,
+            avgRating: parseFloat(((row?.avgRating || 0).toFixed(1))),
+            beansCount: row?.beansCount || 0
         };
     }
 
-    async getRecentWithRecipes(limit: number = 5): Promise<BrewLogWithRecipe[]> {
+    async getRecentWithRecipes(limit?: number): Promise<BrewLogWithRecipe[]> {
         const result = await this.db.query(`
             SELECT b.*, COALESCE(r.name, 'Deleted Recipe') as recipe_name, COALESCE(r.method_id, 'unknown') as method_id, COALESCE(r.ratio, '1:15') as ratio 
             FROM brew_logs b
             LEFT JOIN recipes r ON b.recipe_id = r.id
             ORDER BY b.brewed_at DESC
-            LIMIT ${Number(limit) || 5}
-        `);
-        return (result.values || []).map(toBrewLogWithRecipe);
-    }
-
-    async getRecentWithRecipesAll(): Promise<BrewLogWithRecipe[]> {
-        const result = await this.db.query(`
-            SELECT b.*, COALESCE(r.name, 'Deleted Recipe') as recipe_name, COALESCE(r.method_id, 'unknown') as method_id, COALESCE(r.ratio, '1:15') as ratio 
-            FROM brew_logs b
-            LEFT JOIN recipes r ON b.recipe_id = r.id
-            ORDER BY b.brewed_at DESC
+            ${limit ? `LIMIT ${Number(limit)}` : ''}
         `);
         return (result.values || []).map(toBrewLogWithRecipe);
     }
