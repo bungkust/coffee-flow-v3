@@ -6,21 +6,14 @@ import { Dropdown } from '../components/Dropdown';
 import { QuantityField } from '../components/QuantityField';
 import { pantryService } from '../core/services';
 import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
-import type { PantryCategory } from '../features/pantry/domain/entities';
-
-const VALID_CATEGORIES: PantryCategory[] = [
-    'beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient',
-    'machine', 'dripper', 'french_press', 'aeropress', 'grinder', 'kettle', 'scale', 'accessory'
-];
+import { PANTRY_CATEGORY_MAP, isPantryCategory } from '../features/pantry/domain/pantryCategories';
 
 export const PantryAddFormPage = () => {
     const { category } = useParams<{ category: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
 
-    const validCategory = VALID_CATEGORIES.includes(category as PantryCategory)
-        ? (category as PantryCategory)
-        : 'beans';
+    const validCategory = isPantryCategory(category) ? category : 'beans';
 
     // Common Fields
     const [name, setName] = useState('');
@@ -29,29 +22,10 @@ export const PantryAddFormPage = () => {
     const [unit, setUnit] = useState<'g' | 'ml' | 'pcs'>('g');
 
     useEffect(() => {
-        if (validCategory === 'milk' || validCategory === 'syrup') setUnit('ml');
-        else if (validCategory === 'filter') setUnit('pcs');
-        else setUnit('g');
+        setUnit(PANTRY_CATEGORY_MAP[validCategory].defaultUnit);
     }, [validCategory]);
 
-    const categoryInfo: Record<string, { label: string, icon: string, isGear: boolean }> = {
-        beans: { label: 'Coffee Beans', icon: 'coffee', isGear: false },
-        filter: { label: 'Filters', icon: 'filter_list', isGear: false },
-        milk: { label: 'Milk / Dairy', icon: 'water_drop', isGear: false },
-        syrup: { label: 'Syrup / Flavor', icon: 'liquor', isGear: false },
-        sugar: { label: 'Sugar / Sweetener', icon: 'cookie', isGear: false },
-        other_ingredient: { label: 'Other Ingredient', icon: 'blender', isGear: false },
-        machine: { label: 'Espresso Machine', icon: 'coffee_maker', isGear: true },
-        dripper: { label: 'Dripper', icon: 'filter_alt', isGear: true },
-        french_press: { label: 'French Press', icon: 'coffee', isGear: true },
-        aeropress: { label: 'AeroPress', icon: 'compress', isGear: true },
-        grinder: { label: 'Grinder', icon: 'settings', isGear: true },
-        scale: { label: 'Scale', icon: 'scale', isGear: true },
-        kettle: { label: 'Kettle', icon: 'kettle', isGear: true },
-        accessory: { label: 'Accessory', icon: 'build', isGear: true },
-    };
-
-    const info = categoryInfo[category || 'beans'] || categoryInfo['beans'];
+    const info = PANTRY_CATEGORY_MAP[validCategory];
 
     // Specific Flexible Fields
     const [roastDate, setRoastDate] = useState('');
@@ -68,6 +42,9 @@ export const PantryAddFormPage = () => {
     const [burrType, setBurrType] = useState('');
     const [generalType, setGeneralType] = useState('');
     const [description, setDescription] = useState('');
+
+    const updateComponent = (index: number, patch: Partial<{ type: string; origin: string; percentage: string }>) =>
+        setBlendComponents(current => current.map((comp, i) => (i === index ? { ...comp, ...patch } : comp)));
 
     const handleSave = async () => {
         if (!name.trim()) return;
@@ -110,7 +87,7 @@ export const PantryAddFormPage = () => {
                         >
                             <Icon name="arrow_back" className="text-2xl" />
                         </button>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface">New {info.label}</h1>
+                            <h1 className="typescale-headline-small font-bold text-md-on-surface">New {info.name}</h1>
                     </div>
                 </div>
             </header>
@@ -251,11 +228,7 @@ export const PantryAddFormPage = () => {
                                                             { value: 'Liberica', label: 'Liberica' },
                                                             { value: 'Excelsa', label: 'Excelsa' },
                                                         ]}
-                                                        onChange={(val) => {
-                                                            const newComps = [...blendComponents];
-                                                            newComps[index].type = val;
-                                                            setBlendComponents(newComps);
-                                                        }}
+                                                        onChange={(val) => updateComponent(index, { type: val })}
                                                         placeholder="Select"
                                                     />
                                                 </div>
@@ -267,11 +240,7 @@ export const PantryAddFormPage = () => {
                                                             type="text"
                                                             placeholder="e.g. 70"
                                                             value={comp.percentage}
-                                                            onChange={e => {
-                                                                const newComps = [...blendComponents];
-                                                                newComps[index].percentage = e.target.value.replace(/\D/g, '');
-                                                                setBlendComponents(newComps);
-                                                            }}
+                                                            onChange={e => updateComponent(index, { percentage: e.target.value.replace(/\D/g, '') })}
                                                         />
                                                         <span className="absolute right-3 top-2 text-md-on-surface-variant text-sm">%</span>
                                                     </div>
@@ -283,11 +252,7 @@ export const PantryAddFormPage = () => {
                                                         type="text"
                                                         placeholder="e.g. Temanggung"
                                                         value={comp.origin}
-                                                        onChange={e => {
-                                                            const newComps = [...blendComponents];
-                                                            newComps[index].origin = e.target.value;
-                                                            setBlendComponents(newComps);
-                                                        }}
+                                                        onChange={e => updateComponent(index, { origin: e.target.value })}
                                                     />
                                                 </div>
                                             </div>

@@ -44,10 +44,6 @@ export class PantryService {
         await this.repository.delete(id);
     }
 
-    async clearEquipment(): Promise<void> {
-        await this.repository.clearEquipment();
-    }
-
     async deductStock(id: string, amount: number): Promise<void> {
         await this.repository.deductStock(id, amount);
     }

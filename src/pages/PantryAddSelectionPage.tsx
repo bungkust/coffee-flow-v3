@@ -1,32 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { GEAR_CATEGORIES, SUPPLIES_CATEGORIES } from '../features/pantry/domain/pantryCategories';
 
 export const PantryAddSelectionPage = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'supplies' | 'gear'>('supplies');
 
-    const suppliesCategories = [
-        { id: 'beans', name: 'Coffee Beans', icon: 'coffee', desc: 'Single origins and blends' },
-        { id: 'filter', name: 'Filters', icon: 'filter_list', desc: 'Paper, cloth, or metal filters' },
-        { id: 'milk', name: 'Milk / Dairy', icon: 'water_drop', desc: 'Dairy and plant-based milks' },
-        { id: 'syrup', name: 'Syrup & Flavoring', icon: 'liquor', desc: 'Vanilla, caramel, etc.' },
-        { id: 'sugar', name: 'Sugar & Sweeteners', icon: 'cookie', desc: 'Raw sugar, stevia, etc.' },
-        { id: 'other_ingredient', name: 'Other Ingredient', icon: 'blender', desc: 'Matcha, cocoa powder, etc.' },
-    ];
-
-    const gearCategories = [
-        { id: 'machine', name: 'Espresso Machine', icon: 'coffee_maker', desc: 'Manual or semi-auto machines' },
-        { id: 'dripper', name: 'Dripper', icon: 'filter_alt', desc: 'V60, Kalita, Chemex' },
-        { id: 'french_press', name: 'French Press', icon: 'coffee', desc: 'Immersion brewers' },
-        { id: 'aeropress', name: 'AeroPress', icon: 'compress', desc: 'Pressure brewers' },
-        { id: 'grinder', name: 'Grinder', icon: 'settings', desc: 'Manual and electric grinders' },
-        { id: 'scale', name: 'Scale', icon: 'scale', desc: 'Coffee scales' },
-        { id: 'kettle', name: 'Kettle', icon: 'kettle', desc: 'Gooseneck & regular kettles' },
-        { id: 'accessory', name: 'Accessory', icon: 'build', desc: 'WDT, tampers, carafes' },
-    ];
-
-    const categories = activeTab === 'supplies' ? suppliesCategories : gearCategories;
+    const categories = activeTab === 'supplies' ? SUPPLIES_CATEGORIES : GEAR_CATEGORIES;
 
     const handleSelect = (categoryId: string) => {
         navigate(`/pantry/add/${categoryId}`);

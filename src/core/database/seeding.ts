@@ -32,6 +32,7 @@ export const seedInitialData = async () => {
     }
 
     await seedDrinks();
+    await removeDummyPantryItems();
     await dbService.saveToLocalStore();
 };
 

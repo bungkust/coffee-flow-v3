@@ -4,7 +4,7 @@ import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Modal } from '../components/Modal';
 import { pantryService } from '../core/services';
-import { removeDummyPantryItems } from '../core/database/seeding';
+import { PANTRY_CATEGORY_MAP } from '../features/pantry/domain/pantryCategories';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
 type Tab = 'supplies' | 'gear';
@@ -25,7 +25,6 @@ export const PantryPage = () => {
 
     const loadData = async () => {
         try {
-            await removeDummyPantryItems();
             const data = await pantryService.getPantryItems();
             setItems(data);
         } catch (error) {
@@ -40,8 +39,8 @@ export const PantryPage = () => {
         return text.includes(searchQuery.toLowerCase());
     });
 
-    const supplies = filteredItems.filter(i => ['beans', 'milk', 'syrup', 'sugar', 'filter', 'other', 'other_ingredient'].includes(i.category));
-    const gear = filteredItems.filter(i => ['machine', 'dripper', 'french_press', 'aeropress', 'grinder', 'kettle', 'scale', 'accessory'].includes(i.category));
+    const supplies = filteredItems.filter(i => !PANTRY_CATEGORY_MAP[i.category]?.isGear);
+    const gear = filteredItems.filter(i => PANTRY_CATEGORY_MAP[i.category]?.isGear);
 
     // Grouping helpers
     const beans = supplies.filter(i => i.category === 'beans');

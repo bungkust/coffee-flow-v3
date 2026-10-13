@@ -90,36 +90,12 @@ export class SQLitePantryRepository {
         await dbService.saveToLocalStore();
     }
 
-    async clearByCategory(category: string): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run('UPDATE pantry_items SET deleted_at = ? WHERE category = ?', [now, category]);
-        await dbService.saveToLocalStore();
-    }
-
-    async clearEquipment(): Promise<void> {
-        const now = new Date().toISOString();
-        await this.db.run(
-            `UPDATE pantry_items
-              SET deleted_at = ?
-              WHERE category IN ('dripper', 'grinder', 'kettle', 'scale', 'accessory')`,
-            [now]
-        );
-        await dbService.saveToLocalStore();
-    }
-
     async deductStock(id: string, amount: number): Promise<void> {
         if (!Number.isFinite(amount) || amount <= 0) return;
 
-        const result = await this.db.query('SELECT quantity FROM pantry_items WHERE id = ?', [id]);
-        if (!result.values || result.values.length === 0) return;
-
-        const item = result.values[0] as { quantity: number | null };
-        const newQty = Math.max(0, (item.quantity ?? 0) - amount);
-        const now = new Date().toISOString();
-
         await this.db.run(
-            'UPDATE pantry_items SET quantity = ?, updated_at = ? WHERE id = ?',
-            [newQty, now, id]
+            'UPDATE pantry_items SET quantity = MAX(0, quantity - ?), updated_at = ? WHERE id = ?',
+            [amount, new Date().toISOString(), id]
         );
         await dbService.saveToLocalStore();
     }
