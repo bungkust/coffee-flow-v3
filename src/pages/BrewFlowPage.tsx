@@ -6,7 +6,8 @@ import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
 import { settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
-import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+import { useWakeLock } from '../shared/hooks/useWakeLock';
+import { formatDuration, formatWeight, formatVolume, formatMethodName, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
@@ -64,50 +65,8 @@ export const BrewFlowPage = () => {
             .catch(() => setFeedbackEnabled(true));
     }, []);
 
-    // Screen Wake Lock API to prevent screen from sleeping during active brewing
-    useEffect(() => {
-        let wakeLock: WakeLockSentinel | null = null;
-
-        const requestWakeLock = async () => {
-            try {
-                if ('wakeLock' in navigator && !wakeLock) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) {
-                console.warn('Screen Wake Lock request failed:', err);
-            }
-        };
-
-        const releaseWakeLock = async () => {
-            if (wakeLock) {
-                try {
-                    await wakeLock.release();
-                } catch (err) {
-                    console.warn('Screen Wake Lock release failed:', err);
-                }
-                wakeLock = null;
-            }
-        };
-
-        if (engineState?.isRunning && !engineState?.isCompleted) {
-            requestWakeLock();
-        } else {
-            releaseWakeLock();
-        }
-
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && engineState?.isRunning && !engineState?.isCompleted) {
-                requestWakeLock();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            releaseWakeLock();
-        };
-    }, [engineState?.isRunning, engineState?.isCompleted]);
+    // Keep the screen awake for the whole brew flow (running, paused or done)
+    useWakeLock(true);
 
     const recipeName = activeRecipe?.name;
 
@@ -184,7 +143,7 @@ export const BrewFlowPage = () => {
                 <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                     <div className="flex flex-col">
                         <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
+                        <h1 className="typescale-headline-small font-bold text-md-on-surface">{formatMethodName(activeRecipe.method_id)} - {activeRecipe.name}</h1>
                     </div>
                 </header>
 
@@ -271,7 +230,7 @@ export const BrewFlowPage = () => {
             <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                 <div className="flex flex-col">
                     <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">{activeRecipe.method_id.toUpperCase()} - {activeRecipe.name}</h1>
+                    <h1 className="typescale-headline-small font-bold text-md-on-surface">{formatMethodName(activeRecipe.method_id)} - {activeRecipe.name}</h1>
                 </div>
             </header>
 

@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { useBrewStore } from '../state/useBrewStore';
 import { brewService } from '../core/services';
+import { formatMethodName } from '../shared/utils/brewMath';
 
 const PRESET_TAGS = ['Fruity', 'Nutty', 'Chocolatey', 'Floral', 'Spicy'];
 
@@ -144,7 +145,7 @@ export const BrewLogPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-36">
             {/* Header */}
-            <PageHeader title="How was it?" subtitle={`${activeRecipe.method_id.toUpperCase()} • ${activeRecipe.name}`} />
+            <PageHeader title="How was it?" subtitle={`${formatMethodName(activeRecipe.method_id)} • ${activeRecipe.name}`} />
 
             <main className="flex-1 px-5 py-5 space-y-6">
                 {/* Rating */}

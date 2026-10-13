@@ -327,6 +327,8 @@ export const RecipeListPage = () => {
             <SmartImportModal
                 isOpen={isImportModalOpen}
                 initialParsedRecipes={restoredQueue}
+                showMethodPicker
+                defaultMethodId={methodFilter || 'v60'}
                 onClose={() => {
                     setIsImportModalOpen(false);
                     setRestoredQueue([]);
@@ -334,7 +336,7 @@ export const RecipeListPage = () => {
                 }}
                 onImport={(importedData) => {
                     setIsImportModalOpen(false);
-                    navigate(`/recipes/new/edit?method=${(importedData.method_id || methodFilter || 'V60').toUpperCase()}`, {
+                    navigate(`/recipes/new/edit?method=${(methodFilter || importedData.method_id || 'v60').toUpperCase()}`, {
                         state: { prefill: importedData }
                     });
                 }}
@@ -352,7 +354,7 @@ export const RecipeListPage = () => {
                     const fullRecipe = {
                         id,
                         name: importedData.name || 'Imported Recipe',
-                        method_id: importedData.method_id || 'v60',
+                        method_id: methodFilter || importedData.method_id || 'v60',
                         ratio: importedData.ratio || '1:15',
                         temperature: importedData.temperature ?? 93,
                         grind_size: importedData.grind_size || 'Medium',
@@ -361,6 +363,7 @@ export const RecipeListPage = () => {
                         description_short: importedData.description_short || '',
                         description_detailed: importedData.description_detailed || '',
                         philosophy: importedData.philosophy || '',
+                        source: importedData.source || undefined,
                         best_for_tags: importedData.best_for_tags || [],
                         not_recommended_tags: importedData.not_recommended_tags || [],
                         steps,

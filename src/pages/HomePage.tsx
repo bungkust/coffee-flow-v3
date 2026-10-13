@@ -137,7 +137,6 @@ export const HomePage = () => {
                             {recentBrews.map(brew => (
                                 <RecentBrewItem
                                     key={brew.id}
-                                    method={brew.method_id}
                                     title={brew.recipe_name}
                                     time={`${formatDate(brew.brewed_at)} • ${brew.ratio} ratio`}
                                     rating={(brew.rating || 0).toFixed(1)}
@@ -177,13 +176,13 @@ export const HomePage = () => {
     );
 };
 
-const RecentBrewItem = ({ method, title, time, rating }: { method: string, title: string, time: string, rating: string }) => (
+const RecentBrewItem = ({ title, time, rating }: { title: string, time: string, rating: string }) => (
     <div className="flex items-center bg-md-surface-container-lowest p-3.5 rounded-lg border border-md-outline-variant/30 shadow-md-1 hover:bg-md-surface-container-low transition-colors">
-        <div className="size-10 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center shrink-0 overflow-hidden font-bold">
-            <span className="typescale-label-small uppercase truncate px-1">{method}</span>
+        <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Icon name="coffee_maker" className="text-[20px]" />
         </div>
         <div className="ml-3 flex-1 min-w-0">
-            <h4 className="typescale-title-medium font-semibold text-md-on-surface truncate">{title}</h4>
+            <h4 className="typescale-title-medium font-semibold text-md-on-surface line-clamp-2">{title}</h4>
             <p className="typescale-body-small text-md-on-surface-variant">{time}</p>
         </div>
         <div className="flex items-center text-amber-500 pl-2">

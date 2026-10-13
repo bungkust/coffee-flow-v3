@@ -6,6 +6,18 @@ import type { Recipe } from '../shared/domain/entities';
 import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, sumStepDuration, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 import { PageHeader } from '../components/PageHeader';
 
+const sourceMeta = (url: string): { icon: string; label: string } => {
+    const u = url.toLowerCase();
+    if (u.includes('youtube.') || u.includes('youtu.be')) return { icon: 'play_circle', label: 'Watch on YouTube' };
+    if (u.includes('tiktok.')) return { icon: 'music_note', label: 'Open on TikTok' };
+    if (u.includes('instagram.')) return { icon: 'photo_camera', label: 'Open on Instagram' };
+    try {
+        return { icon: 'link', label: `Open ${new URL(url).hostname.replace(/^www\./, '')}` };
+    } catch {
+        return { icon: 'link', label: 'View source' };
+    }
+};
+
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -56,6 +68,8 @@ export const RecipeDetailPage = () => {
     const totalTime = sumStepDuration(recipe.steps);
     const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
     const hasValidRatio = coffeeDose > 0;
+    const sourceUrl = recipe.source;
+    const sourceInfo = sourceUrl && /^https?:\/\//.test(sourceUrl) ? sourceMeta(sourceUrl) : null;
     const bestForTags = recipe.best_for_tags || [];
     const notRecommendedTags = recipe.not_recommended_tags || [];
 
@@ -116,6 +130,18 @@ export const RecipeDetailPage = () => {
                             </p>
                         </div>
                     )}
+
+                    {sourceUrl && (sourceInfo ? (
+                        <button
+                            onClick={() => window.open(sourceUrl, '_blank')}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-md-secondary-container rounded-full border border-md-outline-variant/20 typescale-label-medium font-bold text-md-on-secondary-container hover:bg-md-secondary-container/80 transition-colors cursor-pointer"
+                        >
+                            <Icon name={sourceInfo.icon} className="text-base" />
+                            {sourceInfo.label}
+                        </button>
+                    ) : (
+                        <p className="typescale-body-small text-md-on-surface-variant">Source: {sourceUrl}</p>
+                    ))}
                 </div>
 
                 {/* Stats Card */}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
-import type { Recipe, BrewStep } from '../shared/domain/entities';
+import { Dropdown } from './Dropdown';
+import { brewService } from '../core/services';
+import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
 
 export interface ImportableRecipe extends Partial<Recipe> {
     _saved?: boolean;
@@ -15,23 +17,30 @@ interface SmartImportModalProps {
     onSaveDirect?: (importedRecipe: ImportableRecipe) => Promise<void>;
     /** Initial parsed recipes list (restored queue) */
     initialParsedRecipes?: ImportableRecipe[];
+    /** Show the brew-tool picker (recipe imports only) */
+    showMethodPicker?: boolean;
+    /** Pre-selected brew method id */
+    defaultMethodId?: string;
 }
+
+const METHOD_LABELS: Record<string, string> = {
+    v60: 'V60', hario_switch: 'Hario Switch', aeropress: 'AeroPress',
+    french_press: 'French Press', chemex: 'Chemex', espresso: 'Espresso',
+    moka_pot: 'Moka Pot', cold_brew: 'Cold Brew', cold_drip: 'Cold Drip',
+    kalita: 'Kalita Wave', clever: 'Clever Dripper', siphon: 'Siphon',
+    turkish: 'Turkish Coffee', phin: 'Vietnamese Phin', percolator: 'Percolator',
+    tubruk: 'Tubruk', drip_machine: 'Drip Coffee Maker', south_indian_filter: 'South Indian Filter',
+    sock_coffee: 'Sock Coffee', keurig: 'Keurig (Single Pod)', clover: 'Clover Machine'
+};
+
+const METHOD_ID_LINES = Object.entries(METHOD_LABELS).map(([id, label]) => `   - "${id}" (${label})`).join('\n');
 
 const SYSTEM_PROMPT_TEMPLATE = `Please extract all coffee recipes from this text/link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
 
 PARAMETER GUIDELINES (STRICT RULES):
 1. "name": Coffee recipe title (e.g., "Scott Rao V60", "James Hoffmann V60", "Tetsu Kasuya 4:6 Method").
 2. "method_id": Must be ONE of the following exact IDs based on the brewing device:
-   - "v60" (V60 / Pour Over)
-   - "aeropress" (AeroPress)
-   - "french_press" (French Press)
-   - "chemex" (Chemex)
-   - "espresso" (Espresso)
-   - "moka_pot" (Moka Pot)
-   - "cold_brew" (Cold Brew)
-   - "kalita" (Kalita Wave)
-   - "clever" (Clever Dripper)
-   - "siphon" (Siphon)
+${METHOD_ID_LINES}
 3. "ratio": Format ratio as "1:X" (e.g., "1:15", "1:16.7", "1:14"). If not stated, calculate total_water / coffee_dose.
 4. "temperature": Water temperature in Celsius as an integer (e.g., 93, 95, 90). Default to 93 if unspecified.
 5. "grind_size": Must be ONE of: "Fine", "Medium-Fine", "Medium", "Medium-Coarse", "Coarse".
@@ -49,6 +58,7 @@ PARAMETER GUIDELINES (STRICT RULES):
    - "duration_seconds": Step duration in seconds as an integer (e.g., 30, 45, 60).
    - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown).
    - "instruction": Complete, detailed step instruction preserved from the source text.
+14. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
 
 MULTI-RECIPE RULE:
 If the source text or link contains MULTIPLE distinct recipes (e.g., Scott Rao V60, James Hoffmann V60, Tetsu Kasuya 4:6 Method), extract ALL recipes into a JSON array:
@@ -97,6 +107,8 @@ REQUIRED JSON OUTPUT FORMAT:
 \`\`\`
 `;
 
+const extractUrl = (text: string): string => (text.match(/https?:\/\/\S+/) || [])[0] || '';
+
 const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> => {
     let jsonDiff: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate';
     if (/beginner|easy/i.test(String(parsed.difficulty))) jsonDiff = 'Beginner';
@@ -116,6 +128,7 @@ const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> 
         description_short: String(parsed.description_short || 'Imported via Smart Importer'),
         description_detailed: String(parsed.description_detailed || ''),
         philosophy: String(parsed.philosophy || ''),
+        source: parsed.source ? String(parsed.source) : undefined,
         best_for_tags: Array.isArray(parsed.best_for_tags) ? parsed.best_for_tags.map(String) : [],
         not_recommended_tags: Array.isArray(parsed.not_recommended_tags) ? parsed.not_recommended_tags.map(String) : [],
         steps: stepsRaw.map((s: Record<string, unknown>, idx: number) => ({
@@ -170,15 +183,23 @@ const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
 
     let method_id = 'v60';
     const lowerRaw = rawText.toLowerCase();
-    if (lowerRaw.includes('aeropress')) method_id = 'aeropress';
+    if (lowerRaw.includes('switch')) method_id = 'hario_switch';
+    else if (lowerRaw.includes('aeropress')) method_id = 'aeropress';
     else if (lowerRaw.includes('french press') || lowerRaw.includes('french_press')) method_id = 'french_press';
     else if (lowerRaw.includes('chemex')) method_id = 'chemex';
     else if (lowerRaw.includes('espresso')) method_id = 'espresso';
     else if (lowerRaw.includes('moka pot') || lowerRaw.includes('moka_pot') || lowerRaw.includes('mokapot')) method_id = 'moka_pot';
     else if (lowerRaw.includes('cold brew') || lowerRaw.includes('cold_brew')) method_id = 'cold_brew';
+    else if (lowerRaw.includes('cold drip') || lowerRaw.includes('kyoto')) method_id = 'cold_drip';
     else if (lowerRaw.includes('kalita')) method_id = 'kalita';
     else if (lowerRaw.includes('clever')) method_id = 'clever';
     else if (lowerRaw.includes('siphon')) method_id = 'siphon';
+    else if (lowerRaw.includes('turkish') || lowerRaw.includes('cezve')) method_id = 'turkish';
+    else if (lowerRaw.includes('phin')) method_id = 'phin';
+    else if (lowerRaw.includes('percolator')) method_id = 'percolator';
+    else if (lowerRaw.includes('tubruk') || lowerRaw.includes('cowboy')) method_id = 'tubruk';
+    else if (lowerRaw.includes('drip machine') || lowerRaw.includes('drip coffee')) method_id = 'drip_machine';
+    else if (lowerRaw.includes('south indian')) method_id = 'south_indian_filter';
 
     let difficulty: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate';
     if (/beginner|easy|simple|pemula|mudah/i.test(rawText)) difficulty = 'Beginner';
@@ -265,6 +286,7 @@ const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
         difficulty,
         total_water,
         description_short: 'Imported via Smart Offline Parser',
+        source: extractUrl(rawText) || undefined,
         steps: parsedSteps
     }];
 };
@@ -274,7 +296,9 @@ export const SmartImportModal = ({
     onClose,
     onImport,
     onSaveDirect,
-    initialParsedRecipes
+    initialParsedRecipes,
+    showMethodPicker,
+    defaultMethodId
 }: SmartImportModalProps) => {
     const [mode, setMode] = useState<'offline' | 'ai'>('offline');
     const [rawInput, setRawInput] = useState('');
@@ -284,6 +308,21 @@ export const SmartImportModal = ({
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [parseError, setParseError] = useState('');
     const [isSavingDirect, setIsSavingDirect] = useState(false);
+    const [methodId, setMethodId] = useState(defaultMethodId || 'v60');
+    const [methodTouched, setMethodTouched] = useState(false);
+    const [methods, setMethods] = useState<BrewingMethod[]>([]);
+
+    useEffect(() => {
+        if (!showMethodPicker) return;
+        brewService.getAllMethods().then(setMethods).catch((err) => console.error('Error loading methods:', err));
+    }, [showMethodPicker]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setMethodId(defaultMethodId || 'v60');
+            setMethodTouched(false);
+        }
+    }, [isOpen, defaultMethodId]);
 
     useEffect(() => {
         if (isOpen && initialParsedRecipes && initialParsedRecipes.length > 0) {
@@ -315,7 +354,7 @@ export const SmartImportModal = ({
             return;
         }
         setParseError('');
-        const fullPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n${rawInput.trim()}`;
+        const fullPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nSOURCE (cite this back in each recipe's "source" field):\n${rawInput.trim()}`;
         try {
             await navigator.clipboard.writeText(fullPrompt);
             setCopiedPrompt(true);
@@ -334,7 +373,13 @@ export const SmartImportModal = ({
             return;
         }
         setParseError('');
-        const results = parseRawTextToRecipes(source);
+        const sourceUrl = extractUrl(rawInput);
+        const results: ImportableRecipe[] = parseRawTextToRecipes(source).map((r) => ({
+            ...r,
+            source: r.source || sourceUrl || undefined,
+            ...(methodTouched ? { method_id: methodId } : {})
+        }));
+        if (!methodTouched && results.length === 1 && results[0].method_id) setMethodId(results[0].method_id);
         setParsedRecipes(results);
         if (results.length === 1) {
             setSelectedIndex(0);
@@ -443,14 +488,7 @@ export const SmartImportModal = ({
         setSelectedIndex((selectedIndex + 1) % parsedRecipes.length);
     };
 
-    const methodLabel = (id?: string) => {
-        const map: Record<string, string> = {
-            v60: 'V60', aeropress: 'AeroPress', french_press: 'French Press',
-            chemex: 'Chemex', espresso: 'Espresso', moka_pot: 'Moka Pot',
-            cold_brew: 'Cold Brew', kalita: 'Kalita Wave', clever: 'Clever Dripper', siphon: 'Siphon'
-        };
-        return map[id || ''] || (id || 'Unknown').toUpperCase();
-    };
+    const methodLabel = (id?: string) => METHOD_LABELS[id || ''] || (id || 'Unknown').toUpperCase();
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -624,6 +662,20 @@ export const SmartImportModal = ({
                     ) : (
                         /* ── Input Form ── */
                         <div className="p-5 space-y-4">
+                            {showMethodPicker && (
+                                <Dropdown
+                                    label="Brew Tool"
+                                    value={methodId}
+                                    options={methods.map((m) => ({ value: m.id, label: m.name }))}
+                                    onChange={(val) => {
+                                        setMethodId(val);
+                                        setMethodTouched(true);
+                                        setParsedRecipes((prev) => prev.map((r) => ({ ...r, method_id: val })));
+                                    }}
+                                    placeholder="Select brew tool"
+                                />
+                            )}
+
                             {/* Mode Selector */}
                             <div className="bg-gray-50 rounded-2xl p-1 flex gap-1">
                                 <button

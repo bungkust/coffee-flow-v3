@@ -6,6 +6,7 @@ import { SegmentedControl } from '../components/SegmentedControl';
 import { PageHeader } from '../components/PageHeader';
 import { brewService, drinkService } from '../core/services';
 import type { BrewLogWithRecipe, BrewStats, DrinkLogWithDrink, DrinkStats } from '../shared/domain/entities';
+import { formatMethodName } from '../shared/utils/brewMath';
 
 type Tab = 'brews' | 'drinks';
 type JournalRow = BrewLogWithRecipe | DrinkLogWithDrink;
@@ -60,7 +61,7 @@ export const JournalPage = () => {
     const rows = logs.map(log => ({
         id: log.id,
         name: 'recipe_name' in log ? log.recipe_name : log.drink_name,
-        subtitle: 'method_id' in log ? log.method_id.toUpperCase() : log.category,
+        subtitle: 'method_id' in log ? formatMethodName(log.method_id) : log.category,
         date: 'brewed_at' in log ? log.brewed_at : log.logged_at,
         rating: log.rating,
         notes: log.notes,

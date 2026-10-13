@@ -5,7 +5,7 @@ import { BottomNav } from '../components/BottomNav';
 import { Dropdown } from '../components/Dropdown';
 import { SaveBar } from '../components/SaveBar';
 import { brewService } from '../core/services';
-import type { Recipe, BrewStep } from '../shared/domain/entities';
+import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
 
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -18,6 +18,11 @@ export const RecipeEditPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [methods, setMethods] = useState<BrewingMethod[]>([]);
+
+    useEffect(() => {
+        brewService.getAllMethods().then(setMethods).catch((err) => console.error('Error loading methods:', err));
+    }, []);
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -172,6 +177,15 @@ export const RecipeEditPage = () => {
                 <section className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                     <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Basic Information</h2>
                     <div className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Dropdown
+                                label="Brewing Method"
+                                value={recipe.method_id}
+                                options={methods.map((m) => ({ value: m.id, label: m.name }))}
+                                onChange={(val) => setRecipe({ ...recipe, method_id: val })}
+                                placeholder="Select method"
+                            />
+                        </div>
                         <div className="space-y-1.5">
                             <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Recipe Name</label>
                             <input

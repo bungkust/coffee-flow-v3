@@ -210,5 +210,11 @@ export const MIGRATIONS = [
     sql: `
       ALTER TABLE drinks ADD COLUMN image_url TEXT;
     `
+  },
+  {
+    version: 12,
+    sql: `
+      ALTER TABLE recipes ADD COLUMN source TEXT;
+    `
   }
 ];

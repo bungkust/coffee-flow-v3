@@ -16,6 +16,17 @@ const ICE_RATIO_BY_RECIPE: Record<string, number> = {
     'v60-bean-rock-iced-japanese': 6
 };
 
+// Reads an ice weight the recipe states itself (e.g. "100 grams of ice" / "70g ice cubes").
+const parseExplicitIce = (recipe: Recipe): number | null => {
+    const text = [
+        recipe.description_detailed,
+        ...(recipe.steps ?? []).flatMap(step => [step.label, step.instruction])
+    ].filter(Boolean).join(' ');
+    const match = text.match(/(\d+(?:\.\d+)?)\s*(?:g|gr|gram|grams)\s*(?:of\s*)?ice\b/i)
+        || text.match(/\bice\b[^.\d]{0,24}?(\d+(?:\.\d+)?)\s*(?:g|gr|gram|grams)\b/i);
+    return match ? Math.round(parseFloat(match[1])) : null;
+};
+
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -41,6 +52,11 @@ export const RecipePreparationPage = () => {
     const ratioMultiplier = recipe ? (parseRatio(recipe.ratio) || 16) : 16;
     const adjustedWaterVolume = adjustedCoffeeDose * ratioMultiplier;
 
+    // Prefer the amount the recipe states itself; the curated ratios below win where present.
+    const curatedIceRatio = recipe ? ICE_RATIO_BY_RECIPE[recipe.id] : undefined;
+    const explicitIceWeight = recipe && curatedIceRatio === undefined ? parseExplicitIce(recipe) : null;
+    const baseDose = recipe ? (calculateCoffeeDose(recipe.total_water, recipe.ratio) || 15) : 15;
+
     const isIced = Boolean(
         recipe?.style?.toLowerCase().includes('iced') ||
         recipe?.name?.toLowerCase().includes('iced') ||
@@ -49,12 +65,21 @@ export const RecipePreparationPage = () => {
     );
 
     const defaultIceWeight = recipe
-        ? Math.round((ICE_RATIO_BY_RECIPE[recipe.id] ?? DEFAULT_ICE_RATIO) * adjustedCoffeeDose)
+        ? Math.round(explicitIceWeight !== null
+            ? explicitIceWeight * (adjustedCoffeeDose / baseDose)
+            : (curatedIceRatio ?? DEFAULT_ICE_RATIO) * adjustedCoffeeDose)
         : 70;
 
     const [customIceWeight, setCustomIceWeight] = useState<number | null>(null);
     const effectiveIceWeight = isIced ? (customIceWeight ?? defaultIceWeight) : 0;
-    const hotWaterVolume = isIced ? Math.max(20, adjustedWaterVolume - effectiveIceWeight) : adjustedWaterVolume;
+    // Most iced recipes state total_water as the whole brew (ice included), but some — like an
+    // immersion brewed over ice — state the pour volume and stack the ice on top. Only subtract
+    // when doing so still leaves more water than ice, otherwise treat total_water as the pour.
+    const iceIsPartOfWater = explicitIceWeight === null || (adjustedWaterVolume - effectiveIceWeight) >= effectiveIceWeight;
+    const hotWaterVolume = isIced
+        ? (iceIsPartOfWater ? Math.max(20, adjustedWaterVolume - effectiveIceWeight) : adjustedWaterVolume)
+        : adjustedWaterVolume;
+    const totalBrewVolume = isIced ? Math.round(hotWaterVolume + effectiveIceWeight) : Math.round(adjustedWaterVolume);
 
     const currentScaledRecipe = useMemo(() => {
         if (!recipe) return null;
@@ -360,7 +385,7 @@ export const RecipePreparationPage = () => {
                         )}
                         <div>
                             <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">Total Brew</span>
-                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{Math.round(adjustedWaterVolume)}ml</span>
+                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{totalBrewVolume}ml</span>
                         </div>
                     </div>
                 </div>

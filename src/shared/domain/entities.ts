@@ -39,6 +39,7 @@ export interface Recipe {
     description_short?: string;
     description_detailed?: string;
     philosophy?: string;
+    source?: string;
     best_for_tags?: string[];
     not_recommended_tags?: string[];
     is_custom: boolean;

@@ -16,6 +16,7 @@ interface RecipeRow {
     description_short: string | null;
     description_detailed: string | null;
     philosophy: string | null;
+    source: string | null;
     best_for_tags: string | null;
     not_recommended_tags: string | null;
     created_at: string;
@@ -51,6 +52,7 @@ function toDomainRecipe(row: RecipeRow, steps: BrewStep[]): Recipe {
         description_short: row.description_short ?? undefined,
         description_detailed: row.description_detailed ?? undefined,
         philosophy: row.philosophy ?? undefined,
+        source: row.source ?? undefined,
         best_for_tags: row.best_for_tags ? JSON.parse(row.best_for_tags) : [],
         not_recommended_tags: row.not_recommended_tags ? JSON.parse(row.not_recommended_tags) : [],
         steps,
@@ -116,10 +118,10 @@ export class SQLiteRecipeRepository {
 
         await this.db.run(
             `INSERT INTO recipes 
-      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, source, created_at, updated_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
-         (method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, updated_at) = (excluded.method_id, excluded.name, excluded.ratio, excluded.grind_size, excluded.temperature, excluded.total_water, excluded.is_custom, excluded.is_favorite, excluded.difficulty, excluded.style, excluded.description_short, excluded.description_detailed, excluded.philosophy, excluded.best_for_tags, excluded.not_recommended_tags, excluded.updated_at)`,
+         (method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, source, updated_at) = (excluded.method_id, excluded.name, excluded.ratio, excluded.grind_size, excluded.temperature, excluded.total_water, excluded.is_custom, excluded.is_favorite, excluded.difficulty, excluded.style, excluded.description_short, excluded.description_detailed, excluded.philosophy, excluded.best_for_tags, excluded.not_recommended_tags, excluded.source, excluded.updated_at)`,
             [
                 recipe.id,
                 recipe.method_id,
@@ -137,6 +139,7 @@ export class SQLiteRecipeRepository {
                 recipe.philosophy ?? null,
                 JSON.stringify(recipe.best_for_tags || []),
                 JSON.stringify(recipe.not_recommended_tags || []),
+                recipe.source ?? null,
                 recipe.created_at || now,
                 now
             ]

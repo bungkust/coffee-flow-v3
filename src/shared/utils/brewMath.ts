@@ -48,6 +48,9 @@ export const formatVolume = (ml: number, unit: UnitSystem = 'metric'): string =>
     return Number.isInteger(rounded) ? `${rounded}${suffix}` : `${rounded.toFixed(unit === 'metric' ? 0 : 1)}${suffix}`;
 };
 
+export const formatMethodName = (methodId: string): string =>
+    methodId.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
 export const formatDuration = (seconds: number): string => {
     const safeSeconds = Math.max(0, Math.round(seconds || 0));
     const hours = Math.floor(safeSeconds / 3600);
