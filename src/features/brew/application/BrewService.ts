@@ -40,10 +40,10 @@ export class BrewService {
 
     async logBrew(
         recipeId: EntityId,
-        rating: number,
-        notes: string,
-        profile: { sweetness: number, acidity: number, body: number, bitterness: number },
-        flavorTags: string[],
+        rating?: number,
+        notes?: string,
+        profile?: { sweetness?: number, acidity?: number, body?: number, bitterness?: number },
+        flavorTags: string[] = [],
         beanId?: string,
         filterId?: string,
         coffeeConsumed?: number
@@ -55,11 +55,11 @@ export class BrewService {
             bean_id: beanId,
             rating,
             notes,
-            sweetness: profile.sweetness,
-            acidity: profile.acidity,
-            body: profile.body,
-            bitterness: profile.bitterness,
-            flavor_tags: flavorTags.join(','),
+            sweetness: profile?.sweetness,
+            acidity: profile?.acidity,
+            body: profile?.body,
+            bitterness: profile?.bitterness,
+            flavor_tags: flavorTags.length > 0 ? flavorTags.join(',') : undefined,
             brewed_at: new Date().toISOString(),
             created_at: new Date().toISOString()
         };

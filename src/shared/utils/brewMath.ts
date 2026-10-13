@@ -135,9 +135,7 @@ export const scaleInstructionText = (instruction: string | undefined, scaleFacto
     return instruction.replace(/\b(\d+(?:\.\d+)?)\s*(g|ml)\b/gi, (match, numStr, unit) => {
         const val = parseFloat(numStr);
         if (isNaN(val)) return match;
-        const scaledVal = roundTo(val * scaleFactor, 1);
-        const formatted = Number.isInteger(scaledVal) ? scaledVal.toString() : scaledVal.toFixed(1);
-        return `${formatted}${unit}`;
+        return `${Math.round(val * scaleFactor)}${unit}`;
     });
 };
 
@@ -181,6 +179,21 @@ export const getStepIntervalInfo = (step: BrewStep): StepIntervalInfo => {
     const duration = step.duration_seconds || 0;
     const pourSeconds = Math.min(parseInt(statedPour[1], 10), duration);
     return { pourSeconds, restSeconds: Math.max(0, duration - pourSeconds) };
+};
+
+export type ValveState = 'open' | 'closed';
+
+/** The Switch valve position at each step — explicit where the step says so, otherwise carried over. */
+export const getValveStates = (steps: BrewStep[]): (ValveState | null)[] => {
+    let state: ValveState | null = null;
+    return steps.map(step => {
+        const text = `${step.label ?? ''} ${step.instruction ?? ''}`;
+        if (/\b(switch|valve)\b/i.test(text)) {
+            if (/\b(open|opening)\b/i.test(text)) state = 'open';
+            else if (/\b(close|closed|closing)\b/i.test(text)) state = 'closed';
+        }
+        return state;
+    });
 };
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, pantryService, settingsService } from '../core/services';
@@ -8,14 +8,13 @@ import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
+import { Modal } from '../components/Modal';
 import { calculateCoffeeDose, formatWeight, formatVolume, formatStepSeconds, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, getTotalTargetWeight, getBrewSteps, withDerivedPourDurations, type UnitSystem } from '../shared/utils/brewMath';
 
 // Steps that only set things up (ice, rinse, dosing) belong on this screen, not the brew flow.
 const DEFAULT_ICE_RATIO = 4.375;
-const ICE_RATIO_BY_RECIPE: Record<string, number> = {
-    'chemex-pull-and-pour-japanese-iced': 7.5,
-    'v60-bean-rock-iced-japanese': 6
-};
+// Curated ice ratios for recipes that don't state their own ice weight.
+const ICE_RATIO_BY_RECIPE: Record<string, number> = {};
 
 // Reads an ice weight the recipe states itself (e.g. "100 grams of ice" / "70g ice cubes").
 const parseExplicitIce = (recipe: Recipe): number | null => {
@@ -42,6 +41,8 @@ export const RecipePreparationPage = () => {
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
     const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+    const manageClicked = useRef(false);
+    const [stockWarning, setStockWarning] = useState<string[] | null>(null);
 
     useEffect(() => {
         if (recipe) {
@@ -73,10 +74,13 @@ export const RecipePreparationPage = () => {
 
     const [customIceWeight, setCustomIceWeight] = useState<number | null>(null);
     const effectiveIceWeight = isIced ? (customIceWeight ?? defaultIceWeight) : 0;
-    // Most iced recipes state total_water as the whole brew (ice included), but some — like an
-    // immersion brewed over ice — state the pour volume and stack the ice on top. Only subtract
-    // when doing so still leaves more water than ice, otherwise treat total_water as the pour.
-    const iceIsPartOfWater = explicitIceWeight === null || (adjustedWaterVolume - effectiveIceWeight) >= effectiveIceWeight;
+    // When the recipe's own pour targets already cover the stated water, the ice is a
+    // separate layer in the server — brewed hot, then drained over it. Only treat the
+    // water as including ice when the targets fall short of it (the gap is the ice), or
+    // when the recipe states no pour targets at all.
+    const recipePourTarget = getTotalTargetWeight(recipe?.steps ?? []);
+    const iceIsPartOfWater = recipePourTarget < (recipe?.total_water ?? 0) * 0.9
+        && (explicitIceWeight === null || (adjustedWaterVolume - effectiveIceWeight) >= effectiveIceWeight);
     const hotWaterVolume = isIced
         ? (iceIsPartOfWater ? Math.max(20, adjustedWaterVolume - effectiveIceWeight) : adjustedWaterVolume)
         : adjustedWaterVolume;
@@ -109,7 +113,7 @@ export const RecipePreparationPage = () => {
             }
 
             if (typeof step.target_weight === 'number' && step.target_weight > 0) {
-                const adjustedTarget = Math.round(step.target_weight * hotWaterScale * 10) / 10;
+                const adjustedTarget = Math.round(step.target_weight * hotWaterScale);
                 const adjustedInstruction = scaleInstructionText(step.instruction, hotWaterScale);
                 return {
                     ...step,
@@ -252,13 +256,29 @@ export const RecipePreparationPage = () => {
         );
     }
 
+    const proceedToBrew = () => {
+        // Drop any log id from a previous brew so this one isn't saved over it.
+        sessionStorage.removeItem('coffee_flow_last_logged_id');
+        startBrew(currentScaledRecipe!, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
+        navigate('/brew-flow');
+    };
+
     const handleProceedToBrew = () => {
-        if (currentScaledRecipe && isReady) {
-            // Drop any log id from a previous brew so this one isn't saved over it.
-            sessionStorage.removeItem('coffee_flow_last_logged_id');
-            startBrew(currentScaledRecipe, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
-            navigate('/brew-flow');
+        if (!currentScaledRecipe || !isReady) return;
+        const selectedBean = beans.find(b => b.id === selectedBeanId);
+        const selectedFilter = filters.find(f => f.id === selectedFilterId);
+        const lines: string[] = [];
+        if (selectedBean && typeof selectedBean.quantity === 'number' && selectedBean.quantity < adjustedCoffeeDose) {
+            lines.push(`Not enough beans ("${selectedBean.name}"): this brew uses ${adjustedCoffeeDose.toFixed(1)}g but you only have ${selectedBean.quantity}g left.`);
         }
+        if (selectedFilter && (selectedFilter.quantity == null || selectedFilter.quantity < 1)) {
+            lines.push(`No ${selectedFilter.name} filters left in your pantry.`);
+        }
+        if (lines.length > 0) {
+            setStockWarning(lines);
+            return;
+        }
+        proceedToBrew();
     };
 
     return (
@@ -555,6 +575,35 @@ export const RecipePreparationPage = () => {
                 p="p-4"
                 icon={isReady ? 'timer' : 'lock'}
                 label={isReady ? "I'm Ready, Start Timer" : 'Complete Checklist to Start'}
+            />
+            <Modal
+                isOpen={stockWarning !== null}
+                type="info"
+                title="Not enough ingredients"
+                confirmText="Manage Pantry"
+                cancelText="Continue anyway"
+                onConfirm={() => {
+                    manageClicked.current = true;
+                    setStockWarning(null);
+                }}
+                onClose={() => {
+                    const wasManage = manageClicked.current;
+                    manageClicked.current = false;
+                    setStockWarning(null);
+                    if (wasManage) {
+                        navigate('/pantry');
+                    } else {
+                        proceedToBrew();
+                    }
+                }}
+                message={
+                    <div className="space-y-2 text-left">
+                        <p className="typescale-body-medium text-md-on-surface-variant">This brew needs more stock than you have right now:</p>
+                        <ul className="list-disc list-inside typescale-body-medium text-md-on-surface pl-4 space-y-0.5">
+                            {stockWarning?.map((line, i) => <li key={i}>{line}</li>)}
+                        </ul>
+                    </div>
+                }
             />
         </div>
     );

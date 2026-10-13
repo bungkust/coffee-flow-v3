@@ -4,7 +4,10 @@ import { Icon } from '../components/Icons';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
-import { brewService, drinkService } from '../core/services';
+import { brewService, drinkService, pantryService } from '../core/services';
+import { TasteEditor } from '../components/TasteEditor';
+import { formatMethodName } from '../shared/utils/brewMath';
+import { parseFlavorTags, serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
 import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/entities';
 
 export const JournalDetailPage = () => {
@@ -18,15 +21,28 @@ export const JournalDetailPage = () => {
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [beanName, setBeanName] = useState<string | null>(null);
+    const [profile, setProfile] = useState<TasteProfileValues>({});
+    const [tags, setTags] = useState<string[]>([]);
 
     useEffect(() => {
         if (!id) return;
         const getLog = () => type === 'brews' ? brewService.getLog(id) : drinkService.getLog(id);
         getLog().then((data) => {
             setLog(data);
-            if (data) {
-                setRating(data.rating || 0);
-                setNotes(data.notes || '');
+            if (!data) return;
+            setRating(data.rating || 0);
+            setNotes(data.notes || '');
+            const brewData = type === 'brews' ? (data as BrewLogWithRecipe) : null;
+            if (brewData) {
+                setProfile({ sweetness: brewData.sweetness, acidity: brewData.acidity, body: brewData.body, bitterness: brewData.bitterness });
+                setTags(parseFlavorTags(brewData.flavor_tags));
+            }
+            const beanId = brewData?.bean_id;
+            if (beanId) {
+                pantryService.getPantryItems()
+                    .then(items => setBeanName(items.find(item => item.id === beanId)?.name ?? null))
+                    .catch(console.error);
             }
         });
     }, [id, type]);
@@ -36,7 +52,15 @@ export const JournalDetailPage = () => {
         setSaving(true);
         try {
             if (type === 'brews') {
-                await brewService.updateLog(log.id, { rating, notes });
+                await brewService.updateLog(log.id, {
+                    rating,
+                    notes,
+                    sweetness: profile.sweetness,
+                    acidity: profile.acidity,
+                    body: profile.body,
+                    bitterness: profile.bitterness,
+                    flavor_tags: serializeFlavorTags(tags)
+                });
             } else {
                 await drinkService.updateLog(log.id, rating, notes);
             }
@@ -73,10 +97,13 @@ export const JournalDetailPage = () => {
         ? ((log as BrewLogWithRecipe).recipe_name || 'Brew Log')
         : ((log as DrinkLogWithDrink).drink_name || 'Drink Log');
 
+    const brewLog = type === 'brews' ? (log as BrewLogWithRecipe) : null;
+
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             <PageHeader
                 title={title}
+                subtitle={brewLog ? `${formatMethodName(brewLog.method_id)} • ${new Date(brewLog.brewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : undefined}
                 onBack={() => navigate(-1)}
                 titleClassName="truncate"
                 action={(
@@ -111,6 +138,15 @@ export const JournalDetailPage = () => {
                     </div>
                 </div>
 
+                {brewLog && (
+                    <TasteEditor
+                        profile={profile}
+                        onProfileChange={setProfile}
+                        tags={tags}
+                        onTagsChange={setTags}
+                    />
+                )}
+
                 <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-2">
                     <label className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider block">Tasting Notes</label>
                     <textarea
@@ -121,6 +157,28 @@ export const JournalDetailPage = () => {
                         placeholder="Add tasting notes, acidity, body, or adjustments..."
                     />
                 </div>
+
+                {brewLog && (
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface">Brew Details</h2>
+                        <div className="flex justify-between items-center typescale-body-medium">
+                            <span className="text-md-on-surface-variant">Method</span>
+                            <span className="font-semibold text-md-on-surface">{formatMethodName(brewLog.method_id)}</span>
+                        </div>
+                        <div className="flex justify-between items-center typescale-body-medium">
+                            <span className="text-md-on-surface-variant">Ratio</span>
+                            <span className="font-semibold text-md-on-surface">{brewLog.ratio}</span>
+                        </div>
+                        <div className="flex justify-between items-center typescale-body-medium">
+                            <span className="text-md-on-surface-variant">Brewed</span>
+                            <span className="font-semibold text-md-on-surface">{new Date(brewLog.brewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex justify-between items-center typescale-body-medium">
+                            <span className="text-md-on-surface-variant">Beans</span>
+                            <span className="font-semibold text-md-on-surface text-right">{beanName ?? '—'}</span>
+                        </div>
+                    </div>
+                )}
             </main>
 
             <SaveBar onClick={handleSave} saving={saving} label="Save Changes" />

@@ -8,13 +8,22 @@ import { brewService, settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import type { Recipe } from '../shared/domain/entities';
-import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getCurrentTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, type UnitSystem } from '../shared/utils/brewMath';
 
-const BrewHeader = ({ recipe }: { recipe: Recipe }) => (
+const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
     <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-        <div className="flex flex-col">
-            <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
-            <h1 className="typescale-headline-small font-bold text-md-on-surface">{recipe.name}</h1>
+        <div className="flex items-center gap-3">
+            <button
+                onClick={onBack}
+                className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer shrink-0"
+                aria-label="Go back"
+            >
+                <Icon name="arrow_back" className="text-2xl" />
+            </button>
+            <div className="flex flex-col min-w-0">
+                <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
+                <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{recipe.name}</h1>
+            </div>
         </div>
     </header>
 );
@@ -28,6 +37,7 @@ export const BrewFlowPage = () => {
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const hasHydratedRef = useRef(false);
+    const stopTarget = useRef<'back' | 'home'>('home');
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
@@ -85,10 +95,10 @@ export const BrewFlowPage = () => {
         hasAutoLoggedRef.current = true;
         brewService.logBrew(
             activeRecipe.id,
-            4,
-            '',
-            { sweetness: 75, acidity: 50, body: 30, bitterness: 20 },
-            ['Fruity'],
+            undefined,
+            undefined,
+            undefined,
+            [],
             selectedBeanId || undefined,
             selectedFilterId || undefined,
             coffeeConsumed || undefined
@@ -124,18 +134,26 @@ export const BrewFlowPage = () => {
     if (!currentStep) return null;
 
     let totalElapsed = 0;
-    for (let i = 0; i < engineState.currentStepIndex; i++) {
-        totalElapsed += activeRecipe.steps[i].duration_seconds;
+    let currentStepEnd = 0;
+    for (let i = 0; i <= engineState.currentStepIndex; i++) {
+        const step = activeRecipe.steps[i];
+        currentStepEnd += getStepDuration(step);
+        if (i < engineState.currentStepIndex) totalElapsed += step.duration_seconds;
     }
     totalElapsed += (engineState.totalTime - engineState.remainingTime);
 
-    const handleBack = () => {
+    const valveStates = getValveStates(activeRecipe.steps);
+    const currentValve = valveStates[engineState.currentStepIndex] ?? null;
+
+    const openStopConfirm = (target: 'back' | 'home') => {
+        stopTarget.current = target;
         setIsStopModalOpen(true);
     };
 
     const confirmStop = () => {
         stopBrew();
-        navigate('/brew-methods');
+        if (stopTarget.current === 'back') navigate(-1);
+        else navigate('/brew-methods');
     };
 
     const handleSkipStep = () => {
@@ -155,7 +173,9 @@ export const BrewFlowPage = () => {
     // tracks the final pour target rather than the recipe total, which may include the ice.
     const totalWaterRecipe = getTotalTargetWeight(activeRecipe.steps) || activeRecipe.total_water || 0;
     const iceWeight = Math.max(0, Math.round((activeRecipe.total_water || 0) - totalWaterRecipe));
-    const currentTargetWeight = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+    const stepTarget = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+    const pouredBefore = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+    const currentTargetWeight = Math.round(pouredBefore + (stepTarget - pouredBefore) * engineState.progress);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
     const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
     const stepTitle = currentStep.target_weight && pourAmount > 0
@@ -170,7 +190,7 @@ export const BrewFlowPage = () => {
         return (
             <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
                 {/* Header for Done state */}
-                <BrewHeader recipe={activeRecipe} />
+                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
 
                 <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                     {/* Done Card */}
@@ -252,7 +272,7 @@ export const BrewFlowPage = () => {
     return (
         <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <BrewHeader recipe={activeRecipe} />
+            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
 
             <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                 {/* Active Phase Card */}
@@ -260,8 +280,18 @@ export const BrewFlowPage = () => {
                     <div className="w-full bg-md-surface-container-low rounded-3xl p-6 border border-md-outline-variant/30 shadow-md-2 flex flex-col items-center justify-center text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-md-primary"></div>
                         <div className="mb-2 flex items-center gap-2 flex-wrap justify-center">
+                            {currentValve && (
+                                <span className={`inline-flex items-center gap-1 px-3.5 py-1 rounded-full typescale-label-medium font-bold border ${currentValve === 'open' ? 'bg-md-primary text-md-on-primary border-md-primary' : 'bg-md-secondary-container text-md-on-secondary-container border-md-outline-variant/20'}`}>
+                                    <Icon name={currentValve === 'open' ? 'lock_open' : 'lock'} className="text-sm" />
+                                    Switch {currentValve === 'open' ? 'Open' : 'Closed'}
+                                </span>
+                            )}
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
+                                <Icon name="schedule" className="text-xs" />
+                                Until {formatDuration(currentStepEnd)}
                             </span>
                             {intervalInfo.pourSeconds > 0 && (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
@@ -271,7 +301,7 @@ export const BrewFlowPage = () => {
                             )}
                         </div>
                         <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
-                            {formatDuration(engineState.remainingTime)}
+                            {formatDuration(totalElapsed)}
                         </div>
                         <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
                             {stepTitle}
@@ -290,7 +320,7 @@ export const BrewFlowPage = () => {
                             </div>
                             <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
                                 <div
-                                    className="bg-md-primary h-3 rounded-full transition-all duration-500"
+                                    className="bg-md-primary h-3 rounded-full transition-[width] duration-1000 ease-linear"
                                     style={{ width: `${progressPercent}%` }}
                                 ></div>
                             </div>
@@ -309,28 +339,37 @@ export const BrewFlowPage = () => {
                     <div className="mb-6">
                         <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2.5 ml-1">Next Up</h3>
                         <div className="space-y-2.5">
-                            {activeRecipe.steps.slice(engineState.currentStepIndex + 1).map((step, idx) => (
-                                <div key={step.id || idx} className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low/70 opacity-70">
-                                    <div className="size-8 rounded-full bg-md-surface-container-highest border border-md-outline-variant/20 flex items-center justify-center text-md-on-surface-variant typescale-label-medium font-bold shrink-0">
-                                        {engineState.currentStepIndex + idx + 2}
+                            {activeRecipe.steps.slice(engineState.currentStepIndex + 1).map((step, idx) => {
+                                const valve = valveStates[engineState.currentStepIndex + idx + 1];
+                                return (
+                                    <div key={step.id || idx} className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low/70 opacity-70">
+                                        <div className="size-8 rounded-full bg-md-surface-container-highest border border-md-outline-variant/20 flex items-center justify-center text-md-on-surface-variant typescale-label-medium font-bold shrink-0">
+                                            {engineState.currentStepIndex + idx + 2}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">
+                                                {typeof step.target_weight === 'number' && step.target_weight > 0
+                                                    ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
+                                                    : step.label}
+                                            </h4>
+                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-5">
+                                                {typeof step.target_weight === 'number' && step.target_weight > 0
+                                                    ? `Target: ${formatWeight(step.target_weight)} on scale`
+                                                    : step.instruction || step.label}
+                                            </p>
+                                        </div>
+                                        {valve && (
+                                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full typescale-label-small font-bold shrink-0 ${valve === 'open' ? 'bg-md-primary text-md-on-primary' : 'bg-md-secondary-container text-md-on-secondary-container'}`}>
+                                                <Icon name={valve === 'open' ? 'lock_open' : 'lock'} className="text-[13px]" />
+                                                Switch {valve === 'open' ? 'Open' : 'Closed'}
+                                            </span>
+                                        )}
+                                        <span className="typescale-label-medium font-semibold text-md-on-surface-variant tabular-nums shrink-0">
+                                            {formatStepSeconds(step.duration_seconds)}
+                                        </span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0
-                                                ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
-                                                : step.label}
-                                        </h4>
-                                        <p className="typescale-body-small text-md-on-surface-variant line-clamp-1">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0
-                                                ? `Target: ${formatWeight(step.target_weight)} on scale`
-                                                : step.instruction || step.label}
-                                        </p>
-                                    </div>
-                                    <span className="typescale-label-medium font-semibold text-md-on-surface-variant tabular-nums shrink-0">
-                                        {formatStepSeconds(step.duration_seconds)}
-                                    </span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -352,7 +391,7 @@ export const BrewFlowPage = () => {
                     ) : (
                         <>
                             <button
-                                onClick={handleBack}
+                                onClick={() => openStopConfirm('home')}
                                 className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
                             >
                                 <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />

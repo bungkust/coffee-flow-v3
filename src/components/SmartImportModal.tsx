@@ -30,7 +30,8 @@ const METHOD_LABELS: Record<string, string> = {
     kalita: 'Kalita Wave', clever: 'Clever Dripper', siphon: 'Siphon',
     turkish: 'Turkish Coffee', phin: 'Vietnamese Phin', percolator: 'Percolator',
     tubruk: 'Tubruk', drip_machine: 'Drip Coffee Maker', south_indian_filter: 'South Indian Filter',
-    sock_coffee: 'Sock Coffee', keurig: 'Keurig (Single Pod)', clover: 'Clover Machine'
+    sock_coffee: 'Sock Coffee', keurig: 'Keurig (Single Pod)', clover: 'Clover Machine',
+    dallah: 'Arabic Coffee (Dallah)', jebena: 'Ethiopian Coffee (Jebena)', portable_all_in_one: 'All-in-One Portable'
 };
 
 const METHOD_ID_LINES = Object.entries(METHOD_LABELS).map(([id, label]) => `   - "${id}" (${label})`).join('\n');
@@ -58,25 +59,26 @@ ${METHOD_ID_LINES}
 4. "temperature": Water temperature in Celsius as an integer (e.g., 93, 95, 90). Default to 93 if unspecified.
 5. "grind_size": Must be ONE of: "Fine", "Medium-Fine", "Medium", "Medium-Coarse", "Coarse".
 6. "difficulty": Must be ONE of: "Beginner", "Intermediate", "Advanced". Default to "Intermediate" if unspecified.
-7. "total_water": Total water volume in grams/ml as an integer (e.g., 225, 500).
-8. "description_short": Concise 1-sentence summary of flavor profile or brewing style in English.
-9. "description_detailed": Detailed explanation of brewing approach from article/source. Leave empty "" if not provided.
-10. "philosophy": Philosophy or creator rationale behind this recipe. Leave empty "" if not provided.
-11. "best_for_tags": String array of recommended bean origin/roast/process tags (e.g., ["Arabica", "Light Roast", "Washed"]). Leave empty [] if not provided.
-12. "not_recommended_tags": String array of non-recommended bean tags (e.g., ["Dark Roast", "Robusta"]). Leave empty [] if not provided.
-13. "steps": Sequential array of brewing steps. PRESERVE THE EXACT STEP BREAKDOWN FROM SOURCE TEXT:
+7. "style": Short descriptor of the cup or technique as two parts separated by " / " (e.g. "Balanced / Clean", "Iced / Flash Chilled", "Sweet / Full-bodied"). Never leave empty — it is shown on the recipe card.
+8. "total_water": Total water volume in grams/ml as an integer (e.g., 225, 500).
+9. "description_short": Concise 1-sentence summary of flavor profile or brewing style in English.
+10. "description_detailed": Detailed explanation of brewing approach from article/source. Leave empty "" if not provided.
+11. "philosophy": Philosophy or creator rationale behind this recipe. Leave empty "" if not provided.
+12. "best_for_tags": String array of recommended bean origin/roast/process tags (e.g., ["Arabica", "Light Roast", "Washed"]). Leave empty [] if not provided.
+13. "not_recommended_tags": String array of non-recommended bean tags (e.g., ["Dark Roast", "Robusta"]). Leave empty [] if not provided.
+14. "steps": Sequential array of brewing steps. PRESERVE THE EXACT STEP BREAKDOWN FROM SOURCE TEXT:
    - Do NOT aggressively merge distinct instructions into one step unless they occur simultaneously.
    - If timestamps are given (e.g. 0:45 to 1:15), calculate exact step duration (1:15 - 0:45 = 30 seconds).
    - "label": Short step title matching source (e.g., "Bloom", "First Main Pour", "Second Main Pour", "Stir & Swirl", "Drawdown").
-   - "duration_seconds": Step duration in seconds as an integer, ONLY when the source states or clearly implies it (e.g. "steep until 03:00" -> 150). Use null when no time is given.
+   - "duration_seconds": REQUIRED positive integer for EVERY step — never null and never 0. Use the source's timing when it states one; otherwise give a realistic estimate so the brew timer runs end to end (e.g. bloom 30-45, pour 30-60, drawdown 30).
    - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown) or when the source does not state one.
-   - "instruction": Complete, detailed step instruction preserved from the source text.
-14. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
+   - "instruction": Complete, detailed step instruction preserved from the source text. When the brewer has a valve or switch (Hario Switch, Clever, siphon), begin the instruction with the valve position — "Close the switch ..." or "Open the switch ..." — and repeat it on every step where the position changes.
+15. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
 
 ACCURACY (CRITICAL — NO HALLUCINATION):
-- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give.
-- If the source omits a value, use null (for numbers) or "" (for text) — do not guess temperature, ratio, dose, water or durations.
-- It is correct for many steps to have null duration_seconds and null target_weight if the video/text does not say.
+- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give — the one exception is "duration_seconds", which must always be a usable number (rule 14).
+- If the source omits a value, use null (for numbers) or "" (for text) — do not guess temperature, ratio, dose, water or pour weights.
+- When the source times its steps cumulatively (e.g. "wait for the timer to reach 2:00"), keep the instruction wording and set each step's duration to the gap between its start and end time.
 
 MULTI-RECIPE RULE:
 If the source text or link contains MULTIPLE distinct recipes (e.g., Scott Rao V60, James Hoffmann V60, Tetsu Kasuya 4:6 Method), extract ALL recipes into a JSON array:
@@ -106,6 +108,7 @@ REQUIRED JSON OUTPUT FORMAT:
     "temperature": 93,
     "grind_size": "Medium-Fine",
     "difficulty": "Intermediate",
+    "style": "Balanced / Clean",
     "total_water": 500,
     "description_short": "Two-phase pour technique for high sweetness & clarity.",
     "description_detailed": "James Hoffmann's technique...",
@@ -133,15 +136,17 @@ const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> 
     else if (/advanced|expert|hard/i.test(String(parsed.difficulty))) jsonDiff = 'Advanced';
     else if (/intermediate|medium/i.test(String(parsed.difficulty))) jsonDiff = 'Intermediate';
 
+    const methodId = METHOD_LABELS[String(parsed.method_id)] ? String(parsed.method_id) : 'v60';
     const stepsRaw = Array.isArray(parsed.steps) ? parsed.steps : [];
 
     return {
-        name: cleanRecipeName(String(parsed.name || 'Imported Recipe'), String(parsed.method_id || 'v60')),
-        method_id: String(parsed.method_id || 'v60'),
+        name: cleanRecipeName(String(parsed.name || 'Imported Recipe'), methodId),
+        method_id: methodId,
         ratio: String(parsed.ratio || '1:15'),
         temperature: parsed.temperature ? Number(parsed.temperature) : 93,
         grind_size: String(parsed.grind_size || 'Medium'),
         difficulty: jsonDiff,
+        style: parsed.style ? String(parsed.style) : undefined,
         total_water: parsed.total_water ? Number(parsed.total_water) : 225,
         description_short: String(parsed.description_short || 'Imported via Smart Importer'),
         description_detailed: String(parsed.description_detailed || ''),

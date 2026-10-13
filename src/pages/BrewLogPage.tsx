@@ -6,25 +6,19 @@ import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { StarRating } from '../components/StarRating';
 import { useBrewStore } from '../state/useBrewStore';
+import { TasteEditor } from '../components/TasteEditor';
 import { brewService } from '../core/services';
 import { formatMethodName } from '../shared/utils/brewMath';
-
-const PRESET_TAGS = ['Fruity', 'Nutty', 'Chocolatey', 'Floral', 'Spicy'];
+import { serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
 
 export const BrewLogPage = () => {
     const navigate = useNavigate();
     const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew, hydrateBrew } = useBrewStore();
 
-    const [rating, setRating] = useState(4);
+    const [rating, setRating] = useState(0);
     const [notes, setNotes] = useState('');
-    const [profile, setProfile] = useState({
-        sweetness: 75,
-        acidity: 50,
-        body: 30,
-        bitterness: 20
-    });
-    const [selectedTags, setSelectedTags] = useState<string[]>(['Fruity']);
-    const [customTagInput, setCustomTagInput] = useState('');
+    const [profile, setProfile] = useState<TasteProfileValues>({});
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     const [autoSavedLogId, setAutoSavedLogId] = useState<string | null>(
         () => sessionStorage.getItem('coffee_flow_last_logged_id')
@@ -44,10 +38,10 @@ export const BrewLogPage = () => {
         if (!autoSavedLogId) {
             brewService.logBrew(
                 activeRecipe.id,
-                4,
-                '',
-                profile,
-                selectedTags,
+                undefined,
+                undefined,
+                undefined,
+                [],
                 selectedBeanId || undefined,
                 selectedFilterId || undefined,
                 coffeeConsumed || undefined
@@ -66,24 +60,6 @@ export const BrewLogPage = () => {
         );
     }
 
-    const customTags = selectedTags.filter(t => !PRESET_TAGS.includes(t));
-
-    const handleToggleTag = (tag: string) => {
-        if (selectedTags.includes(tag)) {
-            setSelectedTags(selectedTags.filter(t => t !== tag));
-        } else {
-            setSelectedTags([...selectedTags, tag]);
-        }
-    };
-
-    const handleAddCustomTag = () => {
-        const trimmed = customTagInput.trim();
-        if (trimmed && !selectedTags.includes(trimmed)) {
-            setSelectedTags([...selectedTags, trimmed]);
-        }
-        setCustomTagInput('');
-    };
-
     const getRatingLabel = (r: number) => {
         const labels: Record<number, string> = {
             1: '1.0 - Poor',
@@ -95,30 +71,23 @@ export const BrewLogPage = () => {
         return labels[r] || '';
     };
 
-    const getProfileLabel = (value: number) => {
-        if (value < 20) return 'Very Low';
-        if (value < 40) return 'Low';
-        if (value < 60) return 'Balanced';
-        if (value < 80) return 'Medium-High';
-        return 'High';
-    };
-
     const handleSave = async () => {
+        const payload = {
+            rating: rating || undefined,
+            notes,
+            sweetness: profile.sweetness,
+            acidity: profile.acidity,
+            body: profile.body,
+            bitterness: profile.bitterness,
+            flavor_tags: serializeFlavorTags(selectedTags)
+        };
         try {
             if (autoSavedLogId) {
-                await brewService.updateLog(autoSavedLogId, {
-                    rating,
-                    notes,
-                    sweetness: profile.sweetness,
-                    acidity: profile.acidity,
-                    body: profile.body,
-                    bitterness: profile.bitterness,
-                    flavor_tags: selectedTags.join(',')
-                });
+                await brewService.updateLog(autoSavedLogId, payload);
             } else {
                 await brewService.logBrew(
                     activeRecipe.id,
-                    rating,
+                    rating || undefined,
                     notes,
                     profile,
                     selectedTags,
@@ -159,79 +128,13 @@ export const BrewLogPage = () => {
                     <p className="typescale-title-medium font-bold text-md-primary mt-2">{getRatingLabel(rating)}</p>
                 </div>
 
-                {/* Taste Profile */}
-                <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-5">
-                    <h2 className="typescale-title-medium font-bold text-md-on-surface">Taste Profile</h2>
-
-                    {Object.entries(profile).map(([key, value]) => (
-                        <div key={key} className="space-y-1.5">
-                            <div className="flex justify-between items-center">
-                                <label className="typescale-label-large font-bold text-md-on-surface capitalize">{key}</label>
-                                <span className="typescale-label-small font-bold text-md-on-secondary-container bg-md-secondary-container px-2.5 py-0.5 rounded-full">
-                                    {getProfileLabel(value)}
-                                </span>
-                            </div>
-                            <div className="relative h-6 flex items-center">
-                                <input
-                                    className="w-full h-2 bg-md-surface-container-high rounded-lg appearance-none cursor-pointer accent-md-primary"
-                                    max="100" min="0" type="range"
-                                    value={value}
-                                    onChange={(e) => setProfile({ ...profile, [key]: parseInt(e.target.value) })}
-                                />
-                            </div>
-                            <div className="flex justify-between typescale-label-small text-md-on-surface-variant/70 font-semibold uppercase tracking-wider">
-                                <span>Low</span>
-                                <span>High</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Flavor Tags */}
-                <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
-                    <h2 className="typescale-title-medium font-bold text-md-on-surface">Flavor Tags</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {PRESET_TAGS.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => handleToggleTag(tag)}
-                                className={`px-3.5 py-1.5 rounded-full typescale-label-medium font-semibold transition-all cursor-pointer border ${selectedTags.includes(tag)
-                                    ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-sm'
-                                    : 'bg-md-surface-container-high text-md-on-surface-variant border-md-outline-variant/30 hover:bg-md-surface-container-highest'
-                                    }`}
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                        {customTags.map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => handleToggleTag(tag)}
-                                className="px-3.5 py-1.5 rounded-full typescale-label-medium font-semibold transition-all border bg-md-primary-container/40 text-md-primary border-md-primary/30 hover:bg-md-primary-container cursor-pointer"
-                            >
-                                {tag}
-                                <span className="ml-1 text-md-primary/70">&times;</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex gap-2 pt-2">
-                        <input
-                            type="text"
-                            value={customTagInput}
-                            onChange={(e) => setCustomTagInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCustomTag(); }}
-                            placeholder="Add custom tag..."
-                            className="flex-1 rounded-full border border-md-outline-variant/30 bg-md-surface-container-high px-4 py-2 typescale-body-medium text-md-on-surface placeholder:text-md-on-surface-variant/70 outline-none focus:ring-2 focus:ring-md-primary/40"
-                        />
-                        <button
-                            onClick={handleAddCustomTag}
-                            disabled={!customTagInput.trim()}
-                            className="rounded-full bg-md-secondary-container px-4 py-2 typescale-label-medium font-bold text-md-on-secondary-container hover:bg-md-secondary-container/80 transition-colors disabled:opacity-40 cursor-pointer"
-                        >
-                            Add
-                        </button>
-                    </div>
-                </div>
+                {/* Taste Profile & Flavor Tags */}
+                <TasteEditor
+                    profile={profile}
+                    onProfileChange={setProfile}
+                    tags={selectedTags}
+                    onTagsChange={setSelectedTags}
+                />
 
                 {/* Notes */}
                 <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-2">
