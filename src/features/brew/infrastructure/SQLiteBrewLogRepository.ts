@@ -110,14 +110,18 @@ export class SQLiteBrewLogRepository {
                 (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now', '-7 days')) as weeklyBrews,
                 (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now', 'start of month')) as monthlyBrews,
                 (SELECT AVG(rating) FROM brew_logs) as avgRating,
-                (SELECT COUNT(*) FROM pantry_items WHERE category = 'beans' AND deleted_at IS NULL) as beansCount
+                (SELECT COUNT(*) FROM pantry_items WHERE category = 'beans' AND deleted_at IS NULL) as beansCount,
+                (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now')) as todayBrews,
+                (SELECT COUNT(*) FROM brew_logs WHERE brewed_at >= date('now', '-14 days') AND brewed_at < date('now', '-7 days')) as previousWeekBrews
         `);
-        const row = result.values?.[0] as { weeklyBrews: number, monthlyBrews: number, avgRating: number | null, beansCount: number } | undefined;
+        const row = result.values?.[0] as { weeklyBrews: number, monthlyBrews: number, avgRating: number | null, beansCount: number, todayBrews: number, previousWeekBrews: number } | undefined;
         return {
             weeklyBrews: row?.weeklyBrews || 0,
             monthlyBrews: row?.monthlyBrews || 0,
             avgRating: parseFloat(((row?.avgRating || 0).toFixed(1))),
-            beansCount: row?.beansCount || 0
+            beansCount: row?.beansCount || 0,
+            todayBrews: row?.todayBrews || 0,
+            previousWeekBrews: row?.previousWeekBrews || 0
         };
     }
 

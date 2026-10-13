@@ -6,10 +6,10 @@ export interface TasteProfileValues {
 }
 
 export const PROFILE_FIELDS = [
-    { key: 'sweetness', label: 'Sweetness' },
-    { key: 'acidity', label: 'Acidity' },
+    { key: 'sweetness', label: 'Sweet' },
+    { key: 'acidity', label: 'Acid' },
     { key: 'body', label: 'Body' },
-    { key: 'bitterness', label: 'Bitterness' }
+    { key: 'bitterness', label: 'Bitter' }
 ] as const;
 
 export const describeProfile = (value: number) => {

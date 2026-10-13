@@ -78,6 +78,8 @@ export interface BrewStats {
     monthlyBrews: number;
     avgRating: number;
     beansCount: number;
+    todayBrews: number;
+    previousWeekBrews: number;
 }
 
 export type DrinkCategory = 'hot' | 'cold';

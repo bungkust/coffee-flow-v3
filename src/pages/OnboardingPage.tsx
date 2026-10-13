@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Dropdown } from '../components/Dropdown';
+import { MethodImage } from '../components/MethodImage';
 import { QuantityField } from '../components/QuantityField';
 import { SaveBar } from '../components/SaveBar';
 import { settingsService, pantryService, brewService } from '../core/services';
@@ -32,25 +33,6 @@ function getCategoryFallback(id: string): string {
     if (['cold_drip', 'siphon', 'sock_coffee', 'percolator', 'clover'].includes(id)) return 'Vacuum, Special & Percolation Methods';
     return 'Hybrid & Portable Methods';
 }
-
-const MethodImage = ({ src, alt, icon }: { src: string; alt: string; icon?: string }) => {
-    const [failed, setFailed] = useState(false);
-    if (failed || !src) {
-        return (
-            <div className="flex items-center justify-center w-full h-full text-md-primary">
-                <Icon name={icon || 'coffee'} className="text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-            </div>
-        );
-    }
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-contain p-1"
-            onError={() => setFailed(true)}
-        />
-    );
-};
 
 export const OnboardingPage = () => {
     const navigate = useNavigate();
@@ -328,7 +310,7 @@ export const OnboardingPage = () => {
                                                         <div className={`size-14 mb-2 rounded-lg flex items-center justify-center transition-colors overflow-hidden border border-md-outline-variant/20 ${
                                                             isSelected ? 'bg-md-primary-container' : 'bg-md-surface-container-highest'
                                                         }`}>
-                                                            <MethodImage src={item.image} alt={item.name} icon={item.icon} />
+                                                            <MethodImage src={item.image} alt={item.name} icon={item.icon} size="sm" />
                                                         </div>
                                                         <span className={`typescale-title-small text-center line-clamp-1 ${
                                                             isSelected ? 'text-md-on-secondary-container font-bold' : 'text-md-on-surface font-semibold'

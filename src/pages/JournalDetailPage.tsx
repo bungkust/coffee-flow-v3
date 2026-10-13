@@ -98,12 +98,25 @@ export const JournalDetailPage = () => {
         : ((log as DrinkLogWithDrink).drink_name || 'Drink Log');
 
     const brewLog = type === 'brews' ? (log as BrewLogWithRecipe) : null;
+    const brewedAt = new Date(brewLog ? brewLog.brewed_at : (log as DrinkLogWithDrink).logged_at)
+        .toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const detailCells = (brewLog
+        ? [
+            { key: 'method', icon: 'coffee_maker', label: 'Method', value: formatMethodName(brewLog.method_id) },
+            { key: 'ratio', icon: 'scale', label: 'Ratio', value: brewLog.ratio },
+            { key: 'beans', icon: 'inventory_2', label: 'Beans', value: beanName ?? undefined },
+            { key: 'brewed', icon: 'schedule', label: 'Brewed', value: brewedAt }
+        ]
+        : [
+            { key: 'category', icon: 'local_cafe', label: 'Category', value: (log as DrinkLogWithDrink).category },
+            { key: 'logged', icon: 'schedule', label: 'Logged', value: brewedAt }
+        ]
+    ).filter(cell => Boolean(cell.value));
 
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             <PageHeader
                 title={title}
-                subtitle={brewLog ? `${formatMethodName(brewLog.method_id)} • ${new Date(brewLog.brewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : undefined}
                 onBack={() => navigate(-1)}
                 titleClassName="truncate"
                 action={(
@@ -118,6 +131,24 @@ export const JournalDetailPage = () => {
             />
 
             <main className="flex-1 px-5 py-5 space-y-6">
+                {detailCells.length > 0 && (
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface">{brewLog ? 'Brew Details' : 'Drink Details'}</h2>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                            {detailCells.map(cell => (
+                                <div key={cell.key} className="min-w-0">
+                                    <span className="flex items-center gap-1.5 typescale-label-small font-semibold uppercase tracking-wider text-md-on-surface-variant/70">
+                                        <Icon name={cell.icon} className="text-base" />
+                                        {cell.label}
+                                    </span>
+                                    <span className="mt-0.5 block truncate typescale-body-medium font-semibold text-md-on-surface">
+                                        {cell.value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3 text-center">
                     <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider block">Rating</span>
                     <div className="flex justify-center gap-2">
@@ -158,27 +189,6 @@ export const JournalDetailPage = () => {
                     />
                 </div>
 
-                {brewLog && (
-                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
-                        <h2 className="typescale-title-medium font-bold text-md-on-surface">Brew Details</h2>
-                        <div className="flex justify-between items-center typescale-body-medium">
-                            <span className="text-md-on-surface-variant">Method</span>
-                            <span className="font-semibold text-md-on-surface">{formatMethodName(brewLog.method_id)}</span>
-                        </div>
-                        <div className="flex justify-between items-center typescale-body-medium">
-                            <span className="text-md-on-surface-variant">Ratio</span>
-                            <span className="font-semibold text-md-on-surface">{brewLog.ratio}</span>
-                        </div>
-                        <div className="flex justify-between items-center typescale-body-medium">
-                            <span className="text-md-on-surface-variant">Brewed</span>
-                            <span className="font-semibold text-md-on-surface">{new Date(brewLog.brewed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <div className="flex justify-between items-center typescale-body-medium">
-                            <span className="text-md-on-surface-variant">Beans</span>
-                            <span className="font-semibold text-md-on-surface text-right">{beanName ?? '—'}</span>
-                        </div>
-                    </div>
-                )}
             </main>
 
             <SaveBar onClick={handleSave} saving={saving} label="Save Changes" />

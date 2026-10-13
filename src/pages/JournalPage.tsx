@@ -4,10 +4,12 @@ import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { PageHeader } from '../components/PageHeader';
-import { brewService, drinkService } from '../core/services';
+import { BrewLogCard } from '../components/BrewLogCard';
+import { brewService, drinkService, pantryService } from '../core/services';
 import type { BrewLogWithRecipe, BrewStats, DrinkLogWithDrink, DrinkStats } from '../shared/domain/entities';
-import { PROFILE_FIELDS, parseFlavorTags } from '../shared/utils/tasteProfile';
+import { parseFlavorTags } from '../shared/utils/tasteProfile';
 import { formatMethodName } from '../shared/utils/brewMath';
+import { getDrinkImage } from '../shared/utils/drinks';
 
 type Tab = 'brews' | 'drinks';
 type JournalRow = BrewLogWithRecipe | DrinkLogWithDrink;
@@ -19,6 +21,13 @@ export const JournalPage = () => {
     const [activeTab, setActiveTab] = useState<Tab>((searchParams.get('tab') as Tab) || 'brews');
     const [logs, setLogs] = useState<JournalRow[]>([]);
     const [stats, setStats] = useState<JournalStats>({});
+    const [beanNames, setBeanNames] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        pantryService.getPantryItems()
+            .then(items => setBeanNames(Object.fromEntries(items.filter(item => item.category === 'beans').map(item => [item.id, item.name]))))
+            .catch(console.error);
+    }, []);
 
     useEffect(() => {
         const loadData = async () => {
@@ -56,20 +65,21 @@ export const JournalPage = () => {
         return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     };
 
-    const formatTime = (dateString: string) =>
-        new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const formatDateTime = (dateString: string) =>
+        new Date(dateString).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 
     const rows = logs.map(log => ({
         id: log.id,
         name: 'recipe_name' in log ? log.recipe_name : log.drink_name,
-        subtitle: 'method_id' in log ? formatMethodName(log.method_id) : log.category,
+        subtitle: [
+            'method_id' in log && log.bean_id ? beanNames[log.bean_id] : undefined,
+            'method_id' in log ? formatMethodName(log.method_id) : log.category
+        ].filter(Boolean).join(' · '),
+        image: 'method_id' in log ? `/assets/methods/${log.method_id}.png` : getDrinkImage({ id: log.drink_id }),
+        icon: 'method_id' in log ? 'coffee_maker' : 'local_cafe',
         date: 'brewed_at' in log ? log.brewed_at : log.logged_at,
         rating: log.rating,
         notes: log.notes,
-        sweetness: 'sweetness' in log ? log.sweetness : undefined,
-        acidity: 'acidity' in log ? log.acidity : undefined,
-        body: 'body' in log ? log.body : undefined,
-        bitterness: 'bitterness' in log ? log.bitterness : undefined,
         flavor_tags: 'flavor_tags' in log ? log.flavor_tags : undefined,
     }));
 
@@ -141,78 +151,22 @@ export const JournalPage = () => {
                                 <span className="h-px flex-1 bg-[#f4f2f0]"></span>
                             </h3>
 
-                            {groupLogs.map((row) => {
-                                const displayRating = Math.min(5, Math.max(0, Number(row.rating) || 0));
-                                const profileEntries = PROFILE_FIELDS.filter(field => typeof row[field.key] === 'number');
-                                const tags = parseFlavorTags(row.flavor_tags);
-                                return (
-                                <div key={row.id} onClick={() => navigate(`/journal/${activeTab}/${row.id}`)} className="group relative mb-4 flex gap-4 rounded-xl bg-white p-4 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-[#f4f2f0] transition-all hover:border-primary/30 cursor-pointer">
-                                    {/* Icon */}
-                                    <div className="flex-shrink-0">
-                                        <div className={`flex h-12 w-12 items-center justify-center rounded-full ${activeTab === 'brews' ? 'bg-primary/10 text-primary' : 'bg-[#EFEBE7] text-[#181411]'}`}>
-                                            <Icon
-                                                name={activeTab === 'brews' ? 'coffee_maker' : 'local_cafe'}
-                                                className="text-[24px]"
-                                            />
-                                        </div>
-                                    </div>
-                                    {/* Content */}
-                                    <div className="flex flex-1 flex-col justify-center">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h4 className="font-bold text-[#181411]">
-                                                    {row.name}
-                                                </h4>
-                                                <p className="text-xs font-medium text-gray-500 mt-0.5">
-                                                    {row.subtitle}
-                                                </p>
-                                            </div>
-                                            <span className="text-xs font-semibold text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-                                                {formatTime(row.date)}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center gap-1 text-primary">
-                                            {[1, 2, 3, 4, 5].map((star) => (
-                                                <Icon
-                                                    key={star}
-                                                    name="star"
-                                                    className="text-[16px]"
-                                                    style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
-                                                />
-                                            ))}
-                                        </div>
-                                        {(profileEntries.length > 0 || tags.length > 0) && (
-                                            <div className="mt-2.5 space-y-2">
-                                                {profileEntries.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {profileEntries.map(field => (
-                                                            <span key={field.key} className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-high px-2 py-0.5 rounded-full border border-md-outline-variant/20">
-                                                                {field.label}
-                                                                <span className="text-md-primary">{row[field.key]}</span>
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {tags.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {tags.map(tag => (
-                                                            <span key={tag} className="typescale-label-small font-bold text-md-primary bg-md-primary-container/40 px-2 py-0.5 rounded-full border border-md-primary/20">
-                                                                {tag}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        {row.notes && (
-                                            <p className="mt-2 text-sm text-gray-500/90 leading-relaxed line-clamp-2">
-                                                "{row.notes}"
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                );
-                            })}
+                            <div className="flex flex-col gap-4">
+                                {groupLogs.map((row) => (
+                                    <BrewLogCard
+                                        key={row.id}
+                                        image={row.image}
+                                        icon={row.icon}
+                                        name={row.name}
+                                        subtitle={row.subtitle}
+                                        date={formatDateTime(row.date)}
+                                        rating={row.rating}
+                                        tags={parseFlavorTags(row.flavor_tags)}
+                                        notes={row.notes}
+                                        onClick={() => navigate(`/journal/${activeTab}/${row.id}`)}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     ))}
 

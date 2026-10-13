@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, pantryService, settingsService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
@@ -30,6 +30,7 @@ const parseExplicitIce = (recipe: Recipe): number | null => {
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const startBrew = useBrewStore(state => state.startBrew);
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -162,7 +163,9 @@ export const RecipePreparationPage = () => {
                 const availableFilters = pantryItems.filter(item => item.category === 'filter');
                 setFilters(availableFilters);
 
-                if (availableBeans.length > 0) setSelectedBeanId(availableBeans[0].id);
+                if (availableBeans.length > 0) {
+                    setSelectedBeanId((availableBeans.find(b => b.id === searchParams.get('beanId')) ?? availableBeans[0]).id);
+                }
                 if (availableFilters.length > 0) setSelectedFilterId(availableFilters[0].id);
             } catch (error) {
                 console.error('Failed to load recipe:', error);
@@ -171,7 +174,7 @@ export const RecipePreparationPage = () => {
             }
         };
         fetchRecipe();
-    }, [id]);
+    }, [id, searchParams]);
 
     // Dynamic Checklist Generator
     const dynamicChecklist = recipe ? (() => {
