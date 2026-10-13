@@ -234,5 +234,14 @@ export const MIGRATIONS = [
       DROP TABLE backups;
       ALTER TABLE backups_new RENAME TO backups;
     `
+  },
+  {
+    // Built-in recipes without a recorded source were retired: only cited recipes ship now.
+    // Soft delete so any brew logs attached to them survive.
+    version: 15,
+    sql: `
+      UPDATE recipes SET deleted_at = datetime('now')
+      WHERE is_custom = 0 AND source IS NULL AND deleted_at IS NULL;
+    `
   }
 ];
