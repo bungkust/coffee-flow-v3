@@ -115,9 +115,11 @@ export class SQLiteRecipeRepository {
         const now = new Date().toISOString();
 
         await this.db.run(
-            `INSERT OR REPLACE INTO recipes 
+            `INSERT INTO recipes 
       (id, method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         (method_id, name, ratio, grind_size, temperature, total_water, is_custom, is_favorite, difficulty, style, description_short, description_detailed, philosophy, best_for_tags, not_recommended_tags, updated_at) = (excluded.method_id, excluded.name, excluded.ratio, excluded.grind_size, excluded.temperature, excluded.total_water, excluded.is_custom, excluded.is_favorite, excluded.difficulty, excluded.style, excluded.description_short, excluded.description_detailed, excluded.philosophy, excluded.best_for_tags, excluded.not_recommended_tags, excluded.updated_at)`,
             [
                 recipe.id,
                 recipe.method_id,

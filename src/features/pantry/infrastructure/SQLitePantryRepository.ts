@@ -60,9 +60,11 @@ export class SQLitePantryRepository {
         const now = new Date().toISOString();
 
         await this.db.run(
-            `INSERT OR REPLACE INTO pantry_items
+            `INSERT INTO pantry_items
             (id, name, category, brand, description, quantity, unit, roast_date, purchase_date, tags_json, icon, created_at, updated_at, deleted_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              (name, category, brand, description, quantity, unit, roast_date, purchase_date, tags_json, icon, updated_at, deleted_at) = (excluded.name, excluded.category, excluded.brand, excluded.description, excluded.quantity, excluded.unit, excluded.roast_date, excluded.purchase_date, excluded.tags_json, excluded.icon, excluded.updated_at, excluded.deleted_at)`,
             [
                 item.id,
                 item.name,

@@ -291,7 +291,7 @@ export const DrinkMenuPage = () => {
                 </button>
             </div>
 
-            <BottomNav activeTab="brewing" />
+            {!isEditing && <BottomNav activeTab="brewing" />}
 
             <SmartImportModal
                 isOpen={isImportModalOpen}

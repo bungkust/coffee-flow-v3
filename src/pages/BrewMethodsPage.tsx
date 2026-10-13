@@ -162,7 +162,7 @@ export const BrewMethodsPage = () => {
             <PageHeader
                 title={isEditing ? 'Select Equipment' : 'Brewing Equipment'}
                 subtitle={isEditing ? 'Choose equipment for your dashboard' : 'Select a method to browse recipes'}
-                onBack={() => (isEditing ? setIsEditing(false) : navigate(-1))}
+                onBack={isEditing ? () => setIsEditing(false) : undefined}
                 className="space-y-3"
             >
                 {/* Search Bar */}

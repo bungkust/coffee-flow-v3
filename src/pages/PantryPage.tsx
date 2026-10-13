@@ -65,7 +65,7 @@ export const PantryPage = () => {
     return (
         <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Sticky Header */}
-            <PageHeader title="My Pantry" padding="pb-2" rowClassName="mb-3">
+            <PageHeader title="My Pantry" padding="px-5 pb-2" rowClassName="mb-3">
                 <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}

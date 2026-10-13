@@ -142,7 +142,7 @@ export const BrewLogPage = () => {
     };
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-36">
             {/* Header */}
             <PageHeader title="How was it?" subtitle={`${activeRecipe.method_id.toUpperCase()} • ${activeRecipe.name}`} />
 

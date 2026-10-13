@@ -16,9 +16,10 @@ export const seedInitialData = async () => {
         console.warn("Category column check failed, proceeding with seeding:", e);
     }
 
+    // IGNORE, not REPLACE: REPLACE would cascade-delete user recipes (recipes.method_id).
     for (const method of BREWING_METHOD_SEEDS) {
         await db.run(
-            `INSERT OR REPLACE INTO brewing_methods (id, name, description, icon, category, created_at, updated_at)
+            `INSERT OR IGNORE INTO brewing_methods (id, name, description, icon, category, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [method.id, method.name, method.description, method.icon, method.category || 'Other', method.created_at, method.updated_at]
         );

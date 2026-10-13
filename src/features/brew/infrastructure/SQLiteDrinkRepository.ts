@@ -46,9 +46,11 @@ export class SQLiteDrinkRepository {
     async save(drink: Drink): Promise<void> {
         const now = new Date().toISOString();
         await this.db.run(
-            `INSERT OR REPLACE INTO drinks
+            `INSERT INTO drinks
              (id, name, category, ingredients_json, instructions_json, image_url, created_at, updated_at, deleted_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(id) DO UPDATE SET
+               (name, category, ingredients_json, instructions_json, image_url, updated_at, deleted_at) = (excluded.name, excluded.category, excluded.ingredients_json, excluded.instructions_json, excluded.image_url, excluded.updated_at, excluded.deleted_at)`,
             [
                 drink.id,
                 drink.name,

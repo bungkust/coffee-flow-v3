@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Dropdown } from '../components/Dropdown';
@@ -11,6 +11,7 @@ export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const prefill = (location.state as { prefill?: Partial<Recipe> } | null)?.prefill;
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -23,7 +24,7 @@ export const RecipeEditPage = () => {
             if (!id) return;
             try {
                 if (id === 'new') {
-                    const method_id = (location.state as { method_id?: string } | null)?.method_id || 'v60';
+                    const method_id = (searchParams.get('method') || 'v60').toLowerCase();
                     const newId = `${method_id}-custom-${Date.now()}`;
                     const now = new Date().toISOString();
                     const p: Partial<Recipe> = prefill || {};
@@ -141,7 +142,7 @@ export const RecipeEditPage = () => {
     if (!recipe) return null;
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-48">
             {/* Header */}
             <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
                 <div className="flex items-center justify-between">

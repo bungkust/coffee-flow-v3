@@ -76,7 +76,7 @@ export const JournalPage = () => {
     return (
         <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Header */}
-            <PageHeader title="Activity Journal" onBack={() => navigate(-1)} padding="pb-0" className="z-20" rowClassName="px-5 mb-2">
+            <PageHeader title="Activity Journal" padding="pb-0" className="z-20" rowClassName="px-5 mb-2">
                 {/* Segmented Button / Toggle Switch */}
                 <div className="px-5 pb-3 pt-1">
                     <SegmentedControl
@@ -192,14 +192,6 @@ export const JournalPage = () => {
                     )}
                 </div>
             </main>
-
-            {/* Floating Action Button */}
-            <button
-                onClick={() => navigate(activeTab === 'brews' ? '/recipes' : '/drinks')}
-                className="absolute bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 hover:scale-105 transition-all"
-            >
-                <Icon name="add" className="text-[28px]" />
-            </button>
 
             {/* Bottom Navigation */}
             <BottomNav activeTab="journal" />
