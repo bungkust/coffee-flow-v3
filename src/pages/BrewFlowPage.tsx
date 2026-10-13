@@ -4,14 +4,24 @@ import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
-import { settingsService } from '../core/services';
+import { brewService, settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
-import { formatDuration, formatWeight, formatVolume, formatMethodName, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+import type { Recipe } from '../shared/domain/entities';
+import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getCurrentTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+
+const BrewHeader = ({ recipe }: { recipe: Recipe }) => (
+    <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+        <div className="flex flex-col">
+            <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
+            <h1 className="typescale-headline-small font-bold text-md-on-surface">{recipe.name}</h1>
+        </div>
+    </header>
+);
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
+    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
@@ -67,6 +77,23 @@ export const BrewFlowPage = () => {
 
     // Keep the screen awake for the whole brew flow (running, paused or done)
     useWakeLock(true);
+
+    // Persist the brew as soon as it finishes, so leaving via "Back to Homepage" still journals it.
+    const hasAutoLoggedRef = useRef(false);
+    useEffect(() => {
+        if (!engineState?.isCompleted || !activeRecipe || hasAutoLoggedRef.current) return;
+        hasAutoLoggedRef.current = true;
+        brewService.logBrew(
+            activeRecipe.id,
+            4,
+            '',
+            { sweetness: 75, acidity: 50, body: 30, bitterness: 20 },
+            ['Fruity'],
+            selectedBeanId || undefined,
+            selectedFilterId || undefined,
+            coffeeConsumed || undefined
+        ).then((id) => sessionStorage.setItem('coffee_flow_last_logged_id', id)).catch(console.error);
+    }, [engineState?.isCompleted, activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed]);
 
     const recipeName = activeRecipe?.name;
 
@@ -124,7 +151,10 @@ export const BrewFlowPage = () => {
         setIsSkipModalOpen(false);
     };
 
-    const totalWaterRecipe = activeRecipe.total_water || 0;
+    // The scale reads only the water poured (any ice already sits in the server), so the gauge
+    // tracks the final pour target rather than the recipe total, which may include the ice.
+    const totalWaterRecipe = getTotalTargetWeight(activeRecipe.steps) || activeRecipe.total_water || 0;
+    const iceWeight = Math.max(0, Math.round((activeRecipe.total_water || 0) - totalWaterRecipe));
     const currentTargetWeight = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
     const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
@@ -140,12 +170,7 @@ export const BrewFlowPage = () => {
         return (
             <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
                 {/* Header for Done state */}
-                <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                    <div className="flex flex-col">
-                        <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface">{formatMethodName(activeRecipe.method_id)} - {activeRecipe.name}</h1>
-                    </div>
-                </header>
+                <BrewHeader recipe={activeRecipe} />
 
                 <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                     {/* Done Card */}
@@ -227,12 +252,7 @@ export const BrewFlowPage = () => {
     return (
         <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex flex-col">
-                    <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">Brewing Method</span>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">{formatMethodName(activeRecipe.method_id)} - {activeRecipe.name}</h1>
-                </div>
-            </header>
+            <BrewHeader recipe={activeRecipe} />
 
             <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                 {/* Active Phase Card */}
@@ -243,10 +263,10 @@ export const BrewFlowPage = () => {
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
-                            {intervalInfo.restSeconds > 0 && (
+                            {intervalInfo.pourSeconds > 0 && (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
                                     <Icon name="hourglass_empty" className="text-xs" />
-                                    Pour ~{intervalInfo.pourSeconds}s • Rest ~{intervalInfo.restSeconds}s
+                                    Pour ~{intervalInfo.pourSeconds}s{intervalInfo.restSeconds > 0 ? ` • Rest ~${intervalInfo.restSeconds}s` : ''}
                                 </span>
                             )}
                         </div>
@@ -274,6 +294,12 @@ export const BrewFlowPage = () => {
                                     style={{ width: `${progressPercent}%` }}
                                 ></div>
                             </div>
+                            {iceWeight > 0 && (
+                                <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5">
+                                    <Icon name="ac_unit" className="text-sm text-md-primary" />
+                                    Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -301,7 +327,7 @@ export const BrewFlowPage = () => {
                                         </p>
                                     </div>
                                     <span className="typescale-label-medium font-semibold text-md-on-surface-variant tabular-nums shrink-0">
-                                        {formatDuration(step.duration_seconds)}
+                                        {formatStepSeconds(step.duration_seconds)}
                                     </span>
                                 </div>
                             ))}

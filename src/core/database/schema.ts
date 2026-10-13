@@ -212,9 +212,27 @@ export const MIGRATIONS = [
     `
   },
   {
-    version: 12,
+    version: 13,
     sql: `
       ALTER TABLE recipes ADD COLUMN source TEXT;
+    `
+  },
+  {
+    // Older installs carry app_settings.updated_at / backups.status as NOT NULL columns that the
+    // current code no longer writes, so every insert failed. Rebuild both tables without them.
+    version: 14,
+    sql: `
+      DROP TABLE IF EXISTS app_settings_new;
+      CREATE TABLE app_settings_new (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      INSERT OR IGNORE INTO app_settings_new (key, value) SELECT key, value FROM app_settings;
+      DROP TABLE app_settings;
+      ALTER TABLE app_settings_new RENAME TO app_settings;
+
+      DROP TABLE IF EXISTS backups_new;
+      CREATE TABLE backups_new (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, size_bytes INTEGER NOT NULL, location TEXT NOT NULL);
+      INSERT OR IGNORE INTO backups_new (id, created_at, size_bytes, location) SELECT id, created_at, size_bytes, location FROM backups;
+      DROP TABLE backups;
+      ALTER TABLE backups_new RENAME TO backups;
     `
   }
 ];

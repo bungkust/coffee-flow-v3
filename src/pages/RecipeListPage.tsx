@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BottomNav } from '../components/BottomNav';
 import { Modal } from '../components/Modal';
 import type { Recipe } from '../shared/domain/entities';
-import { formatDuration, sumStepDuration } from '../shared/utils/brewMath';
+import { formatDuration, getBrewDuration } from '../shared/utils/brewMath';
 
 import { SmartImportModal, type ImportableRecipe } from '../components/SmartImportModal';
 import { PageHeader } from '../components/PageHeader';
@@ -263,7 +263,7 @@ export const RecipeListPage = () => {
                             </div>
 
                             <div className="flex gap-2 mt-3">
-                                <StatCard label="Time" value={formatDuration(sumStepDuration(recipe.steps))} />
+                                <StatCard label="Time" value={formatDuration(getBrewDuration(recipe.steps))} />
                                 <StatCard label="Ratio" value={recipe.ratio} />
                                 <StatCard label="Temp" value={`${recipe.temperature}°C`} />
                             </div>

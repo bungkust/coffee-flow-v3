@@ -35,10 +35,23 @@ const METHOD_LABELS: Record<string, string> = {
 
 const METHOD_ID_LINES = Object.entries(METHOD_LABELS).map(([id, label]) => `   - "${id}" (${label})`).join('\n');
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Titles describe the recipe, not the brewer it is filed under. */
+const cleanRecipeName = (name: string, methodId?: string): string => {
+    const devices = [METHOD_LABELS[methodId || ''], (methodId || '').replace(/_/g, ' ')].filter(Boolean) as string[];
+    let cleaned = name;
+    for (const device of devices) {
+        cleaned = cleaned.replace(new RegExp(`\\s*[-–—|,:]?\\s*${escapeRegExp(device)}\\s*(recipe|method|brewer|dripper)?`, 'ig'), ' ');
+    }
+    const result = cleaned.replace(/\s{2,}/g, ' ').replace(/^[\s\-–—|,:]+|[\s\-–—|,:]+$/g, '').trim();
+    return result || name.trim();
+};
+
 const SYSTEM_PROMPT_TEMPLATE = `Please extract all coffee recipes from this text/link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
 
 PARAMETER GUIDELINES (STRICT RULES):
-1. "name": Coffee recipe title (e.g., "Scott Rao V60", "James Hoffmann V60", "Tetsu Kasuya 4:6 Method").
+1. "name": Short, natural recipe title WITHOUT the brewing device or method name (it is stored separately) and without the word "Recipe". e.g. "Immersion Ice Drip", "Tetsu Kasuya 4:6", "James Hoffmann Ultimate".
 2. "method_id": Must be ONE of the following exact IDs based on the brewing device:
 ${METHOD_ID_LINES}
 3. "ratio": Format ratio as "1:X" (e.g., "1:15", "1:16.7", "1:14"). If not stated, calculate total_water / coffee_dose.
@@ -55,10 +68,15 @@ ${METHOD_ID_LINES}
    - Do NOT aggressively merge distinct instructions into one step unless they occur simultaneously.
    - If timestamps are given (e.g. 0:45 to 1:15), calculate exact step duration (1:15 - 0:45 = 30 seconds).
    - "label": Short step title matching source (e.g., "Bloom", "First Main Pour", "Second Main Pour", "Stir & Swirl", "Drawdown").
-   - "duration_seconds": Step duration in seconds as an integer (e.g., 30, 45, 60).
-   - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown).
+   - "duration_seconds": Step duration in seconds as an integer, ONLY when the source states or clearly implies it (e.g. "steep until 03:00" -> 150). Use null when no time is given.
+   - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown) or when the source does not state one.
    - "instruction": Complete, detailed step instruction preserved from the source text.
 14. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
+
+ACCURACY (CRITICAL — NO HALLUCINATION):
+- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give.
+- If the source omits a value, use null (for numbers) or "" (for text) — do not guess temperature, ratio, dose, water or durations.
+- It is correct for many steps to have null duration_seconds and null target_weight if the video/text does not say.
 
 MULTI-RECIPE RULE:
 If the source text or link contains MULTIPLE distinct recipes (e.g., Scott Rao V60, James Hoffmann V60, Tetsu Kasuya 4:6 Method), extract ALL recipes into a JSON array:
@@ -118,7 +136,7 @@ const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> 
     const stepsRaw = Array.isArray(parsed.steps) ? parsed.steps : [];
 
     return {
-        name: String(parsed.name || 'Imported Recipe'),
+        name: cleanRecipeName(String(parsed.name || 'Imported Recipe'), String(parsed.method_id || 'v60')),
         method_id: String(parsed.method_id || 'v60'),
         ratio: String(parsed.ratio || '1:15'),
         temperature: parsed.temperature ? Number(parsed.temperature) : 93,
@@ -136,7 +154,7 @@ const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> 
             recipe_id: '',
             step_order: idx + 1,
             label: String(s.label || `Step ${idx + 1}`),
-            duration_seconds: Number(s.duration_seconds || s.duration) || 30,
+            duration_seconds: Number(s.duration_seconds ?? s.duration) || 0,
             target_weight: s.target_weight ? Number(s.target_weight) : undefined,
             instruction: String(s.instruction || ''),
             created_at: new Date().toISOString(),
@@ -278,7 +296,7 @@ const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
     }
 
     return [{
-        name: title.length > 3 ? title : 'Imported Coffee Recipe',
+        name: cleanRecipeName(title.length > 3 ? title : 'Imported Coffee Recipe', method_id),
         method_id,
         ratio,
         temperature,

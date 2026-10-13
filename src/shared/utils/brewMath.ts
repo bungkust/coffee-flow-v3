@@ -64,9 +64,41 @@ export const formatDuration = (seconds: number): string => {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
 };
 
-export const sumStepDuration = (steps: BrewStep[]): number => (
-    steps.reduce((total, step) => total + Math.max(0, step.duration_seconds || 0), 0)
+const DEFAULT_STEP_SECONDS = 30;
+
+/** A step the recipe gives no time for still needs a length to run the timer. */
+export const getStepDuration = (step: BrewStep): number => step.duration_seconds || DEFAULT_STEP_SECONDS;
+
+/** "30s", or "—" when the recipe never stated a time for this step. */
+export const formatStepSeconds = (seconds?: number): string => (seconds && seconds > 0 ? `${seconds}s` : '—');
+
+/** Steps that only set things up (ice, rinse, dosing) belong on the prep screen, not the brew timer. */
+const PREPARATION_STEP_PATTERN = /preparation|prep\b|rinse|preheat|tare|set ?up|assemble|dose|dosing|grind|weigh|\bice\b/i;
+
+const isPreparationStep = (step: BrewStep): boolean =>
+    !step.target_weight && PREPARATION_STEP_PATTERN.test(`${step.label ?? ''} ${step.instruction ?? ''}`);
+
+/** The steps the timer actually walks — falling back to all of them if nothing else is left. */
+export const getBrewSteps = (steps: BrewStep[]): BrewStep[] => {
+    const brewSteps = steps.filter(step => !isPreparationStep(step));
+    return brewSteps.length > 0 ? brewSteps : steps;
+};
+
+/** Brew time as the scale sees it — only the steps actually poured. */
+export const getBrewDuration = (steps: BrewStep[]): number => (
+    getBrewSteps(steps).reduce((total, step) => total + getStepDuration(step), 0)
 );
+
+// Manual-brew best practice is a 3–5 ml/s flow rate; 4 ml/s is the sweet spot.
+const FLOW_RATE_ML_PER_SECOND = 4;
+
+/** A pour the recipe never timed gets a duration from its volume at the best-practice flow rate. */
+export const withDerivedPourDurations = (steps: BrewStep[]): BrewStep[] =>
+    steps.map((step, index) => {
+        if (step.duration_seconds) return step;
+        const pour = getPourAmount(steps, index);
+        return pour > 0 ? { ...step, duration_seconds: Math.round(pour / FLOW_RATE_ML_PER_SECOND) } : step;
+    });
 
 export const getPreviousTargetWeight = (steps: BrewStep[], currentStepIndex: number): number => {
     for (let index = currentStepIndex - 1; index >= 0; index--) {
@@ -84,6 +116,11 @@ export const getCurrentTargetWeight = (steps: BrewStep[], currentStepIndex: numb
 
 export const getPourAmount = (steps: BrewStep[], currentStepIndex: number): number => (
     roundTo(Math.max(0, getCurrentTargetWeight(steps, currentStepIndex) - getPreviousTargetWeight(steps, currentStepIndex)), 1)
+);
+
+/** The final scale target of the recipe — the water actually poured. */
+export const getTotalTargetWeight = (steps: BrewStep[]): number => (
+    Math.max(0, ...steps.map(step => (typeof step.target_weight === 'number' && step.target_weight > 0 ? step.target_weight : 0)))
 );
 
 export const getWaterProgressPercent = (currentTargetWeight: number, totalWater?: number): number => {
@@ -132,39 +169,18 @@ export const scaleRecipe = (recipe: Recipe, targetDose: number): Recipe => {
 };
 
 export interface StepIntervalInfo {
-    isPauseStep: boolean;
     pourSeconds: number;
     restSeconds: number;
-    label: string;
 }
 
+/** Splits a step into pour/rest only when the recipe itself states the pour duration. */
 export const getStepIntervalInfo = (step: BrewStep): StepIntervalInfo => {
-    const isPauseKeyword = /pause|rest|wait|settle|drawdown|tunggu|tiris/i.test(step.label);
-    
-    if (!step.target_weight || isPauseKeyword) {
-        return {
-            isPauseStep: true,
-            pourSeconds: 0,
-            restSeconds: step.duration_seconds || 0,
-            label: `Pause / Rest: ${step.duration_seconds || 0}s`
-        };
-    }
+    const statedPour = step.instruction?.match(/(?:within|in|over)\s+(\d+)\s*(?:seconds|sec|s)\b/i);
+    if (!statedPour) return { pourSeconds: 0, restSeconds: 0 };
 
-    const match = step.instruction?.match(/(?:within|in|over)\s+(\d+)\s*(?:seconds|sec|s)/i);
-    let pourSec = match ? parseInt(match[1], 10) : Math.min(15, Math.max(5, Math.round(step.duration_seconds * 0.33)));
-    
-    if (pourSec >= step.duration_seconds) {
-        pourSec = Math.max(5, step.duration_seconds - 15);
-    }
-    
-    const restSec = Math.max(0, step.duration_seconds - pourSec);
-
-    return {
-        isPauseStep: false,
-        pourSeconds: pourSec,
-        restSeconds: restSec,
-        label: `Pour ${pourSec}s • Rest ${restSec}s`
-    };
+    const duration = step.duration_seconds || 0;
+    const pourSeconds = Math.min(parseInt(statedPour[1], 10), duration);
+    return { pourSeconds, restSeconds: Math.max(0, duration - pourSeconds) };
 };
 
 

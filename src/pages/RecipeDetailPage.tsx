@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
-import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, sumStepDuration, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, formatStepSeconds, getBrewDuration, getBrewSteps, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 import { PageHeader } from '../components/PageHeader';
 
 const sourceMeta = (url: string): { icon: string; label: string } => {
@@ -65,7 +65,8 @@ export const RecipeDetailPage = () => {
         );
     }
 
-    const totalTime = sumStepDuration(recipe.steps);
+    const totalTime = getBrewDuration(recipe.steps);
+    const brewSteps = getBrewSteps(recipe.steps);
     const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
     const hasValidRatio = coffeeDose > 0;
     const sourceUrl = recipe.source;
@@ -220,7 +221,7 @@ export const RecipeDetailPage = () => {
                         Brewing Steps
                     </h3>
                     <div className="relative pl-2 border-l-2 border-dashed border-md-outline-variant/40 space-y-8 ml-2">
-                        {recipe.steps.map((step, index) => {
+                        {brewSteps.map((step, index) => {
                             const intervalInfo = getStepIntervalInfo(step);
                             const isPour = typeof step.target_weight === 'number' && step.target_weight > 0;
                             return (
@@ -234,7 +235,7 @@ export const RecipeDetailPage = () => {
                                         <h4 className="typescale-title-medium font-bold text-md-on-surface flex-1 min-w-0 leading-snug">{step.label}</h4>
                                         <span className="typescale-label-medium font-bold text-md-primary flex items-center gap-1 bg-md-primary-container/40 px-2.5 py-0.5 rounded-full shrink-0 border border-md-primary/20">
                                             <Icon name="timer" className="text-xs" />
-                                            {step.duration_seconds}s
+                                            {formatStepSeconds(step.duration_seconds)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap pt-0.5">
@@ -242,7 +243,7 @@ export const RecipeDetailPage = () => {
                                             <>
                                                 <span className="inline-flex items-center gap-1 typescale-label-small font-extrabold text-md-primary bg-md-primary-container/40 px-2.5 py-0.5 rounded-full border border-md-primary/20">
                                                     <Icon name="water_drop" className="text-xs" />
-                                                    +{getPourAmount(recipe.steps, index)}g
+                                                    +{getPourAmount(brewSteps, index)}g
                                                 </span>
                                                 <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
                                                     <Icon name="scale" className="text-xs text-md-on-surface-variant/70" />

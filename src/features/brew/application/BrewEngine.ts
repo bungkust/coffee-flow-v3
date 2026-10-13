@@ -1,4 +1,5 @@
 import type { BrewStep } from '../../../shared/domain/entities';
+import { getStepDuration } from '../../../shared/utils/brewMath';
 
 export interface BrewEngineState {
     currentStepIndex: number;
@@ -24,7 +25,7 @@ export class BrewEngine {
     constructor(steps: BrewStep[]) {
         this.steps = steps;
         if (steps.length > 0) {
-            this.remainingTime = steps[0].duration_seconds;
+            this.remainingTime = getStepDuration(steps[0]);
         }
     }
 
@@ -59,7 +60,7 @@ export class BrewEngine {
     stop(): void {
         this.pause();
         this.currentStepIndex = 0;
-        this.remainingTime = this.steps[0]?.duration_seconds || 0;
+        this.remainingTime = this.steps[0] ? getStepDuration(this.steps[0]) : 0;
         this.isCompleted = false;
         this.notify();
     }
@@ -70,7 +71,7 @@ export class BrewEngine {
 
         if (this.currentStepIndex < this.steps.length - 1) {
             this.currentStepIndex++;
-            this.remainingTime = this.steps[this.currentStepIndex].duration_seconds;
+            this.remainingTime = getStepDuration(this.steps[this.currentStepIndex]);
             this.notify();
         } else {
             this.isRunning = false;
@@ -106,12 +107,12 @@ export class BrewEngine {
     private notify(): void {
         const currentStep = this.steps[this.currentStepIndex];
         if (!currentStep) return;
-        const totalTime = Math.max(1, currentStep.duration_seconds || 0);
+        const totalTime = Math.max(1, getStepDuration(currentStep));
 
         const state: BrewEngineState = {
             currentStepIndex: this.currentStepIndex,
             remainingTime: this.remainingTime,
-            totalTime: currentStep.duration_seconds,
+            totalTime: getStepDuration(currentStep),
             progress: Math.min(1, Math.max(0, 1 - (this.remainingTime / totalTime))),
             isRunning: this.isRunning,
             isCompleted: this.isCompleted

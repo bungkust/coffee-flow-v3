@@ -137,7 +137,12 @@ export const BrewLogPage = () => {
         }
     };
 
-    const confirmDiscard = () => {
+    const confirmDiscard = async () => {
+        // The brew was journalled the moment the timer finished, so discarding means removing that entry.
+        if (autoSavedLogId) {
+            await brewService.deleteLog(autoSavedLogId).catch(console.error);
+            sessionStorage.removeItem('coffee_flow_last_logged_id');
+        }
         stopBrew();
         navigate('/home');
     };

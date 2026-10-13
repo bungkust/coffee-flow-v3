@@ -2,14 +2,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, pantryService, settingsService } from '../core/services';
-import type { Recipe } from '../shared/domain/entities';
+import type { Recipe, BrewStep } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
-import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatWeight, formatVolume, formatStepSeconds, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, getTotalTargetWeight, getBrewSteps, withDerivedPourDurations, type UnitSystem } from '../shared/utils/brewMath';
 
+// Steps that only set things up (ice, rinse, dosing) belong on this screen, not the brew flow.
 const DEFAULT_ICE_RATIO = 4.375;
 const ICE_RATIO_BY_RECIPE: Record<string, number> = {
     'chemex-pull-and-pour-japanese-iced': 7.5,
@@ -84,11 +85,18 @@ export const RecipePreparationPage = () => {
     const currentScaledRecipe = useMemo(() => {
         if (!recipe) return null;
         const scaled = scaleRecipe(recipe, adjustedCoffeeDose);
-        if (!isIced) return scaled;
+
+        const finalize = (steps: BrewStep[], totalWater?: number) => ({
+            ...scaled,
+            total_water: totalWater ?? scaled.total_water,
+            steps: withDerivedPourDurations(getBrewSteps(steps))
+        });
+
+        if (!isIced) return finalize(scaled.steps);
 
         const pourSteps = scaled.steps.filter(s => typeof s.target_weight === 'number' && s.target_weight > 0);
         const maxPourTarget = pourSteps.length > 0 ? Math.max(...pourSteps.map(s => s.target_weight!)) : 0;
-        if (maxPourTarget <= 0) return scaled;
+        if (maxPourTarget <= 0) return finalize(scaled.steps);
 
         const hotWaterScale = hotWaterVolume / maxPourTarget;
 
@@ -112,11 +120,7 @@ export const RecipePreparationPage = () => {
             return step;
         });
 
-        return {
-            ...scaled,
-            total_water: Math.round(hotWaterVolume + effectiveIceWeight),
-            steps: adjustedSteps
-        };
+        return finalize(adjustedSteps, Math.round(hotWaterVolume + effectiveIceWeight));
     }, [recipe, adjustedCoffeeDose, isIced, hotWaterVolume, effectiveIceWeight]);
 
     const handleAdjustDose = (delta: number) => {
@@ -250,6 +254,8 @@ export const RecipePreparationPage = () => {
 
     const handleProceedToBrew = () => {
         if (currentScaledRecipe && isReady) {
+            // Drop any log id from a previous brew so this one isn't saved over it.
+            sessionStorage.removeItem('coffee_flow_last_logged_id');
             startBrew(currentScaledRecipe, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
             navigate('/brew-flow');
         }
@@ -399,7 +405,7 @@ export const RecipePreparationPage = () => {
                                 Scaled Brew Steps
                             </span>
                             <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-high px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
-                                {formatVolume(currentScaledRecipe.total_water || 0, unitSystem)} Total Water
+                                {formatVolume(getTotalTargetWeight(currentScaledRecipe.steps) || currentScaledRecipe.total_water || 0, unitSystem)} Total Water
                             </span>
                         </div>
                         <div className="space-y-3 mt-2">
@@ -414,7 +420,7 @@ export const RecipePreparationPage = () => {
                                                 {idx + 1}. {step.label}
                                             </h4>
                                             <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full shrink-0 border border-md-outline-variant/20">
-                                                {step.duration_seconds}s
+                                                {formatStepSeconds(step.duration_seconds)}
                                             </span>
                                         </div>
 
