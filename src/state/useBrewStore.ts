@@ -85,15 +85,6 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
                 isCompleted: false
             }
         });
-
-        saveBrewToStorage({
-            recipe,
-            beanId: beanId || null,
-            filterId: filterId || null,
-            coffeeConsumed: coffeeConsumed ?? null,
-            stepIndex: 0,
-            remainingTime: recipe.steps[0]?.duration_seconds || 0,
-        });
     },
 
     hydrateBrew: () => {

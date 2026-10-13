@@ -7,26 +7,7 @@ import { drinkService, settingsService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { SmartImportModal } from '../components/SmartImportModal';
 import type { ImportableRecipe } from '../components/SmartImportModal';
-
-const DRINK_IMAGES: Record<string, string> = {
-    espresso: '/assets/drinks/espresso.png',
-    cappuccino: '/assets/drinks/cappuccino.png',
-    latte: '/assets/drinks/latte.png',
-    flat_white: '/assets/drinks/flat_white.png',
-    mocha: '/assets/drinks/mocha.png',
-    cold_brew: '/assets/drinks/cold_brew.png',
-    americano: '/assets/drinks/americano.png',
-    macchiato: '/assets/drinks/espresso.png'
-};
-
-const getDrinkImage = (drink: { id: string; image_url?: string }) => drink.image_url || DRINK_IMAGES[drink.id] || '/assets/drinks/espresso.png';
-const parseList = (json: string): string[] => {
-    try {
-        return JSON.parse(json);
-    } catch {
-        return [];
-    }
-};
+import { getDrinkImage, parseList } from '../shared/utils/drinks';
 
 const DrinkImage = ({ src, alt }: { src: string; alt: string }) => {
     const [failed, setFailed] = useState(false);
@@ -352,9 +333,7 @@ export const DrinkMenuPage = () => {
                     let instructions: string[] = [];
                     
                     if (data.ingredients_json) {
-                        try {
-                            ingredients = JSON.parse((data.ingredients_json as string) || '[]');
-                        } catch { ingredients = []; }
+                        ingredients = parseList((data.ingredients_json as string) || '[]');
                     } else if (data.steps) {
                         const steps = (data.steps as Array<Record<string, unknown>>) || [];
                         ingredients = steps
@@ -367,9 +346,7 @@ export const DrinkMenuPage = () => {
                     }
                     
                     if (data.instructions_json) {
-                        try {
-                            instructions = JSON.parse((data.instructions_json as string) || '[]');
-                        } catch { instructions = []; }
+                        instructions = parseList((data.instructions_json as string) || '[]');
                     } else if (data.steps) {
                         const steps = (data.steps as Array<Record<string, unknown>>) || [];
                         instructions = steps

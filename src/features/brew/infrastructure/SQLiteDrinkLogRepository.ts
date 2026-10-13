@@ -56,11 +56,8 @@ export class SQLiteDrinkLogRepository {
         await dbService.saveToLocalStore();
     }
 
-    async update(log: DrinkLog): Promise<void> {
-        await this.db.run(
-            `UPDATE drink_logs SET rating = ?, notes = ? WHERE id = ?`,
-            [log.rating ?? null, log.notes ?? null, log.id]
-        );
+    async update(id: EntityId, rating: number, notes: string): Promise<void> {
+        await this.db.run('UPDATE drink_logs SET rating = ?, notes = ? WHERE id = ?', [rating, notes, id]);
         await dbService.saveToLocalStore();
     }
 
@@ -81,24 +78,20 @@ export class SQLiteDrinkLogRepository {
     }
 
     async getStats(): Promise<DrinkStats> {
-        const weeklyDrinks = await this.db.query(
-            "SELECT COUNT(*) as count FROM drink_logs WHERE logged_at >= date('now', '-7 days')"
-        );
-        const monthlyDrinks = await this.db.query(
-            "SELECT COUNT(*) as count FROM drink_logs WHERE logged_at >= date('now', 'start of month')"
-        );
-        const avgRating = await this.db.query(
-            "SELECT AVG(rating) as avg FROM drink_logs"
-        );
-        const uniqueDrinks = await this.db.query(
-            "SELECT COUNT(DISTINCT drink_id) as count FROM drink_logs"
-        );
+        const result = await this.db.query(`
+            SELECT
+                (SELECT COUNT(*) FROM drink_logs WHERE logged_at >= date('now', '-7 days')) as weeklyDrinks,
+                (SELECT COUNT(*) FROM drink_logs WHERE logged_at >= date('now', 'start of month')) as monthlyDrinks,
+                (SELECT AVG(rating) FROM drink_logs) as avgRating,
+                (SELECT COUNT(DISTINCT drink_id) FROM drink_logs) as uniqueDrinks
+        `);
+        const row = result.values?.[0];
 
         return {
-            weeklyDrinks: weeklyDrinks.values?.[0].count || 0,
-            monthlyDrinks: monthlyDrinks.values?.[0].count || 0,
-            avgRating: parseFloat((avgRating.values?.[0].avg || 0).toFixed(1)),
-            uniqueDrinks: uniqueDrinks.values?.[0].count || 0
+            weeklyDrinks: row?.weeklyDrinks || 0,
+            monthlyDrinks: row?.monthlyDrinks || 0,
+            avgRating: parseFloat((row?.avgRating || 0).toFixed(1)),
+            uniqueDrinks: row?.uniqueDrinks || 0
         };
     }
 

@@ -79,10 +79,6 @@ export class SQLiteRecipeRepository {
         return dbService.getDb();
     }
 
-    private get dbService() {
-        return dbService;
-    }
-
     async findAll(): Promise<Recipe[]> {
         const result = await this.db.query('SELECT * FROM recipes WHERE deleted_at IS NULL');
         const recipes: Recipe[] = [];
@@ -164,7 +160,7 @@ export class SQLiteRecipeRepository {
             );
         }
 
-        await this.dbService.saveToLocalStore();
+        await dbService.saveToLocalStore();
     }
 
     async delete(id: EntityId): Promise<void> {

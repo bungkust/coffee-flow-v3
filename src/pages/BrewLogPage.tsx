@@ -63,7 +63,6 @@ export const BrewLogPage = () => {
         );
     }
 
-    const tags = PRESET_TAGS;
     const customTags = selectedTags.filter(t => !PRESET_TAGS.includes(t));
 
     const handleToggleTag = (tag: string) => {
@@ -104,19 +103,15 @@ export const BrewLogPage = () => {
     const handleSave = async () => {
         try {
             if (autoSavedLogId) {
-                const existing = await brewService.getLog(autoSavedLogId);
-                if (existing) {
-                    await brewService.updateLog({
-                        ...existing,
-                        rating,
-                        notes,
-                        sweetness: profile.sweetness,
-                        acidity: profile.acidity,
-                        body: profile.body,
-                        bitterness: profile.bitterness,
-                        flavor_tags: selectedTags.join(',')
-                    });
-                }
+                await brewService.updateLog(autoSavedLogId, {
+                    rating,
+                    notes,
+                    sweetness: profile.sweetness,
+                    acidity: profile.acidity,
+                    body: profile.body,
+                    bitterness: profile.bitterness,
+                    flavor_tags: selectedTags.join(',')
+                });
             } else {
                 await brewService.logBrew(
                     activeRecipe.id,
@@ -209,7 +204,7 @@ export const BrewLogPage = () => {
                 <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
                     <h2 className="typescale-title-medium font-bold text-md-on-surface">Flavor Tags</h2>
                     <div className="flex flex-wrap gap-2">
-                        {tags.map(tag => (
+                        {PRESET_TAGS.map(tag => (
                             <button
                                 key={tag}
                                 onClick={() => handleToggleTag(tag)}

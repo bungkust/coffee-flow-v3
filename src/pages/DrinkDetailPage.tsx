@@ -4,25 +4,7 @@ import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
-
-const DRINK_IMAGES: Record<string, string> = {
-    espresso: '/assets/drinks/espresso.png',
-    cappuccino: '/assets/drinks/cappuccino.png',
-    latte: '/assets/drinks/latte.png',
-    flat_white: '/assets/drinks/flat_white.png',
-    mocha: '/assets/drinks/mocha.png',
-    cold_brew: '/assets/drinks/cold_brew.png',
-    americano: '/assets/drinks/americano.png',
-    macchiato: '/assets/drinks/espresso.png'
-};
-
-const parseList = (json: string): string[] => {
-    try {
-        return JSON.parse(json);
-    } catch {
-        return [];
-    }
-};
+import { getDrinkImage, parseList } from '../shared/utils/drinks';
 
 export const DrinkDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -92,7 +74,7 @@ export const DrinkDetailPage = () => {
 
             <main className="flex-1 px-5 pt-4 space-y-4">
                 <div className="overflow-hidden rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1">
-                    <img src={drink.image_url || DRINK_IMAGES[drink.id] || DRINK_IMAGES.espresso} alt={drink.name} className="h-48 w-full object-cover" />
+                    <img src={getDrinkImage(drink)} alt={drink.name} className="h-48 w-full object-cover" />
                     <div className="p-5 space-y-2">
                         <span className="rounded-full bg-md-primary-container/40 px-3 py-1 typescale-label-medium font-bold uppercase tracking-wider text-md-primary">{drink.category}</span>
                         <p className="typescale-body-medium text-md-on-surface-variant leading-relaxed">Prepare this drink step by step, then save the result into your journal.</p>

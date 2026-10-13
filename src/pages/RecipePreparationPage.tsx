@@ -9,6 +9,12 @@ import { Dropdown } from '../components/Dropdown';
 import { Button } from '../components/Button';
 import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
+const DEFAULT_ICE_RATIO = 4.375;
+const ICE_RATIO_BY_RECIPE: Record<string, number> = {
+    'chemex-pull-and-pour-japanese-iced': 7.5,
+    'v60-bean-rock-iced-japanese': 6
+};
+
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -41,12 +47,9 @@ export const RecipePreparationPage = () => {
         recipe?.steps?.some(s => s.instruction?.toLowerCase().includes('ice') || s.label?.toLowerCase().includes('ice'))
     );
 
-    const defaultIceWeight = recipe ? (
-        recipe.id === 'v60-kurasu-japanese-iced-pour-over' ? Math.round(70 * (adjustedCoffeeDose / 16))
-        : recipe.id === 'chemex-pull-and-pour-japanese-iced' ? Math.round(270 * (adjustedCoffeeDose / 36))
-        : recipe.id === 'v60-bean-rock-iced-japanese' ? Math.round(120 * (adjustedCoffeeDose / 20))
-        : Math.round(adjustedCoffeeDose * 4.375)
-    ) : 70;
+    const defaultIceWeight = recipe
+        ? Math.round((ICE_RATIO_BY_RECIPE[recipe.id] ?? DEFAULT_ICE_RATIO) * adjustedCoffeeDose)
+        : 70;
 
     const [customIceWeight, setCustomIceWeight] = useState<number | null>(null);
     const effectiveIceWeight = isIced ? (customIceWeight ?? defaultIceWeight) : 0;

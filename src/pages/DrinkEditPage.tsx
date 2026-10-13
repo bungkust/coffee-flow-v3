@@ -24,28 +24,17 @@ export const DrinkEditPage = () => {
                 if (id === 'new') {
                     const newId = crypto.randomUUID();
                     const now = new Date().toISOString();
+                    const p: Partial<Drink> = prefill || {};
 
-                    if (prefill) {
-                        setDrink({
-                            id: newId,
-                            name: prefill.name || '',
-                            category: prefill.category || 'hot',
-                            ingredients_json: prefill.ingredients_json || '[]',
-                            instructions_json: prefill.instructions_json || '[]',
-                            created_at: now,
-                            updated_at: now,
-                        });
-                    } else {
-                        setDrink({
-                            id: newId,
-                            name: '',
-                            category: 'hot',
-                            ingredients_json: '[]',
-                            instructions_json: '[]',
-                            created_at: now,
-                            updated_at: now,
-                        });
-                    }
+                    setDrink({
+                        id: newId,
+                        name: p.name || '',
+                        category: p.category || 'hot',
+                        ingredients_json: p.ingredients_json || '[]',
+                        instructions_json: p.instructions_json || '[]',
+                        created_at: now,
+                        updated_at: now,
+                    });
                 } else {
                     const data = await drinkService.getDrink(id);
                     setDrink(data);
@@ -79,47 +68,22 @@ export const DrinkEditPage = () => {
         }
     };
 
-    const addIngredient = () => {
+    const updateList = (field: 'ingredients_json' | 'instructions_json', transform: (list: string[]) => string[]) => {
         if (!drink) return;
-        const current = JSON.parse(drink.ingredients_json || '[]');
-        setDrink({ ...drink, ingredients_json: JSON.stringify([...current, '']) });
+        const current = JSON.parse(drink[field] || '[]');
+        setDrink({ ...drink, [field]: JSON.stringify(transform(current)) } as Drink);
     };
 
-    const updateIngredient = (index: number, value: string) => {
-        if (!drink) return;
-        const current = JSON.parse(drink.ingredients_json || '[]');
-        current[index] = value;
-        setDrink({ ...drink, ingredients_json: JSON.stringify(current) });
-    };
-
-    const removeIngredient = (index: number) => {
-        if (!drink) return;
-        const current = JSON.parse(drink.ingredients_json || '[]');
-        if (current.length <= 1) return;
-        current.splice(index, 1);
-        setDrink({ ...drink, ingredients_json: JSON.stringify(current) });
-    };
-
-    const addInstruction = () => {
-        if (!drink) return;
-        const current = JSON.parse(drink.instructions_json || '[]');
-        setDrink({ ...drink, instructions_json: JSON.stringify([...current, '']) });
-    };
-
-    const updateInstruction = (index: number, value: string) => {
-        if (!drink) return;
-        const current = JSON.parse(drink.instructions_json || '[]');
-        current[index] = value;
-        setDrink({ ...drink, instructions_json: JSON.stringify(current) });
-    };
-
-    const removeInstruction = (index: number) => {
-        if (!drink) return;
-        const current = JSON.parse(drink.instructions_json || '[]');
-        if (current.length <= 1) return;
-        current.splice(index, 1);
-        setDrink({ ...drink, instructions_json: JSON.stringify(current) });
-    };
+    const addIngredient = () => updateList('ingredients_json', list => [...list, '']);
+    const updateIngredient = (index: number, value: string) =>
+        updateList('ingredients_json', list => { list[index] = value; return list; });
+    const removeIngredient = (index: number) =>
+        updateList('ingredients_json', list => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
+    const addInstruction = () => updateList('instructions_json', list => [...list, '']);
+    const updateInstruction = (index: number, value: string) =>
+        updateList('instructions_json', list => { list[index] = value; return list; });
+    const removeInstruction = (index: number) =>
+        updateList('instructions_json', list => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
 
     if (loading) {
         return (

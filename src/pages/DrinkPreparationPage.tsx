@@ -4,14 +4,7 @@ import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
-
-const parseList = (json: string): string[] => {
-    try {
-        return JSON.parse(json);
-    } catch {
-        return [];
-    }
-};
+import { parseList } from '../shared/utils/drinks';
 
 export const DrinkPreparationPage = () => {
     const { id } = useParams<{ id: string }>();

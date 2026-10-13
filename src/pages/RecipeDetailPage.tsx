@@ -52,13 +52,6 @@ export const RecipeDetailPage = () => {
         );
     }
 
-    const stepsWithRunningTotal = recipe.steps.map(step => {
-        return {
-            ...step,
-            isPour: typeof step.target_weight === 'number' && step.target_weight > 0
-        };
-    });
-
     const totalTime = sumStepDuration(recipe.steps);
     const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
     const hasValidRatio = coffeeDose > 0;
@@ -208,8 +201,9 @@ export const RecipeDetailPage = () => {
                         Brewing Steps
                     </h3>
                     <div className="relative pl-2 border-l-2 border-dashed border-md-outline-variant/40 space-y-8 ml-2">
-                        {stepsWithRunningTotal.map((step, index) => {
+                        {recipe.steps.map((step, index) => {
                             const intervalInfo = getStepIntervalInfo(step);
+                            const isPour = typeof step.target_weight === 'number' && step.target_weight > 0;
                             return (
                                 <div key={step.id} className="relative pl-6 space-y-1.5">
                                     <div className={`absolute -left-[17px] top-0 size-8 rounded-full typescale-label-medium font-bold flex items-center justify-center border-4 border-md-surface-container-low shadow-sm ${
@@ -225,7 +219,7 @@ export const RecipeDetailPage = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                        {step.isPour && step.target_weight && (
+                                        {isPour && step.target_weight && (
                                             <>
                                                 <span className="inline-flex items-center gap-1 typescale-label-small font-extrabold text-md-primary bg-md-primary-container/40 px-2.5 py-0.5 rounded-full border border-md-primary/20">
                                                     <Icon name="water_drop" className="text-xs" />

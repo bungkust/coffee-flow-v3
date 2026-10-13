@@ -1,4 +1,4 @@
-import type { BrewLog, BrewLogWithRecipe, BrewStats, EntityId } from '../../../shared/domain/entities';
+import type { BrewLog, BrewLogWithRecipe, BrewStats, BrewLogFeedback, EntityId } from '../../../shared/domain/entities';
 import { dbService } from '../../../core/database/sqlite';
 
 interface BrewLogRow {
@@ -76,22 +76,15 @@ export class SQLiteBrewLogRepository {
         await dbService.saveToLocalStore();
     }
 
-    async update(log: BrewLog): Promise<void> {
-        await this.db.run(
-            `UPDATE brew_logs
-             SET rating = ?, notes = ?, sweetness = ?, acidity = ?, body = ?, bitterness = ?, flavor_tags = ?
-             WHERE id = ?`,
-            [
-                log.rating ?? null,
-                log.notes ?? null,
-                log.sweetness ?? null,
-                log.acidity ?? null,
-                log.body ?? null,
-                log.bitterness ?? null,
-                log.flavor_tags ?? null,
-                log.id
-            ]
-        );
+    async update(id: EntityId, updates: BrewLogFeedback): Promise<void> {
+        const columns = Object.keys(updates) as (keyof BrewLogFeedback)[];
+        if (columns.length === 0) return;
+
+        const setClause = columns.map(column => `${column} = ?`).join(', ');
+        const values: (string | number | null)[] = columns.map(column => updates[column] ?? null);
+        values.push(id);
+
+        await this.db.run(`UPDATE brew_logs SET ${setClause} WHERE id = ?`, values);
         await dbService.saveToLocalStore();
     }
 

@@ -34,10 +34,10 @@ export class DrinkService {
         return this.logRepo.findByIdWithDrink(id);
     }
 
-    async logDrink(drinkId: EntityId, rating: number, notes: string): Promise<void> {
+    async logDrink(drink: Drink, rating: number, notes: string): Promise<void> {
         const log: DrinkLog = {
             id: crypto.randomUUID(),
-            drink_id: drinkId,
+            drink_id: drink.id,
             rating,
             notes,
             logged_at: new Date().toISOString(),
@@ -46,16 +46,13 @@ export class DrinkService {
         await this.logRepo.save(log);
 
         // Deduct stock for drink ingredients
-        await this.deductDrinkIngredients(drinkId);
+        await this.deductDrinkIngredients(drink.ingredients_json);
     }
 
-    private async deductDrinkIngredients(drinkId: EntityId): Promise<void> {
-        const drink = await this.drinkRepo.findById(drinkId);
-        if (!drink) return;
-
+    private async deductDrinkIngredients(ingredientsJson: string): Promise<void> {
         try {
-            const ingredients = JSON.parse(drink.ingredients_json || '[]');
-            
+            const ingredients = JSON.parse(ingredientsJson || '[]');
+
             // Fetch pantry once
             const pantryItems = await this.pantryService.getPantryItems();
             const beanItem = pantryItems.find(b => b.category === 'beans');
@@ -67,7 +64,6 @@ export class DrinkService {
 
                 const coffeeMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*g\s*(?:coffee|espresso)/i);
                 const milkMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*ml\s*(?:milk|steamed milk)/i);
-                const waterMatch = ingredient.match(/(\d+(?:\.\d+)?)\s*(?:ml|g)?\s*(?:water|hot water)/i);
                 const shotMatch = ingredient.match(/(\d+)\s*shot/i);
 
                 if (coffeeMatch) {
@@ -76,8 +72,6 @@ export class DrinkService {
                 } else if (milkMatch) {
                     const ml = parseFloat(milkMatch[1]);
                     if (milkItem) await this.pantryService.deductStock(milkItem.id, ml);
-                } else if (waterMatch) {
-                    // Water typically not tracked in pantry
                 } else if (shotMatch) {
                     const shots = parseInt(shotMatch[1]);
                     if (beanItem) await this.pantryService.deductStock(beanItem.id, shots * GRAMS_PER_SHOT);
@@ -88,8 +82,8 @@ export class DrinkService {
         }
     }
 
-    async updateLog(log: DrinkLog): Promise<void> {
-        await this.logRepo.update(log);
+    async updateLog(id: EntityId, rating: number, notes: string): Promise<void> {
+        await this.logRepo.update(id, rating, notes);
     }
 
     async deleteLog(id: EntityId): Promise<void> {

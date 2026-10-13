@@ -22,7 +22,7 @@ export const DrinkLogPage = () => {
         if (!drink) return;
         setSaving(true);
         try {
-            await drinkService.logDrink(drink.id, rating, notes);
+            await drinkService.logDrink(drink, rating, notes);
             navigate('/journal?tab=drinks');
         } catch (error) {
             console.error('Failed to save drink log:', error);
@@ -39,6 +39,8 @@ export const DrinkLogPage = () => {
         );
     }
 
+    const displayRating = Math.min(5, Math.max(0, rating));
+
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
@@ -51,18 +53,15 @@ export const DrinkLogPage = () => {
                 {/* Rating */}
                 <div className="flex flex-col items-center justify-center p-6 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
                     <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                            const displayRating = Math.min(5, Math.max(0, rating));
-                            return (
-                                <button key={star} onClick={() => setRating(star)} className="focus:outline-none group cursor-pointer">
-                                    <Icon
-                                        name="star"
-                                        className={`text-4xl transition-transform group-active:scale-110 ${displayRating >= star ? 'text-md-primary' : 'text-md-outline/40'}`}
-                                        style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
-                                    />
-                                </button>
-                            );
-                        })}
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <button key={star} onClick={() => setRating(star)} className="focus:outline-none group cursor-pointer">
+                                <Icon
+                                    name="star"
+                                    className={`text-4xl transition-transform group-active:scale-110 ${displayRating >= star ? 'text-md-primary' : 'text-md-outline/40'}`}
+                                    style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
+                                />
+                            </button>
+                        ))}
                     </div>
                 </div>
 

@@ -70,6 +70,8 @@ export interface BrewLogWithRecipe extends BrewLog {
     ratio: string;
 }
 
+export type BrewLogFeedback = Partial<Pick<BrewLog, 'rating' | 'notes' | 'sweetness' | 'acidity' | 'body' | 'bitterness' | 'flavor_tags'>>;
+
 export interface BrewStats {
     weeklyBrews: number;
     monthlyBrews: number;

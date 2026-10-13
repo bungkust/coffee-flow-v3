@@ -26,54 +26,30 @@ export const RecipeEditPage = () => {
                     const method_id = (location.state as { method_id?: string } | null)?.method_id || 'v60';
                     const newId = `${method_id}-custom-${Date.now()}`;
                     const now = new Date().toISOString();
+                    const p: Partial<Recipe> = prefill || {};
 
-                    if (prefill) {
-                        setRecipe({
-                            id: newId,
-                            method_id: prefill.method_id || method_id,
-                            name: prefill.name || '',
-                            ratio: prefill.ratio || '1:15',
-                            total_water: prefill.total_water || 250,
-                            grind_size: prefill.grind_size || 'Medium',
-                            temperature: prefill.temperature || 92,
-                            difficulty: prefill.difficulty || 'Intermediate',
-                            style: prefill.style || 'Balanced',
-                            description_short: prefill.description_short || '',
-                            description_detailed: prefill.description_detailed || '',
-                            philosophy: prefill.philosophy || '',
-                            best_for_tags: prefill.best_for_tags || [],
-                            not_recommended_tags: prefill.not_recommended_tags || [],
-                            is_custom: true,
-                            created_at: now,
-                            updated_at: now,
-                            steps: prefill.steps && prefill.steps.length > 0 ? prefill.steps : [
-                                { id: `${newId}-1`, recipe_id: newId, step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: 50, instruction: 'Pour water evenly', created_at: now, updated_at: now }
-                            ]
-                        });
-                    } else {
-                        setRecipe({
-                            id: newId,
-                            method_id,
-                            name: '',
-                            ratio: '1:15',
-                            total_water: 250,
-                            grind_size: 'Medium',
-                            temperature: 92,
-                            difficulty: 'Intermediate',
-                            style: 'Balanced',
-                            description_short: '',
-                            description_detailed: '',
-                            philosophy: '',
-                            best_for_tags: [],
-                            not_recommended_tags: [],
-                            is_custom: true,
-                            created_at: now,
-                            updated_at: now,
-                            steps: [
-                                { id: `${newId}-1`, recipe_id: newId, step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: 50, instruction: 'Pour water evenly', created_at: now, updated_at: now }
-                            ]
-                        });
-                    }
+                    setRecipe({
+                        id: newId,
+                        method_id: p.method_id || method_id,
+                        name: p.name || '',
+                        ratio: p.ratio || '1:15',
+                        total_water: p.total_water || 250,
+                        grind_size: p.grind_size || 'Medium',
+                        temperature: p.temperature || 92,
+                        difficulty: p.difficulty || 'Intermediate',
+                        style: p.style || 'Balanced',
+                        description_short: p.description_short || '',
+                        description_detailed: p.description_detailed || '',
+                        philosophy: p.philosophy || '',
+                        best_for_tags: p.best_for_tags || [],
+                        not_recommended_tags: p.not_recommended_tags || [],
+                        is_custom: true,
+                        created_at: now,
+                        updated_at: now,
+                        steps: p.steps && p.steps.length > 0 ? p.steps : [
+                            { id: `${newId}-1`, recipe_id: newId, step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: 50, instruction: 'Pour water evenly', created_at: now, updated_at: now }
+                        ]
+                    });
                 } else {
                     const data = await brewService.getRecipe(id);
                     setRecipe(data);

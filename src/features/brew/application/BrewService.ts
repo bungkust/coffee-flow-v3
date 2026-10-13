@@ -1,4 +1,4 @@
-import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, BrewingMethod, EntityId } from '../../../shared/domain/entities';
+import type { Recipe, BrewLog, BrewLogWithRecipe, BrewStats, BrewLogFeedback, BrewingMethod, EntityId } from '../../../shared/domain/entities';
 import type { PantryService } from '../../pantry/application/PantryService';
 import { SQLiteRecipeRepository } from '../infrastructure/SQLiteRecipeRepository';
 import { SQLiteBrewLogRepository } from '../infrastructure/SQLiteBrewLogRepository';
@@ -94,8 +94,8 @@ export class BrewService {
         return this.logRepo.findByIdWithRecipe(id);
     }
 
-    async updateLog(log: BrewLog): Promise<void> {
-        await this.logRepo.update(log);
+    async updateLog(id: EntityId, updates: BrewLogFeedback): Promise<void> {
+        await this.logRepo.update(id, updates);
     }
 
     async deleteLog(id: EntityId): Promise<void> {

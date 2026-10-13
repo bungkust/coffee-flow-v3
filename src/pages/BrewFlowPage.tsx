@@ -4,31 +4,25 @@ import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
 import { Button } from '../components/Button';
-import { brewService, settingsService } from '../core/services';
+import { settingsService } from '../core/services';
 import { formatDuration, formatWeight, formatVolume, getCurrentTargetWeight, getPourAmount, getWaterProgressPercent, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
+    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep } = useBrewStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
-    const isAutoSavedRef = useRef(false);
     const hasHydratedRef = useRef(false);
-
-    const feedbackEnabledRef = useRef(feedbackEnabled);
-    useEffect(() => {
-        feedbackEnabledRef.current = feedbackEnabled;
-    }, [feedbackEnabled]);
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
     }, []);
 
     const playFeedback = useCallback((frequency: number, duration: number) => {
-        if (!feedbackEnabledRef.current) return;
+        if (!feedbackEnabled) return;
         try {
             const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
             const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
@@ -51,7 +45,7 @@ export const BrewFlowPage = () => {
         } catch (error) {
             console.warn('Audio feedback failed', error);
         }
-    }, []);
+    }, [feedbackEnabled]);
 
     useEffect(() => {
         if (hasHydratedRef.current) return;
@@ -115,7 +109,7 @@ export const BrewFlowPage = () => {
     }, [engineState?.isRunning, engineState?.isCompleted]);
 
     useEffect(() => {
-        if (!engineState || !activeRecipe) return;
+        if (!engineState) return;
 
         if (engineState.isRunning) {
             if (engineState.remainingTime === 0 && !engineState.isCompleted) {
@@ -123,34 +117,16 @@ export const BrewFlowPage = () => {
                 if ('vibrate' in navigator) navigator.vibrate(200);
             }
 
-            if (engineState.isCompleted) {
-                playFeedback(880, 0.5);
-                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-
-                if (!isAutoSavedRef.current) {
-                    isAutoSavedRef.current = true;
-                    brewService.logBrew(
-                        activeRecipe.id,
-                        5,
-                        'Auto-saved brew session',
-                        { sweetness: 50, acidity: 50, body: 50, bitterness: 50 },
-                        ['Balanced'],
-                        selectedBeanId || undefined,
-                        selectedFilterId || undefined,
-                        coffeeConsumed || undefined
-                    ).then((logId) => {
-                        sessionStorage.setItem('coffee_flow_last_logged_id', logId);
-                    }).catch((err) => {
-                        console.error('Auto-save brew log error:', err);
-                    });
-                }
-            }
-
             if (engineState.remainingTime > 0 && engineState.remainingTime <= 3) {
                 playFeedback(330, 0.1);
             }
         }
-    }, [engineState, activeRecipe, playFeedback, selectedBeanId, selectedFilterId, coffeeConsumed]);
+
+        if (engineState.isCompleted) {
+            playFeedback(880, 0.5);
+            if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+        }
+    }, [engineState, playFeedback]);
 
     if (!activeRecipe || !engineState) return null;
 
@@ -195,6 +171,7 @@ export const BrewFlowPage = () => {
     const stepSubtitle = currentStep.target_weight && pourAmount > 0
         ? `Target: ${formatWeight(currentStep.target_weight, unitSystem)} on scale — ${currentStep.instruction || currentStep.label}`
         : currentStep.instruction || currentStep.label;
+    const intervalInfo = getStepIntervalInfo(currentStep);
 
     if (engineState.isCompleted) {
         return (
@@ -303,16 +280,12 @@ export const BrewFlowPage = () => {
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
-                            {(() => {
-                                const intervalInfo = getStepIntervalInfo(currentStep);
-                                if (intervalInfo.restSeconds <= 0) return null;
-                                return (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
-                                        <Icon name="hourglass_empty" className="text-xs" />
-                                        Pour ~{intervalInfo.pourSeconds}s • Rest ~{intervalInfo.restSeconds}s
-                                    </span>
-                                );
-                            })()}
+                            {intervalInfo.restSeconds > 0 && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
+                                    <Icon name="hourglass_empty" className="text-xs" />
+                                    Pour ~{intervalInfo.pourSeconds}s • Rest ~{intervalInfo.restSeconds}s
+                                </span>
+                            )}
                         </div>
                         <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
                             {formatDuration(engineState.remainingTime)}

@@ -44,9 +44,9 @@ export const JournalDetailPage = () => {
         setSaving(true);
         try {
             if (type === 'brews') {
-                await brewService.updateLog({ ...(log as BrewLogWithRecipe), rating, notes });
+                await brewService.updateLog(log.id, { rating, notes });
             } else {
-                await drinkService.updateLog({ ...(log as DrinkLogWithDrink), rating, notes });
+                await drinkService.updateLog(log.id, rating, notes);
             }
             navigate(`/journal?tab=${type}`);
         } catch (error) {
