@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
 import { QuantityField } from '../components/QuantityField';
+import { SaveBar } from '../components/SaveBar';
 import { settingsService, pantryService, brewService } from '../core/services';
 import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { UnitSystem } from '../shared/utils/brewMath';
@@ -255,18 +255,13 @@ export const OnboardingPage = () => {
                         </div>
                     </main>
 
-                    <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={handleNext}
-                            disabled={!name.trim() || !brewingGoal}
-                            className="w-full"
-                        >
-                            <span>Next</span>
-                            <Icon name="arrow_forward" className="text-xl" />
-                        </Button>
-                    </div>
+                    <SaveBar
+                        iconLast
+                        icon="arrow_forward"
+                        label="Next"
+                        disabled={!name.trim() || !brewingGoal}
+                        onClick={handleNext}
+                    />
                 </div>
             )}
 
@@ -351,18 +346,13 @@ export const OnboardingPage = () => {
                         </div>
                     </main>
 
-                    <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={handleNext}
-                            disabled={selectedEquipment.length < 1}
-                            className="w-full"
-                        >
-                            <span>Next Step</span>
-                            <Icon name="arrow_forward" className="text-xl" />
-                        </Button>
-                    </div>
+                    <SaveBar
+                        iconLast
+                        icon="arrow_forward"
+                        label="Next Step"
+                        disabled={selectedEquipment.length < 1}
+                        onClick={handleNext}
+                    />
                 </div>
             )}
 
@@ -628,17 +618,7 @@ export const OnboardingPage = () => {
                         </div>
                     </main>
 
-                    <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={handleNext}
-                            className="w-full"
-                        >
-                            <span>Finish Setup</span>
-                            <Icon name="check_circle" className="text-xl" />
-                        </Button>
-                    </div>
+                    <SaveBar iconLast icon="check_circle" label="Finish Setup" onClick={handleNext} />
                 </div>
             )}
         </div>

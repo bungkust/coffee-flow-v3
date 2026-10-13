@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
 import { Dropdown } from '../components/Dropdown';
+import { PageHeader } from '../components/PageHeader';
+import { SaveBar } from '../components/SaveBar';
 import { pantryService } from '../core/services';
 import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, parseBeanTags, formatBeanTags } from '../features/pantry/domain/beanOptions';
 import type { PantryItem } from '../features/pantry/domain/entities';
@@ -86,20 +87,7 @@ export const PantryEditPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                            aria-label="Go back"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface">Edit Item</h1>
-                    </div>
-                </div>
-            </header>
+            <PageHeader title="Edit Item" onBack={() => navigate(-1)} />
 
             <main className="flex-1 px-5 pt-4 space-y-6">
                 {error && (
@@ -220,18 +208,7 @@ export const PantryEditPage = () => {
             </main>
 
             {/* Sticky Bottom Actions */}
-            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full"
-                >
-                    <Icon name="save" className="text-xl" />
-                    <span>{saving ? 'Saving...' : 'Save Item'}</span>
-                </Button>
-            </div>
+            <SaveBar onClick={handleSave} saving={saving} label="Save Item" />
         </div>
     );
 };

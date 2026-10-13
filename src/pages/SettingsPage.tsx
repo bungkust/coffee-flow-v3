@@ -5,6 +5,7 @@ import { settingsService } from '../core/services';
 import { seedInitialData } from '../core/database/seeding';
 
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
 
 // Google Form URLs
 // View form: https://docs.google.com/forms/d/1c0okral6Qh0uZZqWyp9NvhsXSqhpfsemkWGZB6HxYMs/viewform
@@ -122,18 +123,7 @@ export const SettingsPage = () => {
     return (
         <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20 flex items-center gap-3">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                    aria-label="Go back"
-                >
-                    <Icon name="arrow_back" className="text-2xl" />
-                </button>
-                <h1 className="typescale-headline-small font-bold text-md-on-surface">
-                    Settings
-                </h1>
-            </header>
+            <PageHeader title="Settings" onBack={() => navigate(-1)} />
 
             {/* Profile Section */}
             <section className="px-5 flex flex-col items-center">

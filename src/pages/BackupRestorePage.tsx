@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
 import { backupService } from '../core/services';
 import type { Backup } from '../features/settings/domain/entities';
 
@@ -119,20 +120,7 @@ export const BackupRestorePage = () => {
             />
 
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        aria-label="Go back"
-                    >
-                        <Icon name="arrow_back" className="text-2xl" />
-                    </button>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">
-                        Backup & Restore
-                    </h1>
-                </div>
-            </header>
+            <PageHeader title="Backup & Restore" onBack={() => navigate(-1)} />
 
             {/* Main Content */}
             <main className="flex-1 px-5 pt-4 space-y-6">

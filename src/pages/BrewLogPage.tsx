@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
+import { StarRating } from '../components/StarRating';
 import { useBrewStore } from '../state/useBrewStore';
 import { brewService } from '../core/services';
 
@@ -142,33 +144,12 @@ export const BrewLogPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex flex-col">
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">
-                        How was it?
-                    </h1>
-                    <p className="typescale-body-small text-md-on-surface-variant mt-0.5">{activeRecipe.method_id.toUpperCase()} • {activeRecipe.name}</p>
-                </div>
-            </header>
+            <PageHeader title="How was it?" subtitle={`${activeRecipe.method_id.toUpperCase()} • ${activeRecipe.name}`} />
 
             <main className="flex-1 px-5 py-5 space-y-6">
                 {/* Rating */}
                 <div className="flex flex-col items-center justify-center p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
-                    <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                                key={star}
-                                onClick={() => setRating(star)}
-                                className="focus:outline-none group cursor-pointer"
-                            >
-                                <Icon
-                                    name="star"
-                                    className={`text-4xl transition-transform group-active:scale-110 ${Math.min(5, Math.max(0, rating)) >= star ? 'text-md-primary' : 'text-md-outline/40'}`}
-                                    style={{ fontVariationSettings: Math.min(5, Math.max(0, rating)) >= star ? "'FILL' 1" : "'FILL' 0" }}
-                                />
-                            </button>
-                        ))}
-                    </div>
+                    <StarRating rating={rating} onChange={setRating} />
                     <p className="typescale-title-medium font-bold text-md-primary mt-2">{getRatingLabel(rating)}</p>
                 </div>
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
+import { SaveBar } from '../components/SaveBar';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { parseList } from '../shared/utils/drinks';
@@ -31,18 +32,7 @@ export const DrinkPreparationPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        aria-label="Go back"
-                    >
-                        <Icon name="arrow_back" className="text-2xl" />
-                    </button>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{drink.name}</h1>
-                </div>
-            </header>
+            <PageHeader title={drink.name} onBack={() => navigate(-1)} titleClassName="line-clamp-1" />
 
             <main className="flex-1 px-5 py-5 space-y-4">
                 <p className="typescale-body-medium text-md-on-surface-variant">Work through each step, then log how it turned out.</p>
@@ -68,18 +58,12 @@ export const DrinkPreparationPage = () => {
                 </div>
             </main>
 
-            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={() => navigate(`/drink-log/${drink.id}`)}
-                    disabled={!isDone}
-                    className="w-full"
-                >
-                    <Icon name={isDone ? "check" : "lock"} className="text-xl" />
-                    <span>{isDone ? "Finish & Log Drink" : "Complete Steps to Log"}</span>
-                </Button>
-            </div>
+            <SaveBar
+                onClick={() => navigate(`/drink-log/${drink.id}`)}
+                disabled={!isDone}
+                icon={isDone ? 'check' : 'lock'}
+                label={isDone ? 'Finish & Log Drink' : 'Complete Steps to Log'}
+            />
         </div>
     );
 };

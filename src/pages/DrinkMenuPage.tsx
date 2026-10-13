@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Icon, SplashLogoIcon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
+import { SearchBar } from '../components/SearchBar';
 import { drinkService, settingsService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { SmartImportModal } from '../components/SmartImportModal';
@@ -115,47 +117,20 @@ export const DrinkMenuPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20 space-y-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => (isEditing ? setIsEditing(false) : navigate(-1))}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                            aria-label="Go back"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <div>
-                            <h1 className="typescale-headline-small font-bold text-md-on-surface">
-                                {isEditing ? 'Select Drinks' : 'Drinks Menu'}
-                            </h1>
-                            <p className="typescale-body-small text-md-on-surface-variant">
-                                {isEditing ? 'Choose drinks for your active menu' : 'Select a drink to view recipe'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
+            <PageHeader
+                title={isEditing ? 'Select Drinks' : 'Drinks Menu'}
+                subtitle={isEditing ? 'Choose drinks for your active menu' : 'Select a drink to view recipe'}
+                onBack={() => (isEditing ? setIsEditing(false) : navigate(-1))}
+                className="space-y-3"
+            >
                 {/* Search Bar */}
-                <div className="relative">
-                    <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-md-on-surface-variant text-xl" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search espresso, latte..."
-                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-on-surface-variant/70 typescale-body-medium rounded-full pl-10 pr-4 py-2.5 outline-none focus:ring-2 focus:ring-md-primary/40 border border-md-outline-variant/30 transition-all"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-md-on-surface-variant hover:text-md-on-surface cursor-pointer"
-                        >
-                            <Icon name="close" className="text-lg" />
-                        </button>
-                    )}
-                </div>
-            </header>
+                <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search espresso, latte..."
+                    clearable
+                />
+            </PageHeader>
 
             {/* Content */}
             {isEditing ? (

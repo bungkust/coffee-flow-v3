@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { getDrinkImage, parseList } from '../shared/utils/drinks';
+import { PageHeader } from '../components/PageHeader';
 
 export const DrinkDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -50,18 +51,11 @@ export const DrinkDetailPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                            aria-label="Go back"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{drink.name}</h1>
-                    </div>
+            <PageHeader
+                title={drink.name}
+                onBack={() => navigate(-1)}
+                titleClassName="line-clamp-1"
+                action={(
                     <button
                         onClick={() => navigate(`/drinks/${drink.id}/edit`)}
                         className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
@@ -69,8 +63,8 @@ export const DrinkDetailPage = () => {
                     >
                         <Icon name="edit" className="text-2xl" />
                     </button>
-                </div>
-            </header>
+                )}
+            />
 
             <main className="flex-1 px-5 pt-4 space-y-4">
                 <div className="overflow-hidden rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1">

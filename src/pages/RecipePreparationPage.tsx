@@ -6,7 +6,8 @@ import type { Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore } from '../state/useBrewStore';
 import { Dropdown } from '../components/Dropdown';
-import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
+import { SaveBar } from '../components/SaveBar';
 import { calculateCoffeeDose, formatWeight, formatVolume, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 
 const DEFAULT_ICE_RATIO = 4.375;
@@ -232,18 +233,7 @@ export const RecipePreparationPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        aria-label="Go back"
-                    >
-                        <Icon name="arrow_back" className="text-2xl" />
-                    </button>
-                    <span className="typescale-headline-small font-bold text-md-on-surface">Preparation</span>
-                </div>
-            </header>
+            <PageHeader title="Preparation" onBack={() => navigate(-1)} />
 
             {/* Preparation Banner Title */}
             <div className="px-5 py-5 border-b border-md-outline-variant/20 bg-md-surface-container-low/60 space-y-1">
@@ -528,18 +518,13 @@ export const RecipePreparationPage = () => {
             </main>
 
             {/* Sticky Action Button */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 max-w-md mx-auto z-20">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={handleProceedToBrew}
-                    disabled={!isReady}
-                    className="w-full"
-                >
-                    <Icon name={isReady ? "timer" : "lock"} className="text-xl" />
-                    <span>{isReady ? "I'm Ready, Start Timer" : "Complete Checklist to Start"}</span>
-                </Button>
-            </div>
+            <SaveBar
+                onClick={handleProceedToBrew}
+                disabled={!isReady}
+                p="p-4"
+                icon={isReady ? 'timer' : 'lock'}
+                label={isReady ? "I'm Ready, Start Timer" : 'Complete Checklist to Start'}
+            />
         </div>
     );
 };

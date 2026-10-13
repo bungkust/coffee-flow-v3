@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { SearchBar } from '../components/SearchBar';
 import { pantryService } from '../core/services';
 import { PANTRY_CATEGORY_MAP } from '../features/pantry/domain/pantryCategories';
 import type { PantryItem } from '../features/pantry/domain/entities';
@@ -62,50 +65,26 @@ export const PantryPage = () => {
     return (
         <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-2 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface">
-                            My Pantry
-                        </h1>
-                    </div>
-                </div>
-                <div className="relative mb-3">
-                    <span className="absolute inset-y-0 left-3.5 flex items-center text-md-on-surface-variant">
-                        <Icon name="search" className="text-xl" />
-                    </span>
-                    <input
-                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-outline/60 rounded-full py-3 pl-11 pr-4 border-none shadow-none focus:outline-none focus:ring-2 focus:ring-md-primary typescale-body-large transition-all"
-                        placeholder="Search inventory..."
-                        type="text"
-                        value={searchQuery}
-                        onChange={(event) => setSearchQuery(event.target.value)}
+            <PageHeader title="My Pantry" padding="pb-2" rowClassName="mb-3">
+                <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search inventory..."
+                    className="mb-3"
+                />
+                {/* Segmented Button / Toggle Switch */}
+                <div className="pb-3">
+                    <SegmentedControl
+                        name="pantry-filter"
+                        value={activeTab}
+                        options={[
+                            { value: 'supplies', label: 'Supplies' },
+                            { value: 'gear', label: 'Gear' }
+                        ]}
+                        onChange={setActiveTab}
                     />
                 </div>
-                {/* Segmented Button / Toggle */}
-                <div className="pb-3">
-                    <div className="flex h-10 w-full items-center justify-center rounded-full bg-md-surface-container-high p-1">
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
-                            <input
-                                checked={activeTab === 'supplies'}
-                                onChange={() => setActiveTab('supplies')}
-                                className="peer sr-only" name="pantry-filter" type="radio" value="supplies"
-                            />
-                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Supplies</span>
-                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
-                        </label>
-                        <label className="group relative flex flex-1 cursor-pointer items-center justify-center rounded-full py-1.5 transition-all">
-                            <input
-                                checked={activeTab === 'gear'}
-                                onChange={() => setActiveTab('gear')}
-                                className="peer sr-only" name="pantry-filter" type="radio" value="gear"
-                            />
-                            <span className="z-10 typescale-label-large text-md-on-surface-variant peer-checked:text-md-on-secondary-container peer-checked:font-bold transition-colors">Gear</span>
-                            <div className="absolute inset-0 z-0 rounded-full bg-md-secondary-container shadow-sm opacity-0 peer-checked:opacity-100 transition-all duration-200"></div>
-                        </label>
-                    </div>
-                </div>
-            </header>
+            </PageHeader>
 
             {/* Inventory List */}
             <main className="flex-1 px-5 pt-3 flex flex-col gap-4 overflow-y-auto scrollbar-hide">

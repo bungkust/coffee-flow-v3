@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { formatDuration } from '../shared/utils/brewMath';
 
 export const QuickTimerPage = () => {
@@ -91,18 +91,7 @@ export const QuickTimerPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        aria-label="Go back"
-                    >
-                        <Icon name="arrow_back" className="text-2xl" />
-                    </button>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">Quick Timer</h1>
-                </div>
-            </header>
+            <PageHeader title="Quick Timer" onBack={() => navigate(-1)} />
 
             <main className="flex flex-1 flex-col items-center justify-center px-6 py-8">
                 <div className="typescale-display-large text-7xl font-extrabold tabular-nums tracking-tight text-md-primary mb-8 bg-md-surface-container-low px-8 py-6 rounded-3xl border border-md-outline-variant/30 shadow-md-1">

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
 import { BottomNav } from '../components/BottomNav';
 import { Dropdown } from '../components/Dropdown';
+import { SaveBar } from '../components/SaveBar';
 import { brewService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 
@@ -390,18 +390,7 @@ export const RecipeEditPage = () => {
             </main>
 
             {/* Sticky Bottom Save Action */}
-            <div className="fixed bottom-20 left-0 right-0 z-[60] mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full"
-                >
-                    <Icon name="save" className="text-xl" />
-                    <span>{saving ? 'Saving...' : 'Save Recipe'}</span>
-                </Button>
-            </div>
+            <SaveBar onClick={handleSave} saving={saving} bottom="bottom-20" z="z-[60]" label="Save Recipe" />
 
             <BottomNav activeTab="brewing" />
         </div>

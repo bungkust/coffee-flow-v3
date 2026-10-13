@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
+import { SaveBar } from '../components/SaveBar';
+import { StarRating } from '../components/StarRating';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 
@@ -39,30 +40,15 @@ export const DrinkLogPage = () => {
         );
     }
 
-    const displayRating = Math.min(5, Math.max(0, rating));
-
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <h1 className="typescale-headline-small font-bold text-md-on-surface">How was it?</h1>
-                <p className="typescale-body-small text-md-on-surface-variant mt-0.5">{drink.name}</p>
-            </header>
+            <PageHeader title="How was it?" subtitle={drink.name} />
 
             <main className="flex-1 px-5 py-6 space-y-6">
                 {/* Rating */}
                 <div className="flex flex-col items-center justify-center p-6 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
-                    <div className="flex gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button key={star} onClick={() => setRating(star)} className="focus:outline-none group cursor-pointer">
-                                <Icon
-                                    name="star"
-                                    className={`text-4xl transition-transform group-active:scale-110 ${displayRating >= star ? 'text-md-primary' : 'text-md-outline/40'}`}
-                                    style={{ fontVariationSettings: displayRating >= star ? "'FILL' 1" : "'FILL' 0" }}
-                                />
-                            </button>
-                        ))}
-                    </div>
+                    <StarRating rating={rating} onChange={setRating} />
                 </div>
 
                 {/* Notes Input */}
@@ -82,18 +68,7 @@ export const DrinkLogPage = () => {
             </main>
 
             {/* Sticky Save CTA */}
-            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full"
-                >
-                    <Icon name="bookmark" style={{ fontVariationSettings: "'FILL' 1" }} className="text-xl" />
-                    <span>{saving ? 'Saving...' : 'Save to Journal'}</span>
-                </Button>
-            </div>
+            <SaveBar onClick={handleSave} saving={saving} label="Save to Journal" icon="bookmark" iconStyle={{ fontVariationSettings: "'FILL' 1" }} />
         </div>
     );
 };

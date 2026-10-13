@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
-import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { PageHeader } from '../components/PageHeader';
+import { SaveBar } from '../components/SaveBar';
 import { brewService, drinkService } from '../core/services';
 import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/entities';
 
@@ -20,23 +21,14 @@ export const JournalDetailPage = () => {
 
     useEffect(() => {
         if (!id) return;
-        if (type === 'brews') {
-            brewService.getLog(id).then((data) => {
-                setLog(data);
-                if (data) {
-                    setRating(data.rating || 0);
-                    setNotes(data.notes || '');
-                }
-            });
-        } else {
-            drinkService.getLog(id).then((data) => {
-                setLog(data);
-                if (data) {
-                    setRating(data.rating || 0);
-                    setNotes(data.notes || '');
-                }
-            });
-        }
+        const getLog = () => type === 'brews' ? brewService.getLog(id) : drinkService.getLog(id);
+        getLog().then((data) => {
+            setLog(data);
+            if (data) {
+                setRating(data.rating || 0);
+                setNotes(data.notes || '');
+            }
+        });
     }, [id, type]);
 
     const handleSave = async () => {
@@ -57,7 +49,7 @@ export const JournalDetailPage = () => {
     };
 
     const confirmDelete = async () => {
-        if (!id || !type) return;
+        if (!id) return;
         try {
             if (type === 'brews') await brewService.deleteLog(id);
             else await drinkService.deleteLog(id);
@@ -77,24 +69,17 @@ export const JournalDetailPage = () => {
         );
     }
 
-    const brewLog = log as BrewLogWithRecipe;
-    const drinkLog = log as DrinkLogWithDrink;
-    const title = type === 'brews' ? (brewLog.recipe_name || 'Brew Log') : (drinkLog.drink_name || 'Drink Log');
+    const title = type === 'brews'
+        ? ((log as BrewLogWithRecipe).recipe_name || 'Brew Log')
+        : ((log as DrinkLogWithDrink).drink_name || 'Drink Log');
 
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer shrink-0"
-                            aria-label="Go back"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface truncate">{title}</h1>
-                    </div>
+            <PageHeader
+                title={title}
+                onBack={() => navigate(-1)}
+                titleClassName="truncate"
+                action={(
                     <button
                         onClick={() => setIsDeleteModalOpen(true)}
                         className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-error hover:bg-md-error-container/20 transition-colors cursor-pointer shrink-0"
@@ -102,8 +87,8 @@ export const JournalDetailPage = () => {
                     >
                         <Icon name="delete" className="text-xl" />
                     </button>
-                </div>
-            </header>
+                )}
+            />
 
             <main className="flex-1 px-5 py-5 space-y-6">
                 <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3 text-center">
@@ -138,18 +123,7 @@ export const JournalDetailPage = () => {
                 </div>
             </main>
 
-            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-5 border-t border-md-outline-variant/30">
-                <Button
-                    variant="filled"
-                    size="lg"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full"
-                >
-                    <Icon name="save" className="text-xl" />
-                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                </Button>
-            </div>
+            <SaveBar onClick={handleSave} saving={saving} label="Save Changes" />
 
             {/* Delete Confirmation Modal */}
             <Modal

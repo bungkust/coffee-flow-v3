@@ -166,6 +166,6 @@ export class SQLiteRecipeRepository {
     async delete(id: EntityId): Promise<void> {
         const now = new Date().toISOString();
         await this.db.run('UPDATE recipes SET deleted_at = ? WHERE id = ?', [now, id]);
-        await this.dbService.saveToLocalStore();
+        await dbService.saveToLocalStore();
     }
 }

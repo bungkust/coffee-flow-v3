@@ -8,6 +8,8 @@ import type { Recipe } from '../shared/domain/entities';
 import { formatDuration, sumStepDuration } from '../shared/utils/brewMath';
 
 import { SmartImportModal, type ImportableRecipe } from '../components/SmartImportModal';
+import { PageHeader } from '../components/PageHeader';
+import { SearchBar } from '../components/SearchBar';
 
 export const RecipeListPage = () => {
     const navigate = useNavigate();
@@ -134,34 +136,19 @@ export const RecipeListPage = () => {
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
             {/* Sticky Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                            aria-label="Go back"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <h1 className="typescale-headline-small font-bold text-md-on-surface capitalize truncate">
-                            {methodFilter ? `${methodFilter} Recipes` : 'Recipes'}
-                        </h1>
-                    </div>
-                </div>
-                <div className="relative mb-1">
-                    <span className="absolute inset-y-0 left-3.5 flex items-center text-md-on-surface-variant">
-                        <Icon name="search" className="text-xl" />
-                    </span>
-                    <input
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-outline/60 rounded-full py-3 pl-11 pr-4 border-none shadow-none focus:outline-none focus:ring-2 focus:ring-md-primary typescale-body-large transition-all"
-                        placeholder={`Search ${methodFilter || ''} recipes...`}
-                        type="text"
-                    />
-                </div>
-            </header>
+            <PageHeader
+                title={methodFilter ? `${methodFilter} Recipes` : 'Recipes'}
+                onBack={() => navigate(-1)}
+                titleClassName="capitalize truncate"
+                rowClassName="mb-3"
+            >
+                <SearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder={`Search ${methodFilter || ''} recipes...`}
+                    className="mb-1"
+                />
+            </PageHeader>
 
             {/* Filter Chips */}
             <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-hide">

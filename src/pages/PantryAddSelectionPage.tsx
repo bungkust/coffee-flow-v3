@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 import { GEAR_CATEGORIES, SUPPLIES_CATEGORIES } from '../features/pantry/domain/pantryCategories';
 
 export const PantryAddSelectionPage = () => {
@@ -16,18 +17,7 @@ export const PantryAddSelectionPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            <header className="sticky top-0 z-10 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        aria-label="Go back"
-                    >
-                        <Icon name="arrow_back" className="text-2xl" />
-                    </button>
-                    <h1 className="typescale-headline-small font-bold text-md-on-surface">Add Pantry Item</h1>
-                </div>
-            </header>
+            <PageHeader title="Add Pantry Item" onBack={() => navigate(-1)} />
 
             {/* Tab Selection */}
             <div className="px-5 py-4 flex gap-3">
