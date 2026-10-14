@@ -10,7 +10,6 @@ const BrewMethodsPage = lazy(() => import('./pages/BrewMethodsPage').then(m => (
 const RecipeListPage = lazy(() => import('./pages/RecipeListPage').then(m => ({ default: m.RecipeListPage })));
 const RecipeDetailPage = lazy(() => import('./pages/RecipeDetailPage').then(m => ({ default: m.RecipeDetailPage })));
 const RecipePreparationPage = lazy(() => import('./pages/RecipePreparationPage').then(m => ({ default: m.RecipePreparationPage })));
-const BrewWizardPage = lazy(() => import('./pages/BrewWizardPage').then(m => ({ default: m.BrewWizardPage })));
 const BrewFlowPage = lazy(() => import('./pages/BrewFlowPage').then(m => ({ default: m.BrewFlowPage })));
 const BrewLogPage = lazy(() => import('./pages/BrewLogPage').then(m => ({ default: m.BrewLogPage })));
 const JournalPage = lazy(() => import('./pages/JournalPage').then(m => ({ default: m.JournalPage })));
@@ -78,7 +77,6 @@ function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/brew-methods" element={<BrewMethodsPage />} />
-          <Route path="/brew-wizard" element={<BrewWizardPage />} />
           <Route path="/recipes" element={<RecipeListPage />} />
           <Route path="/recipes/:id" element={<RecipeDetailPage />} />
           <Route path="/recipes/:id/edit" element={<RecipeEditPage />} />

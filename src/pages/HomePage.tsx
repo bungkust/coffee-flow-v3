@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { BrewLogCard } from '../components/BrewLogCard';
+import { BrewWizardSheet } from '../components/BrewWizardSheet';
 import { brewService, pantryService, settingsService } from '../core/services';
 import { formatMethodName } from '../shared/utils/brewMath';
 import { parseFlavorTags } from '../shared/utils/tasteProfile';
@@ -18,6 +19,7 @@ export const HomePage = () => {
     const [userName, setUserName] = useState('Brewmaster');
     const [loading, setLoading] = useState(true);
     const [showTip, setShowTip] = useState(() => localStorage.getItem('coffee_flow_tip_dismissed') !== 'true');
+    const [wizardOpen, setWizardOpen] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,7 +84,7 @@ export const HomePage = () => {
                 {/* Quick actions — one primary, one secondary */}
                 <section aria-label="Quick Actions" className="grid grid-cols-2 gap-3">
                     <button
-                        onClick={() => navigate('/brew-wizard')}
+                        onClick={() => setWizardOpen(true)}
                         className="group flex items-center gap-3 rounded-xl bg-md-primary text-md-on-primary p-3.5 shadow-md-1 hover:shadow-md-2 transition-all duration-200 active:scale-[0.98] cursor-pointer"
                     >
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-md-on-primary/20 backdrop-blur-xs">
@@ -148,7 +150,7 @@ export const HomePage = () => {
                                 <p className="typescale-title-medium font-bold text-md-on-surface">No brews yet</p>
                                 <p className="typescale-body-small text-md-on-surface-variant mt-0.5 mb-4">Your first cup is one tap away.</p>
                                 <button
-                                    onClick={() => navigate('/brew-wizard')}
+                                    onClick={() => setWizardOpen(true)}
                                     className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-4 py-2 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
                                 >
                                     Start Brewing
@@ -236,6 +238,8 @@ export const HomePage = () => {
             </main>
 
             <BottomNav activeTab="home" />
+
+            <BrewWizardSheet open={wizardOpen} onClose={() => setWizardOpen(false)} />
         </div>
     );
 };
