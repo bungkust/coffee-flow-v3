@@ -12,7 +12,7 @@ import type { PantryItem } from '../features/pantry/domain/entities';
 
 export const HomePage = () => {
     const navigate = useNavigate();
-    const [stats, setStats] = useState({ weeklyBrews: 0, previousWeekBrews: 0, avgRating: 0, beansCount: 0, todayBrews: 0 });
+    const [stats, setStats] = useState({ todayBrews: 0 });
     const [recentBrews, setRecentBrews] = useState<BrewLogWithRecipe[]>([]);
     const [beans, setBeans] = useState<PantryItem[]>([]);
     const [userName, setUserName] = useState('Brewmaster');
@@ -44,8 +44,6 @@ export const HomePage = () => {
     }, []);
 
     const beanNames = Object.fromEntries(beans.map(bean => [bean.id, bean.name]));
-    const weekDelta = stats.weeklyBrews - stats.previousWeekBrews;
-    const weekDeltaLabel = weekDelta === 0 ? 'same as last week' : `${weekDelta > 0 ? '+' : ''}${weekDelta} vs last week`;
 
     const formatDateTime = (dateStr: string) =>
         new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -56,7 +54,7 @@ export const HomePage = () => {
     };
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
+        <div className="relative flex h-dvh w-full flex-col overflow-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             <header className="flex items-start justify-between gap-4 px-5 pt-10 pb-4 bg-md-surface border-b border-md-outline-variant/30">
                 <div className="flex min-w-0 flex-col">
                     <span className="typescale-label-medium text-md-on-surface-variant mb-0.5">
@@ -67,7 +65,7 @@ export const HomePage = () => {
                     </h1>
                     {stats.todayBrews > 0 && (
                         <p className="typescale-body-small text-md-on-surface-variant mt-0.5">
-                            {stats.todayBrews} {stats.todayBrews === 1 ? 'brew' : 'brews'} today · ★ {stats.avgRating} average
+                            {stats.todayBrews} {stats.todayBrews === 1 ? 'brew' : 'brews'} today
                         </p>
                     )}
                 </div>
@@ -80,24 +78,7 @@ export const HomePage = () => {
                 </button>
             </header>
 
-            <main className="flex-1 flex flex-col gap-5 px-5 py-5 pb-28">
-                {/* Stats — two equal tiles */}
-                <section aria-label="Dashboard Statistics" className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 px-3 py-3.5 shadow-md-1">
-                        <span className="typescale-label-medium text-md-on-surface-variant">This week</span>
-                        <span className="typescale-title-large font-bold text-md-on-surface mt-0.5 tabular-nums">{stats.weeklyBrews}</span>
-                        <span className="typescale-label-small font-semibold text-md-on-surface-variant/70 mt-0.5">{weekDeltaLabel}</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 px-3 py-3.5 shadow-md-1">
-                        <span className="typescale-label-medium text-md-on-surface-variant">Avg rating</span>
-                        <span className="flex items-center gap-1 typescale-title-large font-bold text-md-on-surface mt-0.5 tabular-nums">
-                            <Icon name="star" className="text-lg text-md-tertiary" style={{ fontVariationSettings: "'FILL' 1" }} />
-                            {stats.avgRating}
-                        </span>
-                        <span className="typescale-label-small font-semibold text-md-on-surface-variant/70 mt-0.5">{stats.beansCount} beans tracked</span>
-                    </div>
-                </section>
-
+            <main className="flex-1 flex flex-col gap-5 px-5 py-5 pb-28 min-h-0">
                 {/* Quick actions — one primary, one secondary */}
                 <section aria-label="Quick Actions" className="grid grid-cols-2 gap-3">
                     <button
@@ -127,8 +108,8 @@ export const HomePage = () => {
                 </section>
 
                 {/* Recent brews */}
-                <section aria-label="Recent Brews" className="flex flex-col">
-                    <div className="flex items-center justify-between mb-3">
+                <section aria-label="Recent Brews" className="flex flex-col flex-1 min-h-0">
+                    <div className="flex items-center justify-between mb-3 shrink-0">
                         <h2 className="typescale-title-medium font-bold text-md-on-surface">Recent brews</h2>
                         <button
                             onClick={() => navigate('/journal')}
@@ -137,37 +118,49 @@ export const HomePage = () => {
                             View all
                         </button>
                     </div>
-                    {loading ? (
-                        <div className="animate-pulse flex flex-col gap-2">
-                            {[1, 2].map(i => <div key={i} className="h-[76px] rounded-xl bg-md-surface-container-low" />)}
-                        </div>
-                    ) : recentBrews.length > 0 ? (
-                        <div className="flex flex-col gap-3">
-                            {recentBrews.map(brew => (
-                                <BrewLogCard
-                                    key={brew.id}
-                                    image={`/assets/methods/${brew.method_id}.png`}
-                                    icon="coffee_maker"
-                                    name={brew.recipe_name}
-                                    subtitle={[beanNames[brew.bean_id ?? ''], formatMethodName(brew.method_id)].filter(Boolean).join(' · ')}
-                                    date={formatDateTime(brew.brewed_at)}
-                                    rating={brew.rating}
-                                    tags={parseFlavorTags(brew.flavor_tags)}
-                                    notes={brew.notes}
-                                    onClick={() => navigate(`/journal/brews/${brew.id}`)}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="rounded-xl bg-md-surface-container-low p-6 border border-dashed border-md-outline-variant text-center">
-                            <p className="typescale-body-medium text-md-on-surface-variant">No brews yet — your first cup is one tap away.</p>
-                        </div>
-                    )}
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        {loading ? (
+                            <div className="animate-pulse flex flex-col gap-2">
+                                {[1, 2].map(i => <div key={i} className="h-[76px] rounded-xl bg-md-surface-container-low" />)}
+                            </div>
+                        ) : recentBrews.length > 0 ? (
+                            <div className="flex flex-col gap-3">
+                                {recentBrews.map(brew => (
+                                    <BrewLogCard
+                                        key={brew.id}
+                                        image={`/assets/methods/${brew.method_id}.png`}
+                                        icon="coffee_maker"
+                                        name={brew.recipe_name}
+                                        subtitle={[beanNames[brew.bean_id ?? ''], formatMethodName(brew.method_id)].filter(Boolean).join(' · ')}
+                                        date={formatDateTime(brew.brewed_at)}
+                                        rating={brew.rating}
+                                        tags={parseFlavorTags(brew.flavor_tags)}
+                                        notes={brew.notes}
+                                        onClick={() => navigate(`/journal/brews/${brew.id}`)}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex min-h-full flex-col items-center justify-center text-center py-10">
+                                <div className="flex size-12 items-center justify-center rounded-full bg-md-surface-container-high text-md-on-surface-variant mb-3">
+                                    <Icon name="coffee_maker" className="text-2xl" />
+                                </div>
+                                <p className="typescale-title-medium font-bold text-md-on-surface">No brews yet</p>
+                                <p className="typescale-body-small text-md-on-surface-variant mt-0.5 mb-4">Your first cup is one tap away.</p>
+                                <button
+                                    onClick={() => navigate('/brew-wizard')}
+                                    className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-4 py-2 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
+                                >
+                                    Start Brewing
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </section>
 
                 {/* From your shelf */}
-                <section aria-label="From your shelf" className="flex flex-col">
-                    <div className="flex items-center justify-between mb-3">
+                <section aria-label="From your shelf" className="flex flex-col shrink-0">
+                    <div className="flex items-center justify-between mb-3 shrink-0">
                         <h2 className="typescale-title-medium font-bold text-md-on-surface">From your shelf</h2>
                         <button
                             onClick={() => navigate('/pantry/add/beans')}
@@ -178,7 +171,7 @@ export const HomePage = () => {
                     </div>
                     {beans.length > 0 ? (
                         <div className="flex flex-col gap-3">
-                            {beans.slice(0, 3).map(bean => {
+                            {beans.slice(0, 2).map(bean => {
                                 const days = daysOffRoast(bean.roast_date);
                                 return (
                                     <button
@@ -205,15 +198,25 @@ export const HomePage = () => {
                             })}
                         </div>
                     ) : (
-                        <div className="rounded-xl bg-md-surface-container-low p-6 border border-dashed border-md-outline-variant text-center">
-                            <p className="typescale-body-medium text-md-on-surface-variant">No beans in your pantry yet.</p>
+                        <div className="flex flex-col items-center text-center py-8">
+                            <div className="flex size-12 items-center justify-center rounded-full bg-md-surface-container-high text-md-on-surface-variant mb-3">
+                                <Icon name="inventory_2" className="text-2xl" />
+                            </div>
+                            <p className="typescale-title-medium font-bold text-md-on-surface">No beans yet</p>
+                            <p className="typescale-body-small text-md-on-surface-variant mt-0.5 mb-4">Add beans to start brewing.</p>
+                            <button
+                                onClick={() => navigate('/pantry/add/beans')}
+                                className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
+                            >
+                                Add beans
+                            </button>
                         </div>
                     )}
                 </section>
 
                 {/* Tip */}
                 {showTip && (
-                    <div className="flex items-center gap-3 rounded-xl bg-md-tertiary-container text-md-on-tertiary-container p-3.5 shadow-md-1">
+                    <div className="flex items-center gap-3 rounded-xl bg-md-tertiary-container text-md-on-tertiary-container p-3.5 shadow-md-1 shrink-0">
                         <Icon name="lightbulb" className="shrink-0 text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                         <p className="flex-1 typescale-body-medium leading-snug">
                             <span className="font-bold">Tip:</span> Filtered water significantly improves brew clarity & taste.

@@ -74,12 +74,9 @@ export interface BrewLogWithRecipe extends BrewLog {
 export type BrewLogFeedback = Partial<Pick<BrewLog, 'rating' | 'notes' | 'sweetness' | 'acidity' | 'body' | 'bitterness' | 'flavor_tags'>>;
 
 export interface BrewStats {
-    weeklyBrews: number;
     monthlyBrews: number;
     avgRating: number;
-    beansCount: number;
     todayBrews: number;
-    previousWeekBrews: number;
 }
 
 export type DrinkCategory = 'hot' | 'cold';
