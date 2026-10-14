@@ -52,6 +52,7 @@ const cleanRecipeName = (name: string, methodId?: string): string => {
 const SYSTEM_PROMPT_TEMPLATE = `Please extract all coffee recipes from this text/link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
 
 PARAMETER GUIDELINES (STRICT RULES):
+Use these exact JSON field names — never rename them. The step text field is "instruction", never "value", "text" or "description".
 1. "name": Short, natural recipe title WITHOUT the brewing device or method name (it is stored separately) and without the word "Recipe". e.g. "Immersion Ice Drip", "Tetsu Kasuya 4:6", "James Hoffmann Ultimate".
 2. "method_id": Must be ONE of the following exact IDs based on the brewing device:
 ${METHOD_ID_LINES}
@@ -72,12 +73,12 @@ ${METHOD_ID_LINES}
    - "label": Short step title matching source (e.g., "Bloom", "First Main Pour", "Second Main Pour", "Stir & Swirl", "Drawdown").
    - "duration_seconds": REQUIRED positive integer for EVERY step — never null and never 0. Use the source's timing when it states one; otherwise give a realistic estimate so the brew timer runs end to end (e.g. bloom 30-45, pour 30-60, drawdown 30).
    - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown) or when the source does not state one.
-   - "instruction": Complete, detailed step instruction preserved from the source text. When the brewer has a valve or switch (Hario Switch, Clever, siphon), begin the instruction with the valve position — "Close the switch ..." or "Open the switch ..." — and repeat it on every step where the position changes.
+   - "instruction": Complete, detailed step instruction preserved from the source text, keeping every number and unit (g, ml, °C) verbatim. Lead with tool-specific values — iced steps start with the ice amount ("Add 100g ice ..."), valve brewers (Hario Switch, Clever, siphon) start with the valve position ("Close the switch ..." or "Open the switch ...") and repeat it on every step where the position changes.
 15. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
 
 ACCURACY (CRITICAL — NO HALLUCINATION):
-- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give — the one exception is "duration_seconds", which must always be a usable number (rule 14).
-- If the source omits a value, use null (for numbers) or "" (for text) — do not guess temperature, ratio, dose, water or pour weights.
+- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give — the only exceptions are "duration_seconds" (rule 14) and the documented defaults (temperature 93, difficulty "Intermediate").
+- If the source omits a value, use null (for numbers) or "" (for text) — do not guess ratio, dose, water or pour weights.
 - When the source times its steps cumulatively (e.g. "wait for the timer to reach 2:00"), keep the instruction wording and set each step's duration to the gap between its start and end time.
 
 MULTI-RECIPE RULE:
@@ -102,7 +103,7 @@ REQUIRED JSON OUTPUT FORMAT:
 \`\`\`json
 [
   {
-    "name": "James Hoffmann V60 Method",
+    "name": "James Hoffmann Ultimate",
     "method_id": "v60",
     "ratio": "1:16.7",
     "temperature": 93,

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from './Icons';
 import { WizardRow } from './WizardRow';
-import { brewService, pantryService } from '../core/services';
+import { brewService, pantryService, settingsService } from '../core/services';
 import { suggestMethods } from '../shared/utils/beanMatching';
 import { daysOffRoast, freshnessLabel } from '../shared/utils/beanFreshness';
 import type { BrewingMethod, Recipe } from '../shared/domain/entities';
@@ -22,6 +22,7 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
     const [beans, setBeans] = useState<PantryItem[]>([]);
     const [methods, setMethods] = useState<BrewingMethod[]>([]);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [preferredIds, setPreferredIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,14 +33,16 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
         setLoading(true);
         const load = async () => {
             try {
-                const [items, allMethods, allRecipes] = await Promise.all([
+                const [items, allMethods, allRecipes, preferred] = await Promise.all([
                     pantryService.getPantryItems(),
                     brewService.getAllMethods(),
-                    brewService.getAllRecipes()
+                    brewService.getAllRecipes(),
+                    settingsService.getUserPreferredMethods()
                 ]);
                 setBeans(items.filter(item => item.category === 'beans' && !item.deleted_at));
                 setMethods(allMethods);
                 setRecipes(allRecipes);
+                setPreferredIds(preferred);
             } catch (error) {
                 console.error('Failed to load brew wizard data:', error);
             } finally {
@@ -53,8 +56,9 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
     const method = methods.find(m => m.id === methodId);
     const suggestions = suggestMethods(bean?.tags_json ?? [], recipes);
     const methodRecipes = recipes.filter(recipe => recipe.method_id === methodId);
+    const equipment = preferredIds.flatMap(id => methods.filter(m => m.id === id));
 
-    const stepTitle = step === 1 ? 'Which bean?' : step === 2 ? 'Which method?' : 'Which recipe?';
+    const stepTitle = step === 1 ? 'Which bean?' : step === 2 ? 'Which equipment?' : 'Which recipe?';
     const context = step === 2 ? bean?.name : step === 3 && bean ? `${bean.name} · ${method?.name ?? ''}` : undefined;
 
     const beanSubtitle = (item: PantryItem) => {
@@ -88,23 +92,20 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
             <div className="relative flex w-full max-w-md flex-col max-h-[85vh] rounded-t-2xl bg-md-surface text-md-on-surface font-sans shadow-md-2">
                 <div className="shrink-0 border-b border-md-outline-variant/20 px-5 pt-3 pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                        <button
-                            onClick={step === 1 ? onClose : goBack}
-                            className="size-8 -ml-2 shrink-0 rounded-full flex items-center justify-center hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                            aria-label={step === 1 ? 'Close wizard' : 'Back'}
-                        >
-                            <Icon name={step === 1 ? 'close' : 'arrow_back'} className="text-xl" />
-                        </button>
-                        <div className="flex gap-1.5" aria-hidden="true">
-                            {[1, 2, 3].map(i => (
-                                <span key={i} className={`size-1.5 rounded-full ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant/40'}`} />
-                            ))}
-                        </div>
-                        <span className="size-8 shrink-0" />
-                    </div>
+                    <button
+                        onClick={step === 1 ? onClose : goBack}
+                        className="size-8 -ml-2 mb-2 shrink-0 rounded-full flex items-center justify-center hover:bg-md-surface-container-high transition-colors cursor-pointer"
+                        aria-label={step === 1 ? 'Close wizard' : 'Back'}
+                    >
+                        <Icon name={step === 1 ? 'close' : 'arrow_back'} className="text-xl" />
+                    </button>
                     <h1 className="typescale-headline-small font-bold text-md-on-surface text-center">{stepTitle}</h1>
                     {context && <p className="typescale-body-small text-md-on-surface-variant text-center truncate">{context}</p>}
+                    <div className="mt-3 flex gap-1.5" aria-hidden="true">
+                        {[1, 2, 3].map(i => (
+                            <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant/40'}`} />
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -147,12 +148,29 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
 
                             {step === 2 && bean && (
                                 <>
+                                    {equipment.length > 0 && (
+                                        <section className="space-y-2">
+                                            <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">
+                                                Your equipment
+                                            </h2>
+                                            {equipment.map(m => (
+                                                <WizardRow
+                                                    key={m.id}
+                                                    title={m.name}
+                                                    subtitle={`${recipes.filter(r => r.method_id === m.id).length} recipes`}
+                                                    icon={m.icon}
+                                                    image={`/assets/methods/${m.id}.png`}
+                                                    onClick={() => pickMethod(m.id)}
+                                                />
+                                            ))}
+                                        </section>
+                                    )}
                                     {suggestions.length > 0 && (
                                         <section className="space-y-2">
                                             <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">
                                                 Suggested for {bean.name}
                                             </h2>
-                                            {suggestions.map(suggestion => {
+                                            {suggestions.slice(0, 2).map(suggestion => {
                                                 const m = methods.find(mm => mm.id === suggestion.methodId);
                                                 if (!m) return null;
                                                 return (
@@ -168,21 +186,6 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
                                             })}
                                         </section>
                                     )}
-                                    <section className="space-y-2">
-                                        <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">
-                                            All methods
-                                        </h2>
-                                        {methods.map(m => (
-                                            <WizardRow
-                                                key={m.id}
-                                                title={m.name}
-                                                subtitle={`${recipes.filter(r => r.method_id === m.id).length} recipes`}
-                                                icon={m.icon}
-                                                image={`/assets/methods/${m.id}.png`}
-                                                onClick={() => pickMethod(m.id)}
-                                            />
-                                        ))}
-                                    </section>
                                 </>
                             )}
 
