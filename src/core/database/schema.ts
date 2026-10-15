@@ -243,5 +243,60 @@ export const MIGRATIONS = [
       UPDATE recipes SET deleted_at = datetime('now')
       WHERE is_custom = 0 AND source IS NULL AND deleted_at IS NULL;
     `
+  },
+  {
+    // Version 16: Synergy of Drink, Brew, and Pantry + Stock Audit Ledger & Non-Coffee Seeds
+    version: 16,
+    sql: `
+      ALTER TABLE drinks ADD COLUMN base_recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;
+      ALTER TABLE drinks ADD COLUMN base_type TEXT DEFAULT 'coffee';
+      ALTER TABLE drinks ADD COLUMN is_favorite INTEGER DEFAULT 0;
+
+      ALTER TABLE drink_logs ADD COLUMN drink_name TEXT;
+      ALTER TABLE drink_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
+      ALTER TABLE drink_logs ADD COLUMN milk_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
+      ALTER TABLE drink_logs ADD COLUMN recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;
+      ALTER TABLE drink_logs ADD COLUMN ingredients_snapshot_json TEXT;
+      ALTER TABLE drink_logs ADD COLUMN sweetness INTEGER;
+      ALTER TABLE drink_logs ADD COLUMN coffee_strength INTEGER;
+      ALTER TABLE drink_logs ADD COLUMN creaminess INTEGER;
+      ALTER TABLE drink_logs ADD COLUMN flavor_tags TEXT;
+
+      CREATE INDEX IF NOT EXISTS idx_drink_logs_bean ON drink_logs(bean_id);
+      CREATE INDEX IF NOT EXISTS idx_drink_logs_date ON drink_logs(logged_at);
+      CREATE INDEX IF NOT EXISTS idx_drinks_base_recipe ON drinks(base_recipe_id);
+      CREATE INDEX IF NOT EXISTS idx_drinks_base_type ON drinks(base_type);
+
+      CREATE TABLE IF NOT EXISTS pantry_logs (
+        id TEXT PRIMARY KEY,
+        pantry_item_id TEXT NOT NULL,
+        change_amount REAL NOT NULL,
+        unit TEXT,
+        action_type TEXT NOT NULL,
+        reference_id TEXT,
+        reference_name TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (pantry_item_id) REFERENCES pantry_items(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pantry_logs_item ON pantry_logs(pantry_item_id);
+      CREATE INDEX IF NOT EXISTS idx_pantry_logs_date ON pantry_logs(created_at);
+
+      INSERT OR IGNORE INTO drinks (id, name, base_type, category, ingredients_json, instructions_json, created_at, updated_at)
+      VALUES 
+        ('matcha_latte', 'Matcha Latte', 'non_coffee', 'hot', 
+         '[{"name":"Matcha Powder","amount":4,"unit":"g"},{"name":"Hot Water","amount":30,"unit":"ml"},{"name":"Steamed Milk","amount":180,"unit":"ml"}]',
+         '["Whisk matcha powder with 30ml hot water until smooth and frothy.","Steam milk to silky microfoam.","Pour steamed milk over matcha and serve."]',
+         datetime('now'), datetime('now')),
+        ('iced_chocolate', 'Classic Iced Chocolate', 'non_coffee', 'cold',
+         '[{"name":"Chocolate Powder / Sauce","amount":30,"unit":"g"},{"name":"Fresh Milk","amount":150,"unit":"ml"},{"name":"Ice Cubes","amount":80,"unit":"g"}]',
+         '["Dissolve chocolate powder with a splash of warm water.","Fill glass with ice cubes.","Pour fresh milk, then top with dissolved chocolate."]',
+         datetime('now'), datetime('now')),
+        ('chai_latte', 'Chai Tea Latte', 'non_coffee', 'hot',
+         '[{"name":"Chai Tea Concentrate / Syrup","amount":40,"unit":"ml"},{"name":"Steamed Milk","amount":160,"unit":"ml"},{"name":"Cinnamon Powder","amount":1,"unit":"g"}]',
+         '["Add chai concentrate to cup.","Steam milk to microfoam texture.","Pour milk into chai and dust with cinnamon."]',
+         datetime('now'), datetime('now'));
+    `
   }
 ];

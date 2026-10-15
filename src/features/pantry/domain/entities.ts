@@ -34,3 +34,17 @@ export interface PantryItem {
     updated_at: string;
     deleted_at?: string;
 }
+
+export type PantryLogAction = 'brew' | 'drink' | 'restock' | 'adjustment' | 'waste';
+
+export interface PantryLog {
+    id: EntityId;
+    pantry_item_id: EntityId;
+    change_amount: number;
+    unit?: string;
+    action_type: PantryLogAction;
+    reference_id?: string;
+    reference_name?: string;
+    notes?: string;
+    created_at: string;
+}

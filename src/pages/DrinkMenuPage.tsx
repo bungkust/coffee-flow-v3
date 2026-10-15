@@ -1,379 +1,183 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Icon, SplashLogoIcon } from '../components/Icons';
+import { useNavigate } from 'react-router-dom';
+import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
-import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
-import { SearchBar } from '../components/SearchBar';
-import { drinkService, settingsService } from '../core/services';
+import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
-import { SmartImportModal } from '../components/SmartImportModal';
-import type { ImportableRecipe } from '../components/SmartImportModal';
-import { getDrinkImage, parseList } from '../shared/utils/drinks';
-
-const DrinkImage = ({ src, alt }: { src: string; alt: string }) => {
-    const [failed, setFailed] = useState(false);
-    if (failed || !src) {
-        return (
-            <div className="flex items-center justify-center w-full h-full text-md-primary">
-                <Icon name="local_cafe" className="text-3xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-            </div>
-        );
-    }
-    return (
-        <img
-            src={src}
-            alt={alt}
-            className="w-full h-full object-cover rounded-full"
-            onError={() => setFailed(true)}
-        />
-    );
-};
+import { DrinkSmartImportModal } from '../components/DrinkSmartImportModal';
 
 export const DrinkMenuPage = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const [allDrinks, setAllDrinks] = useState<Drink[]>([]);
-    const [availableDrinks, setAvailableDrinks] = useState<Drink[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
-    const [selectedDrinks, setSelectedDrinks] = useState<string[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [restoredQueue, setRestoredQueue] = useState<ImportableRecipe[]>([]);
+
+    const fetchDrinks = async () => {
+        try {
+            setLoading(true);
+            const drinks = await drinkService.getAllDrinks();
+            setAllDrinks(drinks);
+        } catch (error) {
+            console.error('Failed to load drinks:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchDrinks = async () => {
-            try {
-                setLoading(true);
-                const preferredDrinks = await settingsService.getUserPreferredDrinks();
-                const drinks = await drinkService.getAllDrinks();
-                setAllDrinks(drinks);
-
-                if (preferredDrinks && preferredDrinks.length > 0) {
-                    const drinkIds = new Set(preferredDrinks);
-                    const filtered = drinks.filter(drink => drinkIds.has(drink.id));
-                    setAvailableDrinks(filtered.length > 0 ? filtered : drinks);
-                } else {
-                    setAvailableDrinks(drinks);
-                }
-            } catch (error) {
-                console.error("Failed to load preferred drinks:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchDrinks();
+    }, []);
 
-        // Restore pending import queue if returning from DrinkEditPage
-        const rawQueue = sessionStorage.getItem('coffee_flow_import_queue');
-        if (rawQueue) {
-            try {
-                const queue = JSON.parse(rawQueue) as ImportableRecipe[];
-                if (Array.isArray(queue) && queue.length > 0) {
-                    setRestoredQueue(queue);
-                    setIsImportModalOpen(true);
-                }
-            } catch {
-                sessionStorage.removeItem('coffee_flow_import_queue');
-            }
-        }
-    }, [isEditing, location.pathname]);
-
-    const handleEditToggle = () => {
-        if (!isEditing) {
-            setSelectedDrinks(availableDrinks.map(d => d.id));
-        }
-        setIsEditing(!isEditing);
-    };
-
-    const toggleDrink = (id: string) => {
-        if (selectedDrinks.includes(id)) {
-            setSelectedDrinks(selectedDrinks.filter(i => i !== id));
-        } else {
-            setSelectedDrinks([...selectedDrinks, id]);
-        }
-    };
-
-    const handleSaveDrinks = async () => {
-        try {
-            await settingsService.setUserPreferredDrinks(selectedDrinks);
-            setIsEditing(false);
-        } catch (error) {
-            console.error("Failed to save drinks", error);
-        }
-    };
-
-    const filteredDisplayDrinks = availableDrinks.filter(d =>
-        d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        parseList(d.ingredients_json).join(' ').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const editableDrinks = allDrinks.filter(d =>
-        d.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const nonCoffeeCount = allDrinks.filter((d) => d.base_type === 'non_coffee').length;
+    const coffeeCount = allDrinks.length - nonCoffeeCount;
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
-            {/* Sticky Header */}
+        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
+            {/* Header */}
             <PageHeader
-                title={isEditing ? 'Select Drinks' : 'Drinks Menu'}
-                subtitle={isEditing ? 'Choose drinks for your active menu' : 'Select a drink to view recipe'}
-                onBack={() => (isEditing ? setIsEditing(false) : navigate(-1))}
-                className="space-y-3"
-            >
-                {/* Search Bar */}
-                <SearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search espresso, latte..."
-                    clearable
-                />
-            </PageHeader>
+                title="Beverages"
+                subtitle="Select base category to browse & craft drinks"
+            />
 
-            {/* Content */}
-            {isEditing ? (
-                /* EDIT MODE: Pick active drinks */
-                <main className="flex-1 px-5 pt-4">
-                    <div className="mb-4 text-center bg-md-secondary-container/50 p-3 rounded-xl border border-md-outline-variant/20">
-                        <p className="typescale-body-medium text-md-on-secondary-container font-medium">
-                            Select drinks to feature on your menu screen. ({selectedDrinks.length} selected)
+            <main className="flex-1 px-5 pt-4 space-y-4">
+                {/* Coffee Base Card */}
+                <div
+                    onClick={() => navigate('/drinks/list?base=coffee')}
+                    className="group relative overflow-hidden bg-gradient-to-br from-amber-900/10 via-amber-800/5 to-transparent hover:from-amber-900/20 hover:via-amber-800/10 border border-amber-900/20 dark:border-amber-700/30 rounded-3xl p-6 transition-all shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]"
+                >
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-amber-800 text-amber-100 flex items-center justify-center shadow-md shrink-0">
+                            <Icon name="local_cafe" className="text-3xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+                            {loading ? '...' : `${coffeeCount} recipes`}
+                        </span>
+                    </div>
+
+                    <div className="mt-5">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-md-on-surface tracking-tight">
+                                ☕ Coffee Base
+                            </h2>
+                            <Icon
+                                name="arrow_forward"
+                                className="text-lg text-md-on-surface-variant group-hover:translate-x-1 transition-transform"
+                            />
+                        </div>
+                        <p className="text-xs text-md-on-surface-variant mt-1.5 leading-relaxed">
+                            All beverages built on espresso, cold brew, or filtered coffee bases like Latte,
+                            Cappuccino, Americano, and Dirty.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pb-20">
-                        {editableDrinks.map((item) => {
-                            const isSelected = selectedDrinks.includes(item.id);
-                            return (
-                                <button
-                                    key={item.id}
-                                    onClick={() => toggleDrink(item.id)}
-                                    className={`group relative flex flex-col items-center justify-center p-3.5 rounded-xl transition-all active:scale-[0.98] border cursor-pointer ${
-                                        isSelected
-                                            ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-md-1'
-                                            : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface hover:bg-md-surface-container-high'
-                                    }`}
-                                >
-                                    {isSelected && (
-                                        <div className="absolute top-2 right-2 text-md-primary">
-                                            <Icon name="check_circle" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                        </div>
-                                    )}
-                                    <div className={`size-14 mb-2 rounded-full flex items-center justify-center transition-colors overflow-hidden border border-md-outline-variant/20 p-1 ${
-                                        isSelected ? 'bg-md-primary-container' : 'bg-md-surface-container-highest'
-                                    }`}>
-                                        <DrinkImage src={getDrinkImage(item)} alt={item.name} />
-                                    </div>
-                                    <span className={`typescale-title-small text-center line-clamp-1 ${
-                                        isSelected ? 'text-md-on-secondary-container font-bold' : 'text-md-on-surface font-semibold'
-                                    }`}>
-                                        {item.name}
-                                    </span>
-                                </button>
-                            );
-                        })}
+                    <div className="mt-4 pt-3 border-t border-amber-900/10 dark:border-amber-700/20 flex items-center gap-2 text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                        <span>Espresso</span>
+                        <span>•</span>
+                        <span>Cold Brew</span>
+                        <span>•</span>
+                        <span>Americano</span>
+                        <span>•</span>
+                        <span>Mocha</span>
+                    </div>
+                </div>
+
+                {/* Non-Coffee Card */}
+                <div
+                    onClick={() => navigate('/drinks/list?base=non_coffee')}
+                    className="group relative overflow-hidden bg-gradient-to-br from-emerald-900/10 via-emerald-800/5 to-transparent hover:from-emerald-900/20 hover:via-emerald-800/10 border border-emerald-900/20 dark:border-emerald-700/30 rounded-3xl p-6 transition-all shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]"
+                >
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-800 text-emerald-100 flex items-center justify-center shadow-md shrink-0">
+                            <Icon name="eco" className="text-3xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800">
+                            {loading ? '...' : `${nonCoffeeCount} recipes`}
+                        </span>
                     </div>
 
-                    <div className="fixed bottom-0 w-full bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 p-5 z-30 max-w-md mx-auto left-0 right-0">
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={handleSaveDrinks}
-                            disabled={selectedDrinks.length < 1}
-                            className="w-full"
-                        >
-                            <span>Save Menu Selection ({selectedDrinks.length})</span>
-                            <Icon name="check" className="text-xl" />
-                        </Button>
-                    </div>
-                </main>
-            ) : (
-                /* NORMAL MODE: Clean Row List matching equipment page UI */
-                <main className="flex-1 px-5 pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 className="typescale-title-medium font-bold text-md-on-surface">Active Menu</h2>
-                            <p className="typescale-body-small text-md-on-surface-variant">Tap any drink to view recipe & preparation</p>
+                    <div className="mt-5">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-md-on-surface tracking-tight">
+                                🍵 Non-Coffee
+                            </h2>
+                            <Icon
+                                name="arrow_forward"
+                                className="text-lg text-md-on-surface-variant group-hover:translate-x-1 transition-transform"
+                            />
                         </div>
-                        <button
-                            onClick={handleEditToggle}
-                            className="typescale-label-large bg-md-secondary-container text-md-on-secondary-container px-3.5 py-1.5 rounded-full hover:bg-md-secondary-container/80 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                            <Icon name="edit" className="text-base" />
-                            Edit Menu
-                        </button>
+                        <p className="text-xs text-md-on-surface-variant mt-1.5 leading-relaxed">
+                            Matcha, chocolate, artisanal teas, and milk specialties without a coffee base.
+                        </p>
                     </div>
 
-                    {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="size-9 border-4 border-md-primary border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-3">
-                            {filteredDisplayDrinks.map((drink) => {
-                                const ingredientsList = parseList(drink.ingredients_json).join(', ');
-                                return (
-                                    <div
-                                        key={drink.id}
-                                        onClick={() => navigate(`/drinks/${drink.id}`)}
-                                        className="group flex items-center gap-4 p-4 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 hover:bg-md-surface-container-high hover:border-md-primary/40 transition-all active:scale-[0.98] cursor-pointer shadow-md-1"
-                                    >
-                                        {/* Circular Left Image / Avatar Container */}
-                                        <div className="size-14 rounded-full bg-md-surface-container-highest flex items-center justify-center overflow-hidden border border-md-outline-variant/20 p-1 shrink-0">
-                                            <DrinkImage src={getDrinkImage(drink)} alt={drink.name} />
-                                        </div>
+                    <div className="mt-4 pt-3 border-t border-emerald-900/10 dark:border-emerald-700/20 flex items-center gap-2 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                        <span>Matcha</span>
+                        <span>•</span>
+                        <span>Chocolate</span>
+                        <span>•</span>
+                        <span>Chai & Tea</span>
+                        <span>•</span>
+                        <span>Milk</span>
+                    </div>
+                </div>
+            </main>
 
-                                        {/* Middle Text Details */}
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="typescale-title-medium font-bold text-md-on-surface line-clamp-1 mb-0.5">
-                                                {drink.name}
-                                            </h3>
-                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-2 leading-tight">
-                                                {ingredientsList || 'Espresso drink recipe'}
-                                            </p>
-                                        </div>
-
-                                        {/* Right Chevron */}
-                                        <Icon name="chevron_right" className="text-md-on-surface-variant/40 text-xl group-hover:translate-x-0.5 transition-transform shrink-0" />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {filteredDisplayDrinks.length === 0 && !loading && (
-                        <div className="text-center py-12 px-4 bg-md-surface-container-low rounded-xl border border-dashed border-md-outline-variant">
-                            <Icon name="local_cafe" className="text-4xl text-md-outline/50 mb-2 mx-auto" />
-                            <p className="typescale-body-medium text-md-on-surface-variant">
-                                {searchQuery ? 'No drinks match your search.' : 'No drinks found.'}
-                            </p>
-                        </div>
-                    )}
-                </main>
-            )}
-
-            {/* Floating Speed Dial FAB */}
-            <div className="fixed bottom-24 right-6 z-40 flex flex-col items-end gap-3 max-w-md mx-auto">
+            {/* Floating Action Button (FAB) Speed Dial */}
+            <div className="fixed bottom-24 right-5 z-30 flex flex-col items-end gap-2.5">
                 {isFabMenuOpen && (
-                    <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
+                    <>
                         <button
                             onClick={() => {
                                 setIsFabMenuOpen(false);
                                 setIsImportModalOpen(true);
                             }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-md-surface-container-high text-md-on-surface rounded-2xl shadow-md-2 border border-md-outline-variant/30 typescale-label-medium font-bold hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-md-surface border border-md-outline-variant/40 shadow-lg text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-md-surface-container-high transition-all animate-in slide-in-from-bottom-2 duration-150"
                         >
-                            <SplashLogoIcon className="w-4 h-4 text-md-primary" />
-                            <span>Import Drink</span>
+                            <Icon name="auto_awesome" className="text-[16px]" />
+                            <span>Smart Import</span>
                         </button>
-
                         <button
                             onClick={() => {
                                 setIsFabMenuOpen(false);
-                                navigate('/drinks/new/edit');
+                                navigate('/drinks/new');
                             }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-md-surface-container-high text-md-on-surface rounded-2xl shadow-md-2 border border-md-outline-variant/30 typescale-label-medium font-bold hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-md-surface border border-md-outline-variant/40 shadow-lg text-xs font-bold text-md-primary hover:bg-md-surface-container-high transition-all animate-in slide-in-from-bottom-2 duration-150"
                         >
-                            <Icon name="edit" className="text-lg text-md-on-surface-variant" />
+                            <Icon name="add" className="text-[16px]" />
                             <span>New Drink</span>
                         </button>
-                    </div>
+                    </>
                 )}
 
                 <button
                     onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-                    className={`size-14 rounded-full text-md-on-primary shadow-md-3 flex items-center justify-center transition-all duration-300 active:scale-90 border-2 border-md-surface cursor-pointer ${
-                        isFabMenuOpen ? 'bg-md-on-surface-variant rotate-45' : 'bg-md-primary hover:bg-md-primary/90'
-                    }`}
+                    className="w-14 h-14 rounded-full bg-md-primary hover:bg-md-primary/90 text-md-on-primary shadow-xl flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
+                    aria-label="Actions"
                 >
-                    <Icon name="add" className="text-3xl" />
+                    <Icon
+                        name={isFabMenuOpen ? 'close' : 'add'}
+                        className={`text-2xl transition-transform ${isFabMenuOpen ? 'rotate-90' : ''}`}
+                    />
                 </button>
             </div>
 
-            {!isEditing && <BottomNav activeTab="brewing" />}
-
-            <SmartImportModal
+            {/* Smart Import Modal */}
+            <DrinkSmartImportModal
                 isOpen={isImportModalOpen}
-                initialParsedRecipes={restoredQueue}
-                onClose={() => {
-                    setIsImportModalOpen(false);
-                    setRestoredQueue([]);
-                    sessionStorage.removeItem('coffee_flow_import_queue');
+                onClose={() => setIsImportModalOpen(false)}
+                onImportToEdit={(imported) => {
+                    navigate('/drinks/new', { state: { prefill: imported } });
                 }}
-                onImport={(importedData) => {
-                    setIsImportModalOpen(false);
-                    const data = importedData as Record<string, unknown>;
-                    let ingredients: string[] = [];
-                    let instructions: string[] = [];
-                    
-                    if (data.ingredients_json) {
-                        ingredients = parseList((data.ingredients_json as string) || '[]');
-                    } else if (data.steps) {
-                        const steps = (data.steps as Array<Record<string, unknown>>) || [];
-                        ingredients = steps
-                            .flatMap((step: Record<string, unknown>) => {
-                                const instruction = (step.instruction as string) || '';
-                                const matches = instruction.match(/(\d+(?:\.\d+)?)\s*(g|ml|shot|shots?)\s*(coffee|espresso|milk|water|syrup|cream|foam)/gi);
-                                return matches || [];
-                            })
-                            .filter((v, i, a) => a.indexOf(v) === i);
-                    }
-                    
-                    if (data.instructions_json) {
-                        instructions = parseList((data.instructions_json as string) || '[]');
-                    } else if (data.steps) {
-                        const steps = (data.steps as Array<Record<string, unknown>>) || [];
-                        instructions = steps
-                            .map((step: Record<string, unknown>) => (step.instruction as string) || (step.label as string))
-                            .filter(Boolean);
-                    }
-                    
-                    const methodId = (data.method_id as string) || '';
-                    const name = (data.name as string) || '';
-                    const isCold = methodId === 'cold_brew' || name.toLowerCase().includes('cold') || name.toLowerCase().includes('iced') || name.toLowerCase().includes('frapp');
-                    
-                    const prefillDrink = {
-                        name: (data.name as string) || 'Imported Drink',
-                        category: isCold ? 'cold' : 'hot',
-                        ingredients_json: JSON.stringify(ingredients.length > 0 ? ingredients : ['1 shot espresso', '120ml milk']),
-                        instructions_json: JSON.stringify(instructions.length > 0 ? instructions : ['Prepare ingredients', 'Mix and serve']),
-                    };
-                    
-                    setIsImportModalOpen(false);
-                    navigate(`/drinks/new`, {
-                        state: { prefill: prefillDrink }
-                    });
-                }}
-                onSaveDirect={async (importedData) => {
-                    const id = crypto.randomUUID();
-                    const now = new Date().toISOString();
-                    try {
-                        const data = importedData as Record<string, unknown>;
-                        const parsedIngredients = JSON.parse((data.ingredients_json as string) || '[]');
-                        const parsedInstructions = JSON.parse((data.instructions_json as string) || '[]');
-                        await drinkService.saveDrink({
-                            id,
-                            name: (data.name as string) || 'Imported Drink',
-                            category: (data.category as string) === 'cold' ? 'cold' : 'hot',
-                            ingredients_json: JSON.stringify(parsedIngredients),
-                            instructions_json: JSON.stringify(parsedInstructions),
-                            created_at: now,
-                            updated_at: now,
-                        });
-                    } catch {
-                        await drinkService.saveDrink({
-                            id,
-                            name: (importedData as Record<string, unknown>).name as string || 'Imported Drink',
-                            category: 'hot',
-                            ingredients_json: '[]',
-                            instructions_json: '[]',
-                            created_at: now,
-                            updated_at: now,
-                        });
-                    }
+                onSaveDirect={async (imported) => {
+                    await drinkService.saveDrink(imported as Drink);
+                    fetchDrinks();
                 }}
             />
+
+            {/* Bottom Navigation */}
+            <BottomNav activeTab="brewing" />
         </div>
     );
 };

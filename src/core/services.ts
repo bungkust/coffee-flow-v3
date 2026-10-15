@@ -12,6 +12,7 @@ import { SQLiteDrinkRepository } from '../features/brew/infrastructure/SQLiteDri
 
 import { PantryService } from '../features/pantry/application/PantryService';
 import { SQLitePantryRepository } from '../features/pantry/infrastructure/SQLitePantryRepository';
+import { SQLitePantryLogRepository } from '../features/pantry/infrastructure/SQLitePantryLogRepository';
 
 // Repositories
 const recipeRepo = new SQLiteRecipeRepository();
@@ -22,9 +23,10 @@ const drinkRepo = new SQLiteDrinkRepository();
 const backupRepo = new SQLiteBackupRepository();
 const settingsRepo = new SQLiteSettingsRepository();
 const pantryRepo = new SQLitePantryRepository();
+const pantryLogRepo = new SQLitePantryLogRepository();
 
 // Services
-export const pantryService = new PantryService(pantryRepo);
+export const pantryService = new PantryService(pantryRepo, pantryLogRepo);
 export const brewService = new BrewService(recipeRepo, logRepo, brewingMethodRepo, pantryService);
 export const drinkService = new DrinkService(drinkRepo, drinkLogRepo, pantryService);
 export const backupService = new BackupService(backupRepo);

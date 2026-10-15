@@ -79,7 +79,8 @@ export interface BrewStats {
     todayBrews: number;
 }
 
-export type DrinkCategory = 'hot' | 'cold';
+export type DrinkCategory = 'hot' | 'cold' | 'Hot' | 'Cold';
+export type DrinkBaseType = 'coffee' | 'non_coffee';
 
 export const GRIND_SIZE_OPTIONS = [
     { value: 'Fine', label: 'Fine' },
@@ -89,10 +90,21 @@ export const GRIND_SIZE_OPTIONS = [
     { value: 'Coarse', label: 'Coarse' },
 ] as const;
 
+export interface DrinkIngredient {
+    name: string;
+    amount?: number;
+    unit?: 'ml' | 'g' | 'shot' | 'pump' | 'tsp' | 'tbsp' | 'pcs' | 'cube';
+    category?: 'beans' | 'milk' | 'syrup' | 'sugar' | 'other_ingredient';
+    default_pantry_item_id?: string;
+}
+
 export interface Drink {
     id: EntityId;
     name: string;
     category: DrinkCategory;
+    base_type?: DrinkBaseType;
+    is_favorite?: boolean;
+    base_recipe_id?: string;
     ingredients_json: string;
     instructions_json: string;
     image_url?: string;
@@ -104,7 +116,16 @@ export interface Drink {
 export interface DrinkLog {
     id: EntityId;
     drink_id: EntityId;
+    drink_name?: string;
+    bean_id?: string;
+    milk_id?: string;
+    recipe_id?: string;
+    ingredients_snapshot_json?: string;
     rating?: number;
+    sweetness?: number;
+    coffee_strength?: number;
+    creaminess?: number;
+    flavor_tags?: string;
     notes?: string;
     logged_at: string;
     created_at: string;
@@ -113,6 +134,9 @@ export interface DrinkLog {
 export interface DrinkLogWithDrink extends DrinkLog {
     drink_name: string;
     category: DrinkCategory;
+    bean_name?: string;
+    milk_name?: string;
+    recipe_name?: string;
 }
 
 export interface DrinkStats {

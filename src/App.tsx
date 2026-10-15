@@ -22,6 +22,7 @@ const RecipeEditPage = lazy(() => import('./pages/RecipeEditPage').then(m => ({ 
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const BackupRestorePage = lazy(() => import('./pages/BackupRestorePage').then(m => ({ default: m.BackupRestorePage })));
 const DrinkMenuPage = lazy(() => import('./pages/DrinkMenuPage').then(m => ({ default: m.DrinkMenuPage })));
+const DrinkListPage = lazy(() => import('./pages/DrinkListPage').then(m => ({ default: m.DrinkListPage })));
 const DrinkDetailPage = lazy(() => import('./pages/DrinkDetailPage').then(m => ({ default: m.DrinkDetailPage })));
 const DrinkPreparationPage = lazy(() => import('./pages/DrinkPreparationPage').then(m => ({ default: m.DrinkPreparationPage })));
 const DrinkLogPage = lazy(() => import('./pages/DrinkLogPage').then(m => ({ default: m.DrinkLogPage })));
@@ -90,6 +91,7 @@ function App() {
           <Route path="/pantry/add/:category" element={<PantryAddFormPage />} />
           <Route path="/pantry/:id/edit" element={<PantryEditPage />} />
           <Route path="/drinks" element={<DrinkMenuPage />} />
+          <Route path="/drinks/list" element={<DrinkListPage />} />
           <Route path="/drinks/:id/edit" element={<DrinkEditPage />} />
           <Route path="/drinks/:id" element={<DrinkDetailPage />} />
           <Route path="/drinks/:id/prepare" element={<DrinkPreparationPage />} />

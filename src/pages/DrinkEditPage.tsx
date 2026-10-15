@@ -5,7 +5,7 @@ import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { drinkService } from '../core/services';
-import type { Drink } from '../shared/domain/entities';
+import type { Drink, DrinkBaseType } from '../shared/domain/entities';
 
 export const DrinkEditPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -31,6 +31,7 @@ export const DrinkEditPage = () => {
                         id: newId,
                         name: p.name || '',
                         category: p.category || 'hot',
+                        base_type: p.base_type || 'coffee',
                         ingredients_json: p.ingredients_json || '[]',
                         instructions_json: p.instructions_json || '[]',
                         created_at: now,
@@ -60,7 +61,7 @@ export const DrinkEditPage = () => {
         setError('');
         try {
             await drinkService.saveDrink(drink);
-            navigate('/drinks');
+            navigate(`/drinks/list?base=${drink.base_type || 'coffee'}`);
         } catch (err) {
             console.error('Error saving drink:', err);
             alert('Failed to save drink');
@@ -125,17 +126,31 @@ export const DrinkEditPage = () => {
                                 placeholder="e.g. Caramel Macchiato"
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <Dropdown
-                                label="Category"
-                                value={drink.category}
-                                options={[
-                                    { value: 'hot', label: 'Hot' },
-                                    { value: 'cold', label: 'Cold' }
-                                ]}
-                                onChange={(val) => setDrink({ ...drink, category: val as Drink['category'] })}
-                                placeholder="Select"
-                            />
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <Dropdown
+                                    label="Base Type"
+                                    value={drink.base_type || 'coffee'}
+                                    options={[
+                                        { value: 'coffee', label: '☕ Coffee Base' },
+                                        { value: 'non_coffee', label: '🍵 Non-Coffee' }
+                                    ]}
+                                    onChange={(val) => setDrink({ ...drink, base_type: val as DrinkBaseType })}
+                                    placeholder="Select"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Dropdown
+                                    label="Category"
+                                    value={drink.category}
+                                    options={[
+                                        { value: 'hot', label: 'Hot' },
+                                        { value: 'cold', label: 'Cold' }
+                                    ]}
+                                    onChange={(val) => setDrink({ ...drink, category: val as Drink['category'] })}
+                                    placeholder="Select"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Image</label>

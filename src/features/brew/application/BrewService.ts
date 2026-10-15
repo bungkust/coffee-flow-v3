@@ -65,14 +65,27 @@ export class BrewService {
         };
         await this.logRepo.save(log);
 
+        const recipe = await this.recipeRepo.findById(recipeId);
+        const recipeName = recipe?.name || 'Coffee Brew';
+
         // Deduct bean stock
         if (beanId && coffeeConsumed && Number.isFinite(coffeeConsumed) && coffeeConsumed > 0) {
-            await this.pantryService.deductStock(beanId, coffeeConsumed);
+            await this.pantryService.deductStock(beanId, coffeeConsumed, {
+                actionType: 'brew',
+                referenceId: logId,
+                referenceName: recipeName,
+                unit: 'g'
+            });
         }
 
         // Deduct filter stock (always 1 for filter-based methods)
         if (filterId) {
-            await this.pantryService.deductStock(filterId, 1);
+            await this.pantryService.deductStock(filterId, 1, {
+                actionType: 'brew',
+                referenceId: logId,
+                referenceName: `${recipeName} (Filter)`,
+                unit: 'pcs'
+            });
         }
 
         return logId;

@@ -101,4 +101,14 @@ export class SQLitePantryRepository {
         );
         await dbService.saveToLocalStore();
     }
+
+    async addStock(id: string, amount: number): Promise<void> {
+        if (!Number.isFinite(amount) || amount <= 0) return;
+
+        await this.db.run(
+            'UPDATE pantry_items SET quantity = COALESCE(quantity, 0) + ?, updated_at = ? WHERE id = ?',
+            [amount, new Date().toISOString(), id]
+        );
+        await dbService.saveToLocalStore();
+    }
 }

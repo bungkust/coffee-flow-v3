@@ -70,7 +70,7 @@ export const JournalPage = () => {
 
     const rows = logs.map(log => ({
         id: log.id,
-        name: 'recipe_name' in log ? log.recipe_name : log.drink_name,
+        name: ('recipe_name' in log ? log.recipe_name : log.drink_name) || 'Drink',
         subtitle: [
             'method_id' in log && log.bean_id ? beanNames[log.bean_id] : undefined,
             'method_id' in log ? formatMethodName(log.method_id) : log.category
