@@ -62,10 +62,12 @@ Sistem migrasi di `src/core/database/schema.ts` akan menambahkan migration `vers
 
 -- 1. Menghubungkan master resep drink ke resep ekstraksi brew (opsional) & klasifikasi base
 ALTER TABLE drinks ADD COLUMN base_recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;
-ALTER TABLE drinks ADD COLUMN base_type TEXT DEFAULT 'coffee' CHECK(base_type IN ('coffee', 'non_coffee'));
+-- Catatan teknis: CHECK constraint divalidasi di level aplikasi untuk kompatibilitas SQLite mobile
+ALTER TABLE drinks ADD COLUMN base_type TEXT DEFAULT 'coffee';
 ALTER TABLE drinks ADD COLUMN is_favorite INTEGER DEFAULT 0;
 
 -- 2. Menghubungkan log eksperimen minuman ke Pantry (biji kopi & susu) dan Brew (resep ekstraksi)
+ALTER TABLE drink_logs ADD COLUMN drink_name TEXT; -- Snapshot nama minuman agar log tetap abadi walau resep dihapus
 ALTER TABLE drink_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
 ALTER TABLE drink_logs ADD COLUMN milk_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
 ALTER TABLE drink_logs ADD COLUMN recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;
@@ -101,7 +103,36 @@ CREATE TABLE IF NOT EXISTS pantry_logs (
 
 CREATE INDEX IF NOT EXISTS idx_pantry_logs_item ON pantry_logs(pantry_item_id);
 CREATE INDEX IF NOT EXISTS idx_pantry_logs_date ON pantry_logs(created_at);
+
+-- 7. Seed Data Starter Minuman Non-Coffee (Agar kategori non-coffee tidak kosong saat pertama dibuka)
+INSERT OR IGNORE INTO drinks (id, name, base_type, category, ingredients_json, instructions_json, created_at, updated_at)
+VALUES 
+  ('matcha_latte', 'Matcha Latte', 'non_coffee', 'hot', 
+   '[{"name":"Matcha Powder","amount":4,"unit":"g"},{"name":"Hot Water","amount":30,"unit":"ml"},{"name":"Steamed Milk","amount":180,"unit":"ml"}]',
+   '["Whisk matcha powder with 30ml hot water until smooth and frothy.","Steam milk to silky microfoam.","Pour steamed milk over matcha and serve."]',
+   datetime('now'), datetime('now')),
+  ('iced_chocolate', 'Classic Iced Chocolate', 'non_coffee', 'cold',
+   '[{"name":"Chocolate Powder / Sauce","amount":30,"unit":"g"},{"name":"Fresh Milk","amount":150,"unit":"ml"},{"name":"Ice Cubes","amount":80,"unit":"g"}]',
+   '["Dissolve chocolate powder with a splash of warm water.","Fill glass with ice cubes.","Pour fresh milk, then top with dissolved chocolate."]',
+   datetime('now'), datetime('now')),
+  ('chai_latte', 'Chai Tea Latte', 'non_coffee', 'hot',
+   '[{"name":"Chai Tea Concentrate / Syrup","amount":40,"unit":"ml"},{"name":"Steamed Milk","amount":160,"unit":"ml"},{"name":"Cinnamon Powder","amount":1,"unit":"g"}]',
+   '["Add chai concentrate to cup.","Steam milk to microfoam texture.","Pour milk into chai and dust with cinnamon."]',
+   datetime('now'), datetime('now'));
 ```
+
+### Konversi Standar Barista & Penanganan Stok
+1. **Aturan Konversi Unit**:
+   - `1 shot espresso` = **18g beans**
+   - `1 pump sirup` = **10ml sirup**
+   - `1 tbsp / sdm` = **15ml**
+   - `1 tsp / sdt` = **5ml**
+2. **Bahan Lepas (Non-Inventory Ingredients)**:
+   - Bahan seperti *Es batu, Garnish daun mint, Air mineral, Taburan kayu manis* tidak wajib ada di Pantry.
+   - Jika bahan tidak ditautkan ke item Pantry, aplikasi melewati (*skip*) proses potong stok secara mulus tanpa error.
+3. **Penanganan Stok Menipis (Soft-Warning, No Hard-Block)**:
+   - Jika stok bahan di Pantry 0 atau tidak mencukupi, aplikasi hanya menampilkan badge peringatan kuning (*"Stok menipis"*).
+   - Pengguna tetap dapat melanjutkan *"Finish & Log"* (stok Pantry di-clamp minimum 0). Barista tidak terhalang jika membawa bahan fisik baru yang belum di-input ke app.
 
 ### Struktur `DrinkIngredient` (JSON Terstruktur & Kompatibel ke Belakang)
 Disimpan dalam `drinks.ingredients_json`. Mendukung format string lama maupun format objek terstruktur:
