@@ -70,7 +70,7 @@ export const WelcomePage = () => {
                 </Button>
 
                 <button
-                    onClick={() => navigate('/settings/backup')}
+                    onClick={() => navigate('/settings/backup', { state: { restore: true } })}
                     className="w-full bg-md-surface-container-high text-md-on-surface font-semibold py-3.5 px-6 rounded-full border border-md-outline-variant/30 hover:bg-md-surface-container-highest transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer typescale-label-large"
                 >
                     <Icon name="cloud_sync" className="text-xl text-md-primary" />

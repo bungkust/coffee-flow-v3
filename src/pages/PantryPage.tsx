@@ -8,6 +8,7 @@ import { SegmentedControl } from '../components/SegmentedControl';
 import { SearchBar } from '../components/SearchBar';
 import { pantryService } from '../core/services';
 import { PANTRY_CATEGORY_MAP } from '../features/pantry/domain/pantryCategories';
+import { stripTagPrefix } from '../features/pantry/domain/beanOptions';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
 type Tab = 'supplies' | 'gear';
@@ -200,7 +201,7 @@ export const PantryPage = () => {
                                                     <p className="text-xs text-gray-500 font-medium">{item.description}</p>
                                                 </div>
                                                 {item.tags_json && item.tags_json.map((tag: string) => (
-                                                    <span key={tag} className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-md font-bold uppercase tracking-wide">{tag}</span>
+                                                    <span key={tag} className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-md font-bold uppercase tracking-wide">{stripTagPrefix(tag)}</span>
                                                 ))}
                                             </div>
                                         ))}
@@ -222,7 +223,7 @@ export const PantryPage = () => {
                                                     <p className="text-xs text-gray-500 font-medium">{item.description}</p>
                                                 </div>
                                                 {item.tags_json && item.tags_json.map((tag: string) => (
-                                                    <span key={tag} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-bold uppercase tracking-wide">{tag}</span>
+                                                    <span key={tag} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-md font-bold uppercase tracking-wide">{stripTagPrefix(tag)}</span>
                                                 ))}
                                             </div>
                                         ))}
@@ -312,7 +313,7 @@ export const PantryPage = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {selectedBean.tags_json.map((tag, idx) => (
                                             <span key={idx} className="bg-gray-50 border border-gray-100 text-gray-600 text-[11px] font-bold px-3 py-1.5 rounded-lg">
-                                                {tag}
+                                                {stripTagPrefix(tag)}
                                             </span>
                                         ))}
                                     </div>

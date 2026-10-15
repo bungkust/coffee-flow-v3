@@ -5,8 +5,10 @@ import { Dropdown } from '../components/Dropdown';
 import { MethodImage } from '../components/MethodImage';
 import { QuantityField } from '../components/QuantityField';
 import { SaveBar } from '../components/SaveBar';
+import { TasteProfileFields } from '../components/TasteProfileFields';
 import { settingsService, pantryService, brewService } from '../core/services';
-import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
+import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
+import type { BlendComponent } from '../features/pantry/domain/beanOptions';
 import type { UnitSystem } from '../shared/utils/brewMath';
 import type { BrewingMethod } from '../shared/domain/entities';
 
@@ -32,6 +34,43 @@ function getCategoryFallback(id: string): string {
     if (['french_press', 'cold_brew', 'turkish', 'dallah', 'jebena', 'tubruk'].includes(id)) return 'Full Immersion (Steeping) Methods';
     if (['cold_drip', 'siphon', 'sock_coffee', 'percolator', 'clover'].includes(id)) return 'Vacuum, Special & Percolation Methods';
     return 'Hybrid & Portable Methods';
+}
+
+const STEP_ORDER = ['name', 'equipment', 'beans'] as const;
+
+function StepProgress({ step }: { step: (typeof STEP_ORDER)[number] }) {
+    const current = STEP_ORDER.indexOf(step);
+    return (
+        <div className="mt-3 flex gap-1.5" aria-hidden="true">
+            {STEP_ORDER.map((s, i) => (
+                <span key={s} className={`h-1 flex-1 rounded-full ${i <= current ? 'bg-md-primary' : 'bg-md-outline-variant'}`} />
+            ))}
+        </div>
+    );
+}
+
+function StepHeader({ step, title, onBack, onSkip }: { step: (typeof STEP_ORDER)[number], title: string, onBack: () => void, onSkip?: () => void }) {
+    return (
+        <header className="px-5 pt-10 pb-3 border-b border-md-outline-variant/20">
+            <div className="flex items-center gap-3">
+                <button
+                    onClick={onBack}
+                    className="size-10 shrink-0 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                >
+                    <Icon name="arrow_back" className="text-2xl" />
+                </button>
+                <h1 className="typescale-headline-small font-bold text-md-on-surface truncate">{title}</h1>
+                {onSkip ? (
+                    <button onClick={onSkip} className="typescale-label-large font-bold text-md-primary hover:underline cursor-pointer">
+                        Skip
+                    </button>
+                ) : (
+                    <div className="flex-1"></div>
+                )}
+            </div>
+            <StepProgress step={step} />
+        </header>
+    );
 }
 
 export const OnboardingPage = () => {
@@ -68,17 +107,20 @@ export const OnboardingPage = () => {
     const [beanName, setBeanName] = useState('');
     const [roastery, setRoastery] = useState('');
     const [beanQuantity, setBeanQuantity] = useState('');
+    const [species, setSpecies] = useState('');
     const [origin, setOrigin] = useState('');
     const [variety, setVariety] = useState('');
     const [process, setProcess] = useState('');
     const [altitude, setAltitude] = useState('');
+    const [producer, setProducer] = useState('');
     const [roastLevel, setRoastLevel] = useState<'light' | 'medium' | 'dark'>('medium');
     const [roastDate, setRoastDate] = useState('');
     const [tastingNotes, setTastingNotes] = useState('');
+    const [tasteProfile, setTasteProfile] = useState({ sweet: '', acid: '', body: '', bitter: '' });
 
     const [beanType, setBeanType] = useState<'single_origin' | 'blend'>('single_origin');
-    const [blendComponents, setBlendComponents] = useState<Array<{ type: string; origin: string; percentage: string }>>([
-        { type: 'Arabica', origin: '', percentage: '' }
+    const [blendComponents, setBlendComponents] = useState<BlendComponent[]>([
+        { type: 'Arabica', origin: '', percentage: '', variety: '', process: '' }
     ]);
 
     useEffect(() => {
@@ -121,7 +163,7 @@ export const OnboardingPage = () => {
                     quantity: parseQuantity(beanQuantity),
                     unit: 'g',
                     tags_json: [
-                        ...formatBeanTags({ origin, variety, process, altitude, roastLevel }),
+                        ...formatBeanTags({ species, origin, variety, process, altitude, roastLevel, producer, ...tasteProfile }),
                         ...buildBlendTags(beanType === 'blend' ? blendComponents : [])
                     ]
                 });
@@ -141,29 +183,12 @@ export const OnboardingPage = () => {
             {/* Step 1: Profile Input */}
             {step === 'name' && (
                 <div className="flex flex-col min-h-screen w-full">
-                    <header className="flex items-center justify-between px-5 pt-10 pb-3 border-b border-md-outline-variant/20">
-                        <button
-                            onClick={handleBack}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <div className="flex gap-1.5">
-                            <div className="h-2 w-8 rounded-full bg-md-primary"></div>
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                        </div>
-                        <div className="size-10"></div>
-                    </header>
+                    <StepHeader step={step} title="Let's get to know you" onBack={handleBack} />
 
                     <main className="flex-1 flex flex-col px-5 pt-4 pb-28 space-y-6">
-                        <div className="text-center space-y-1">
-                            <p className="typescale-label-medium font-bold text-md-primary tracking-widest uppercase">Step 1 — Profile</p>
-                            <h1 className="typescale-headline-medium font-bold text-md-on-surface">Let's get to know you</h1>
-                            <p className="typescale-body-medium text-md-on-surface-variant max-w-xs mx-auto">
-                                Help us tailor your coffee journey.
-                            </p>
-                        </div>
+                        <p className="text-center typescale-body-medium text-md-on-surface-variant max-w-xs mx-auto">
+                            Help us tailor your coffee journey.
+                        </p>
 
                         <div className="space-y-4">
                             {/* Name Input Card */}
@@ -249,29 +274,12 @@ export const OnboardingPage = () => {
             {/* Step 2: Equipment Selection */}
             {step === 'equipment' && (
                 <div className="flex flex-col min-h-screen w-full">
-                    <header className="flex items-center justify-between px-5 pt-10 pb-3 border-b border-md-outline-variant/20">
-                        <button
-                            onClick={handleBack}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <div className="flex gap-1.5">
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                            <div className="h-2 w-8 rounded-full bg-md-primary"></div>
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                        </div>
-                        <div className="size-10"></div>
-                    </header>
+                    <StepHeader step={step} title="What do you brew with?" onBack={handleBack} />
 
                     <main className="flex-1 flex flex-col px-5 pt-4 pb-28 space-y-4">
-                        <div className="text-center space-y-1">
-                            <p className="typescale-label-medium font-bold text-md-primary tracking-widest uppercase">Step 2 — Equipment</p>
-                            <h1 className="typescale-headline-medium font-bold text-md-on-surface">What do you brew with?</h1>
-                            <p className="typescale-body-medium text-md-on-surface-variant">
-                                Select <span className="text-md-primary font-bold">at least 1</span> item to proceed. ({selectedEquipment.length} selected)
-                            </p>
-                        </div>
+                        <p className="text-center typescale-body-medium text-md-on-surface-variant">
+                            Select <span className="text-md-primary font-bold">at least 1</span> item to proceed. ({selectedEquipment.length} selected)
+                        </p>
 
                         <div className="space-y-6">
                             {CATEGORIES.map((catName) => {
@@ -340,31 +348,12 @@ export const OnboardingPage = () => {
             {/* Step 3: Bean Inventory */}
             {step === 'beans' && (
                 <div className="flex flex-col min-h-screen w-full">
-                    <header className="flex items-center justify-between px-5 pt-10 pb-3 border-b border-md-outline-variant/20">
-                        <button
-                            onClick={handleBack}
-                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                        >
-                            <Icon name="arrow_back" className="text-2xl" />
-                        </button>
-                        <div className="flex gap-1.5">
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                            <div className="h-2 w-2 rounded-full bg-md-outline-variant/40"></div>
-                            <div className="h-2 w-8 rounded-full bg-md-primary"></div>
-                        </div>
-                        <button onClick={() => navigate('/home')} className="typescale-label-large font-bold text-md-primary hover:underline cursor-pointer">
-                            Skip
-                        </button>
-                    </header>
+                    <StepHeader step={step} title="Current Beans" onBack={handleBack} onSkip={() => navigate('/home')} />
 
                     <main className="flex-1 flex flex-col px-5 pt-4 pb-28 space-y-4">
-                        <div className="text-center space-y-1">
-                            <p className="typescale-label-medium font-bold text-md-primary tracking-widest uppercase">Step 3 — Beans</p>
-                            <h1 className="typescale-headline-medium font-bold text-md-on-surface">Current Beans</h1>
-                            <p className="typescale-body-medium text-md-on-surface-variant">
-                                Tell us what you're brewing. We'll personalize recipe suggestions.
-                            </p>
-                        </div>
+                        <p className="text-center typescale-body-medium text-md-on-surface-variant">
+                            Tell us what you're brewing. We'll personalize recipe suggestions.
+                        </p>
 
                         <div className="space-y-4">
                             {/* Identity Card */}
@@ -404,6 +393,15 @@ export const OnboardingPage = () => {
                                             type="text"
                                             value={beanName}
                                             onChange={(e) => setBeanName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Dropdown
+                                            label="Species"
+                                            value={species}
+                                            options={SPECIES_OPTIONS}
+                                            onChange={setSpecies}
+                                            placeholder="Select"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -464,7 +462,7 @@ export const OnboardingPage = () => {
                                                 placeholder="Select"
                                             />
                                         </div>
-                                        <div className="space-y-1.5 col-span-2">
+                                        <div className="space-y-1.5">
                                             <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant" htmlFor="altitude">
                                                 Altitude
                                             </label>
@@ -475,6 +473,19 @@ export const OnboardingPage = () => {
                                                 type="text"
                                                 value={altitude}
                                                 onChange={(e) => setAltitude(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant" htmlFor="producer">
+                                                Producer
+                                            </label>
+                                            <input
+                                                className="w-full bg-md-surface-container-high text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl py-3 px-4 border border-md-outline-variant/30 focus:ring-2 focus:ring-md-primary/40 typescale-body-medium outline-none"
+                                                id="producer"
+                                                placeholder="e.g. Argopuro Walida"
+                                                type="text"
+                                                value={producer}
+                                                onChange={(e) => setProducer(e.target.value)}
                                             />
                                         </div>
                                     </div>
@@ -500,7 +511,7 @@ export const OnboardingPage = () => {
                                                             buttonClassName="py-2 rounded-lg"
                                                             label="Type"
                                                             value={comp.type}
-                                                            options={VARIETY_OPTIONS.slice(0, 4)}
+                                                            options={SPECIES_OPTIONS}
                                                             onChange={(val) => {
                                                                 const newComps = [...blendComponents];
                                                                 newComps[index].type = val;
@@ -540,12 +551,40 @@ export const OnboardingPage = () => {
                                                             }}
                                                         />
                                                     </div>
+                                                    <div className="space-y-1">
+                                                        <Dropdown
+                                                            buttonClassName="py-2 rounded-lg"
+                                                            label="Variety"
+                                                            value={comp.variety}
+                                                            options={VARIETY_OPTIONS}
+                                                            onChange={(val) => {
+                                                                const newComps = [...blendComponents];
+                                                                newComps[index].variety = val;
+                                                                setBlendComponents(newComps);
+                                                            }}
+                                                            placeholder="Select"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <Dropdown
+                                                            buttonClassName="py-2 rounded-lg"
+                                                            label="Process"
+                                                            value={comp.process}
+                                                            options={PROCESS_OPTIONS}
+                                                            onChange={(val) => {
+                                                                const newComps = [...blendComponents];
+                                                                newComps[index].process = val;
+                                                                setBlendComponents(newComps);
+                                                            }}
+                                                            placeholder="Select"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
                                         {blendComponents.length < 5 && (
                                             <button
-                                                onClick={() => setBlendComponents([...blendComponents, { type: '', origin: '', percentage: '' }])}
+                                                onClick={() => setBlendComponents([...blendComponents, { type: '', origin: '', percentage: '', variety: '', process: '' }])}
                                                 className="w-full py-2.5 flex items-center justify-center gap-2 typescale-label-medium font-bold text-md-primary hover:bg-md-primary-container/30 rounded-xl transition-colors border border-dashed border-md-primary/40 cursor-pointer"
                                             >
                                                 <Icon name="add" className="text-base" /> Add Component
@@ -554,6 +593,15 @@ export const OnboardingPage = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Taste Profile Card */}
+                            <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                                <h2 className="typescale-title-medium font-bold text-md-on-surface border-b border-md-outline-variant/20 pb-2">Taste Profile</h2>
+                                <TasteProfileFields
+                                    value={tasteProfile}
+                                    onChange={(field, val) => setTasteProfile({ ...tasteProfile, [field]: val })}
+                                />
+                            </div>
 
                             {/* Roast Info Card */}
                             <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">

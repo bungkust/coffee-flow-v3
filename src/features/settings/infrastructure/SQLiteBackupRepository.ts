@@ -77,8 +77,11 @@ export class SQLiteBackupRepository {
 
         for (const table of BACKUP_TABLES) {
             const rows = parsed.tables[table] || [];
+            if (rows.length === 0) continue;
+            const info = await this.db.query(`PRAGMA table_info(${table})`);
+            const currentColumns = new Set((info.values || []).map((c: { name: string }) => c.name));
             for (const row of rows) {
-                const columns = Object.keys(row);
+                const columns = Object.keys(row).filter(column => currentColumns.has(column));
                 if (columns.length === 0) continue;
                 const placeholders = columns.map(() => '?').join(', ');
                 const values = columns.map((column) => row[column]);

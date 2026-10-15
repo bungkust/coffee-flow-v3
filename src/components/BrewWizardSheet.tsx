@@ -4,6 +4,7 @@ import { Icon } from './Icons';
 import { WizardRow } from './WizardRow';
 import { brewService, pantryService, settingsService } from '../core/services';
 import { suggestMethods } from '../shared/utils/beanMatching';
+import { stripTagPrefix } from '../features/pantry/domain/beanOptions';
 import { daysOffRoast, freshnessLabel } from '../shared/utils/beanFreshness';
 import type { BrewingMethod, Recipe } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
@@ -65,7 +66,7 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
         const days = daysOffRoast(item.roast_date);
         const parts = [
             days !== null ? `${days} days off roast · ${freshnessLabel(days)}` : null,
-            (item.tags_json ?? []).slice(0, 2).join(' · ') || null
+            (item.tags_json ?? []).slice(0, 2).map(stripTagPrefix).join(' · ') || null
         ].filter(Boolean);
         return parts.join(' · ');
     };
@@ -103,7 +104,7 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
                     {context && <p className="typescale-body-small text-md-on-surface-variant text-center truncate">{context}</p>}
                     <div className="mt-3 flex gap-1.5" aria-hidden="true">
                         {[1, 2, 3].map(i => (
-                            <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant/40'}`} />
+                            <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant'}`} />
                         ))}
                     </div>
                 </div>

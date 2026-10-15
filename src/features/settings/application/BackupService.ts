@@ -71,9 +71,6 @@ export class BackupService {
             throw new Error('Invalid CoffeeFlow backup file. Missing required data tables.');
         }
 
-        // Restore snapshot to SQLite
-        await this.repo.restoreSnapshot(parsed);
-
         // Save imported file as a new backup record in list
         const importedBackup = this.buildRecord('Imported File', new Blob([jsonContent]).size);
 

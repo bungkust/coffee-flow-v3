@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
@@ -9,6 +9,8 @@ import type { Backup } from '../features/settings/domain/entities';
 
 export const BackupRestorePage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const restoreOnly = (location.state as { restore?: boolean } | null)?.restore === true;
     const [backups, setBackups] = useState<Backup[]>([]);
     const [isBackingUp, setIsBackingUp] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
@@ -48,7 +50,7 @@ export const BackupRestorePage = () => {
         if (!restoreModalId) return;
         try {
             await backupService.restoreBackup(restoreModalId);
-            navigate('/home');
+            navigate(restoreOnly ? '/' : '/home');
         } catch (error) {
             console.error('Restore failed:', error);
         } finally {
@@ -98,7 +100,7 @@ export const BackupRestorePage = () => {
         if (!importedModalId) return;
         try {
             await backupService.restoreBackup(importedModalId);
-            navigate('/home');
+            navigate(restoreOnly ? '/' : '/home');
         } catch (error) {
             console.error('Restore failed:', error);
         } finally {
@@ -120,7 +122,7 @@ export const BackupRestorePage = () => {
             />
 
             {/* Header */}
-            <PageHeader title="Backup & Restore" onBack={() => navigate(-1)} />
+            <PageHeader title={restoreOnly ? 'Restore Backup' : 'Backup & Restore'} onBack={() => navigate(-1)} />
 
             {/* Main Content */}
             <main className="flex-1 px-5 pt-4 space-y-6">
@@ -158,18 +160,20 @@ export const BackupRestorePage = () => {
                             )}
                         </div>
 
-                        {/* Action Buttons: Backup Now & Import File */}
+                        {/* Action Buttons: Backup Now (full mode) & Import File */}
                         <div className="flex gap-2.5 pt-1">
-                            <Button
-                                variant="filled"
-                                size="md"
-                                onClick={handleBackup}
-                                disabled={isBackingUp}
-                                className="flex-1"
-                            >
-                                <Icon name="backup" className="text-lg" />
-                                <span>{isBackingUp ? 'Backing up...' : 'Backup Now'}</span>
-                            </Button>
+                            {!restoreOnly && (
+                                <Button
+                                    variant="filled"
+                                    size="md"
+                                    onClick={handleBackup}
+                                    disabled={isBackingUp}
+                                    className="flex-1"
+                                >
+                                    <Icon name="backup" className="text-lg" />
+                                    <span>{isBackingUp ? 'Backing up...' : 'Backup Now'}</span>
+                                </Button>
+                            )}
 
                             <button
                                 onClick={() => fileInputRef.current?.click()}
@@ -205,23 +209,27 @@ export const BackupRestorePage = () => {
                                 </div>
 
                                 <div className="flex items-center gap-1 shrink-0">
-                                    {/* Download / Export Button */}
-                                    <button
-                                        onClick={() => handleDownloadFile(backup.id)}
-                                        className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-primary hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                                        title="Download JSON file to share"
-                                    >
-                                        <Icon name="download" className="text-lg" />
-                                    </button>
+                                    {!restoreOnly && (
+                                        <>
+                                            {/* Download / Export Button */}
+                                            <button
+                                                onClick={() => handleDownloadFile(backup.id)}
+                                                className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-primary hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                                                title="Download JSON file to share"
+                                            >
+                                                <Icon name="download" className="text-lg" />
+                                            </button>
 
-                                    {/* Delete Button */}
-                                    <button
-                                        onClick={() => setDeleteModalId(backup.id)}
-                                        className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-error hover:bg-md-error-container/20 transition-colors cursor-pointer"
-                                        title="Delete backup snapshot"
-                                    >
-                                        <Icon name="delete" className="text-lg" />
-                                    </button>
+                                            {/* Delete Button */}
+                                            <button
+                                                onClick={() => setDeleteModalId(backup.id)}
+                                                className="size-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-md-error hover:bg-md-error-container/20 transition-colors cursor-pointer"
+                                                title="Delete backup snapshot"
+                                            >
+                                                <Icon name="delete" className="text-lg" />
+                                            </button>
+                                        </>
+                                    )}
 
                                     {/* Restore Button */}
                                     <button
@@ -242,6 +250,7 @@ export const BackupRestorePage = () => {
                 </div>
 
                 {/* Info Section */}
+                {!restoreOnly && (
                 <div className="rounded-2xl bg-md-surface-container-low p-4 border border-md-outline-variant/30 shadow-md-1">
                     <div className="flex items-start gap-3">
                         <Icon name="info" className="text-md-primary text-xl mt-0.5 shrink-0" />
@@ -253,6 +262,7 @@ export const BackupRestorePage = () => {
                         </div>
                     </div>
                 </div>
+                )}
             </main>
 
             {/* Restore Confirmation Modal */}

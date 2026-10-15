@@ -1,4 +1,5 @@
 import type { Recipe } from '../domain/entities';
+import { stripTagPrefix } from '../../features/pantry/domain/beanOptions';
 
 export interface MethodSuggestion {
     methodId: string;
@@ -18,7 +19,7 @@ const matches = (beanTag: string, recipeTag: string) => normalize(recipeTag).inc
  * yields no suggestions — the caller then shows every method instead.
  */
 export const suggestMethods = (beanTags: string[], recipes: Recipe[]): MethodSuggestion[] => {
-    const cleanTags = beanTags.map(normalize).filter(Boolean);
+    const cleanTags = beanTags.map(tag => normalize(stripTagPrefix(tag))).filter(Boolean);
     if (cleanTags.length === 0) return [];
 
     const byMethod = new Map<string, { score: number, reasons: Set<string> }>();

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Dropdown } from '../components/Dropdown';
+import { TasteProfileFields } from '../components/TasteProfileFields';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { pantryService } from '../core/services';
-import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, parseBeanTags, formatBeanTags } from '../features/pantry/domain/beanOptions';
+import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, parseBeanTags, formatBeanTags } from '../features/pantry/domain/beanOptions';
 import type { PantryItem } from '../features/pantry/domain/entities';
 
 export const PantryEditPage = () => {
@@ -15,7 +16,7 @@ export const PantryEditPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [beanFields, setBeanFields] = useState({ origin: '', variety: '', process: '', altitude: '', roastLevel: '', roastDate: '' });
+    const [beanFields, setBeanFields] = useState({ species: '', origin: '', variety: '', process: '', altitude: '', roastLevel: '', producer: '', roastDate: '', sweet: '', acid: '', body: '', bitter: '' });
 
     useEffect(() => {
         const loadItem = async () => {
@@ -153,6 +154,14 @@ export const PantryEditPage = () => {
                     <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
                         <h2 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">Bean Details</h2>
 
+                        <Dropdown
+                            label="Species"
+                            value={beanFields.species}
+                            options={SPECIES_OPTIONS}
+                            onChange={(val) => setBeanFields({ ...beanFields, species: val })}
+                            placeholder="Select"
+                        />
+
                         <Field label="Origin">
                             <input
                                 value={beanFields.origin}
@@ -185,6 +194,20 @@ export const PantryEditPage = () => {
                                 className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
                             />
                         </Field>
+
+                        <Field label="Producer">
+                            <input
+                                value={beanFields.producer}
+                                onChange={(event) => setBeanFields({ ...beanFields, producer: event.target.value })}
+                                placeholder="e.g. Argopuro Walida"
+                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
+                            />
+                        </Field>
+
+                        <TasteProfileFields
+                            value={beanFields}
+                            onChange={(field, val) => setBeanFields({ ...beanFields, [field]: val })}
+                        />
 
                         <div className="grid grid-cols-2 gap-3">
                             <Dropdown

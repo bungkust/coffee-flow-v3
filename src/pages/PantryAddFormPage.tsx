@@ -5,8 +5,11 @@ import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { QuantityField } from '../components/QuantityField';
+import { SegmentedControl } from '../components/SegmentedControl';
+import { TasteProfileFields } from '../components/TasteProfileFields';
 import { pantryService } from '../core/services';
-import { VARIETY_OPTIONS, PROCESS_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
+import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
+import type { BlendComponent } from '../features/pantry/domain/beanOptions';
 import { PANTRY_CATEGORY_MAP, isPantryCategory } from '../features/pantry/domain/pantryCategories';
 
 export const PantryAddFormPage = () => {
@@ -30,21 +33,24 @@ export const PantryAddFormPage = () => {
 
     // Specific Flexible Fields
     const [roastDate, setRoastDate] = useState('');
+    const [tasteProfile, setTasteProfile] = useState({ sweet: '', acid: '', body: '', bitter: '' });
     const [roastLevel, setRoastLevel] = useState('');
+    const [species, setSpecies] = useState('');
     const [origin, setOrigin] = useState('');
     const [process, setProcess] = useState('');
     const [beanType, setBeanType] = useState<'single_origin' | 'blend'>('single_origin');
-    const [blendComponents, setBlendComponents] = useState<Array<{ type: string, origin: string, percentage: string }>>([
-        { type: '', origin: '', percentage: '' }
+    const [blendComponents, setBlendComponents] = useState<BlendComponent[]>([
+        { type: '', origin: '', percentage: '', variety: '', process: '' }
     ]);
     const [variety, setVariety] = useState('');
     const [altitude, setAltitude] = useState('');
+    const [producer, setProducer] = useState('');
     const [material, setMaterial] = useState('');
     const [burrType, setBurrType] = useState('');
     const [generalType, setGeneralType] = useState('');
     const [description, setDescription] = useState('');
 
-    const updateComponent = (index: number, patch: Partial<{ type: string; origin: string; percentage: string }>) =>
+    const updateComponent = (index: number, patch: Partial<BlendComponent>) =>
         setBlendComponents(current => current.map((comp, i) => (i === index ? { ...comp, ...patch } : comp)));
 
     const handleSave = async () => {
@@ -58,7 +64,7 @@ export const PantryAddFormPage = () => {
                 quantity: parseQuantity(quantity),
                 unit: unit,
                 tags_json: [
-                    ...formatBeanTags({ origin, variety, process, altitude, roastLevel }),
+                    ...formatBeanTags({ species, origin, variety, process, altitude, roastLevel, producer, ...tasteProfile }),
                     material.trim(),
                     burrType.trim(),
                     generalType.trim(),
@@ -126,74 +132,140 @@ export const PantryAddFormPage = () => {
 
                     {category === 'beans' && (
                         <div className="space-y-4">
-                            {/* Bean Type Selection */}
-                            <div className="flex justify-between gap-3">
-                                <button
-                                    onClick={() => setBeanType('single_origin')}
-                                    className={`flex-1 py-2.5 px-3 rounded-full flex items-center justify-center typescale-label-medium font-bold transition-all border cursor-pointer ${
-                                        beanType === 'single_origin'
-                                            ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-sm'
-                                            : 'bg-md-surface-container-high border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-highest'
-                                    }`}
-                                >
-                                    Single Origin
-                                </button>
-                                <button
-                                    onClick={() => setBeanType('blend')}
-                                    className={`flex-1 py-2.5 px-3 rounded-full flex items-center justify-center typescale-label-medium font-bold transition-all border cursor-pointer ${
-                                        beanType === 'blend'
-                                            ? 'bg-md-secondary-container border-md-primary text-md-on-secondary-container shadow-sm'
-                                            : 'bg-md-surface-container-high border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-highest'
-                                    }`}
-                                >
-                                    Blend
-                                </button>
-                            </div>
+                            <SegmentedControl
+                                name="bean-type"
+                                value={beanType}
+                                options={[
+                                    { value: 'single_origin', label: 'Single Origin' },
+                                    { value: 'blend', label: 'Blend' }
+                                ]}
+                                onChange={setBeanType}
+                            />
 
                             {beanType === 'single_origin' ? (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="col-span-2 space-y-1.5">
-                                        <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Origin</label>
-                                        <input
-                                            type="text"
-                                            value={origin}
-                                            onChange={(e) => setOrigin(e.target.value)}
-                                            placeholder="e.g. Colombia, Huila"
-                                            className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                                        />
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Bean</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Origin</label>
+                                                <input
+                                                    type="text"
+                                                    value={origin}
+                                                    onChange={(e) => setOrigin(e.target.value)}
+                                                    placeholder="e.g. Colombia, Huila"
+                                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Roast Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={roastDate}
+                                                    onChange={(e) => setRoastDate(e.target.value)}
+                                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Dropdown
+                                                    label="Variety"
+                                                    value={variety}
+                                                    options={VARIETY_OPTIONS}
+                                                    onChange={setVariety}
+                                                    placeholder="Select"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Dropdown
+                                                    label="Process"
+                                                    value={process}
+                                                    options={PROCESS_OPTIONS}
+                                                    onChange={setProcess}
+                                                    placeholder="Select"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Dropdown
-                                            label="Variety"
-                                            value={variety}
-                                            options={VARIETY_OPTIONS}
-                                            onChange={setVariety}
-                                            placeholder="Select"
-                                        />
+                                    <div className="space-y-2">
+                                        <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Farm</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1.5">
+                                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Altitude</label>
+                                                <input
+                                                    type="text"
+                                                    value={altitude}
+                                                    onChange={(e) => setAltitude(e.target.value)}
+                                                    placeholder="e.g. 1700 masl"
+                                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Producer</label>
+                                                <input
+                                                    type="text"
+                                                    value={producer}
+                                                    onChange={(e) => setProducer(e.target.value)}
+                                                    placeholder="e.g. Argopuro Walida"
+                                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <Dropdown
-                                            label="Process"
-                                            value={process}
-                                            options={PROCESS_OPTIONS}
-                                            onChange={setProcess}
-                                            placeholder="Select"
-                                        />
-                                    </div>
-                                    <div className="col-span-2 space-y-1.5">
-                                        <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Altitude</label>
-                                        <input
-                                            type="text"
-                                            value={altitude}
-                                            onChange={(e) => setAltitude(e.target.value)}
-                                            placeholder="e.g. 1700 masl"
-                                            className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                                        />
+                                    <div className="space-y-2">
+                                        <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Roast</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Dropdown
+                                                label="Species"
+                                                value={species}
+                                                options={SPECIES_OPTIONS}
+                                                onChange={setSpecies}
+                                                placeholder="Select"
+                                            />
+                                            <Dropdown
+                                                label="Roast Level"
+                                                value={roastLevel}
+                                                options={ROAST_LEVEL_OPTIONS}
+                                                onChange={setRoastLevel}
+                                                placeholder="Select"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-3">
-                                    {blendComponents.map((comp, index) => (
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Roast</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="col-span-2">
+                                                <Dropdown
+                                                    label="Species"
+                                                    value={species}
+                                                    options={SPECIES_OPTIONS}
+                                                    onChange={setSpecies}
+                                                    placeholder="Select"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Roast Date</label>
+                                                <input
+                                                    type="date"
+                                                    value={roastDate}
+                                                    onChange={(e) => setRoastDate(e.target.value)}
+                                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                                                />
+                                            </div>
+                                            <Dropdown
+                                                label="Roast Level"
+                                                value={roastLevel}
+                                                options={ROAST_LEVEL_OPTIONS}
+                                                onChange={setRoastLevel}
+                                                placeholder="Select"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Components</p>
+                                        {blendComponents.map((comp, index) => (
                                         <div key={index} className="space-y-3 p-3.5 bg-md-surface-container-high rounded-xl border border-md-outline-variant/30 relative">
                                             {blendComponents.length > 1 && (
                                                 <button
@@ -210,12 +282,7 @@ export const PantryAddFormPage = () => {
                                                         buttonClassName="py-2 rounded-lg"
                                                         label="Type"
                                                         value={comp.type}
-                                                        options={[
-                                                            { value: 'Arabica', label: 'Arabica' },
-                                                            { value: 'Robusta', label: 'Robusta' },
-                                                            { value: 'Liberica', label: 'Liberica' },
-                                                            { value: 'Excelsa', label: 'Excelsa' },
-                                                        ]}
+                                                        options={SPECIES_OPTIONS}
                                                         onChange={(val) => updateComponent(index, { type: val })}
                                                         placeholder="Select"
                                                     />
@@ -243,39 +310,47 @@ export const PantryAddFormPage = () => {
                                                         onChange={e => updateComponent(index, { origin: e.target.value })}
                                                     />
                                                 </div>
+                                                <div className="space-y-1">
+                                                    <Dropdown
+                                                        buttonClassName="py-2 rounded-lg"
+                                                        label="Variety"
+                                                        value={comp.variety}
+                                                        options={VARIETY_OPTIONS}
+                                                        onChange={(val) => updateComponent(index, { variety: val })}
+                                                        placeholder="Select"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Dropdown
+                                                        buttonClassName="py-2 rounded-lg"
+                                                        label="Process"
+                                                        value={comp.process}
+                                                        options={PROCESS_OPTIONS}
+                                                        onChange={(val) => updateComponent(index, { process: val })}
+                                                        placeholder="Select"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                     {blendComponents.length < 5 && (
                                         <button
-                                            onClick={() => setBlendComponents([...blendComponents, { type: '', origin: '', percentage: '' }])}
+                                            onClick={() => setBlendComponents([...blendComponents, { type: '', origin: '', percentage: '', variety: '', process: '' }])}
                                             className="w-full py-2.5 flex items-center justify-center gap-2 typescale-label-medium font-bold text-md-primary hover:bg-md-primary-container/30 rounded-xl transition-colors border border-dashed border-md-primary/40 cursor-pointer"
                                         >
                                             <Icon name="add" className="text-base" /> Add Component
                                         </button>
                                     )}
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-2 gap-3 mt-4">
-                                <div className="space-y-1.5">
-                                    <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Roast Date</label>
-                                    <input
-                                        type="date"
-                                        value={roastDate}
-                                        onChange={(e) => setRoastDate(e.target.value)}
-                                        className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Dropdown
-                                        label="Roast Level"
-                                        value={roastLevel}
-                                        options={ROAST_LEVEL_OPTIONS}
-                                        onChange={setRoastLevel}
-                                        placeholder="Select"
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <p className="typescale-label-small font-bold uppercase text-md-on-surface-variant">Taste Profile</p>
+                                <TasteProfileFields
+                                    value={tasteProfile}
+                                    onChange={(field, val) => setTasteProfile({ ...tasteProfile, [field]: val })}
+                                />
                             </div>
                         </div>
                     )}
