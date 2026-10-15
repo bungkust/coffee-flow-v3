@@ -60,8 +60,10 @@ Sistem migrasi di `src/core/database/schema.ts` akan menambahkan migration `vers
 ```sql
 -- Migration Version 16: Synergy of Drink, Brew, and Pantry
 
--- 1. Menghubungkan master resep drink ke resep ekstraksi brew (opsional)
+-- 1. Menghubungkan master resep drink ke resep ekstraksi brew (opsional) & klasifikasi base
 ALTER TABLE drinks ADD COLUMN base_recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;
+ALTER TABLE drinks ADD COLUMN base_type TEXT DEFAULT 'coffee' CHECK(base_type IN ('coffee', 'non_coffee'));
+ALTER TABLE drinks ADD COLUMN is_favorite INTEGER DEFAULT 0;
 
 -- 2. Menghubungkan log eksperimen minuman ke Pantry (biji kopi & susu) dan Brew (resep ekstraksi)
 ALTER TABLE drink_logs ADD COLUMN bean_id TEXT REFERENCES pantry_items(id) ON DELETE SET NULL;
@@ -81,6 +83,7 @@ ALTER TABLE drink_logs ADD COLUMN flavor_tags TEXT;         -- CSV string tags, 
 CREATE INDEX IF NOT EXISTS idx_drink_logs_bean ON drink_logs(bean_id);
 CREATE INDEX IF NOT EXISTS idx_drink_logs_date ON drink_logs(logged_at);
 CREATE INDEX IF NOT EXISTS idx_drinks_base_recipe ON drinks(base_recipe_id);
+CREATE INDEX IF NOT EXISTS idx_drinks_base_type ON drinks(base_type);
 
 -- 6. Tabel Riwayat Penggunaan & Keluar-Masuk Stok Pantry (Pantry Activity Logs / Stock Ledger)
 CREATE TABLE IF NOT EXISTS pantry_logs (
@@ -151,17 +154,32 @@ export interface PantryLog {
 
 ---
 
-### Phase 2: Drink Smart Import Modal (AI & Offline Parser)
-* **Tujuan**: Menyediakan modal import instan khusus resep minuman (espresso drinks, mocktails, kopi susu kekinian) dari media sosial / web.
+### Phase 2: Drink UI/UX Navigation (Symmetric to Brew) & Smart Import Modal
+* **Tujuan**: Menyelaraskan pengalaman navigasi dan tampilan Drink agar simetris dengan modul Brew (Category Hub → Recipe List → Recipe Detail) serta menyediakan modal import instan.
 * **Tugas**:
-  1. Buat komponen `src/components/DrinkSmartImportModal.tsx`:
-     - **Mode AI (Prompt Assist)**: Instruksi prompt terstruktur untuk ChatGPT/Gemini menghasilkan JSON dengan format `name`, `category` (hot/cold), `ingredients` (amount, unit, name), `instructions`.
-     - **Mode Offline (Regex Rule-Based)**: Parser lokal yang mengekstrak bahan dengan satuan (`ml`, `g`, `shot`, `pump`, `tbsp`, dll), kategori otomatis dari kata kunci (*iced, dingin, hot, hangat*), dan langkah-langkah racik.
-     - **Preview UI**: Menampilkan ringkasan bahan terstruktur dan langkah racik, dengan opsi *"Save Direct"* atau *"Edit & Customize"*.
-     - **Queue Support**: Mendukung import batch multi-minuman sekaligus.
-  2. Perbarui `src/pages/DrinkMenuPage.tsx`:
-     - Ganti modal import lama dengan `DrinkSmartImportModal`.
-     - Perbaiki bug navigasi dari `/drinks/new` ke `/drinks/new/edit` dengan `state.prefill`.
+  1. **Halaman Kategori Utama Minuman (Mirip `BrewMethodsPage`)**:
+     - Menampilkan 2 kartu kategori besar di `/drinks`:
+       - ☕ **Coffee Base Drinks**: Espresso, Latte, Cappuccino, Kopi Susu, Cold Brew, Coffee Mocktail.
+       - 🍵 **Non-Coffee Base Drinks**: Matcha, Chocolate, Chai, Artisan Tea, Milk Drinks.
+     - Setiap kartu menampilkan ikon/artwork, jumlah resep yang tersedia, dan deskripsi ringkas.
+     - Saat kartu di-tap, navigasi ke daftar minuman terfilter: `/drinks?base=coffee` atau `/drinks?base=non_coffee`.
+  2. **Halaman Daftar Minuman (Mirip `RecipeListPage`)**:
+     - Header dengan SearchBar real-time.
+     - Filter Chips: `[ All ]` `[ ♨️ Hot ]` `[ 🧊 Cold ]` `[ ⭐ Favorites ]`.
+     - Tampilan kartu bergaya Brew:
+       - Nama minuman, ringkasan takaran bahan utama (*"2 shots espresso · 150ml milk · 20ml syrup"*).
+       - Tombol **Bookmark / Favorite** di pojok kanan kartu (toggle `is_favorite`).
+       - Tombol **Kebab Menu (3 titik)**:
+         - 📋 **Duplicate / Clone**: Langsung membuat salinan resep untuk eksperimen baru.
+         - ✏️ **Edit Recipe**: Mengubah takaran atau instruksi.
+         - 🗑️ **Delete**: Menghapus resep.
+     - Floating Action Button (FAB) Speed Dial:
+       - 🪄 **Smart Import Drink** (terbuka otomatis dengan pre-selected category).
+       - ✏️ **New Custom Drink**.
+  3. **Komponen `DrinkSmartImportModal.tsx`**:
+     - **Mode AI (Prompt Assist)**: Instruksi prompt terstruktur untuk ChatGPT/Gemini menghasilkan JSON dengan format `name`, `base_type` (coffee/non_coffee), `category` (hot/cold), `ingredients` (amount, unit, name), `instructions`.
+     - **Mode Offline (Regex Rule-Based)**: Parser lokal cerdas yang mengenali bahan, satuan, kategori base, dan langkah racik.
+     - **Queue Support**: Mendukung import batch multi-minuman sekaligus dengan antrean penyimpanan.
 
 ---
 
