@@ -81,6 +81,23 @@ ALTER TABLE drink_logs ADD COLUMN flavor_tags TEXT;         -- CSV string tags, 
 CREATE INDEX IF NOT EXISTS idx_drink_logs_bean ON drink_logs(bean_id);
 CREATE INDEX IF NOT EXISTS idx_drink_logs_date ON drink_logs(logged_at);
 CREATE INDEX IF NOT EXISTS idx_drinks_base_recipe ON drinks(base_recipe_id);
+
+-- 6. Tabel Riwayat Penggunaan & Keluar-Masuk Stok Pantry (Pantry Activity Logs / Stock Ledger)
+CREATE TABLE IF NOT EXISTS pantry_logs (
+  id TEXT PRIMARY KEY,
+  pantry_item_id TEXT NOT NULL,
+  change_amount REAL NOT NULL,                 -- Nilai perubahan: negatif untuk keluar (-16), positif untuk masuk (+250)
+  unit TEXT,                                  -- 'g', 'ml', 'pcs'
+  action_type TEXT NOT NULL,                  -- 'brew' | 'drink' | 'restock' | 'adjustment' | 'waste'
+  reference_id TEXT,                          -- id dari brew_logs atau drink_logs
+  reference_name TEXT,                        -- Misal: "V60 Tetsu Kasuya 4:6" atau "Iced Vanilla Latte"
+  notes TEXT,                                 -- Catatan tambahan (opsional)
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (pantry_item_id) REFERENCES pantry_items(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_pantry_logs_item ON pantry_logs(pantry_item_id);
+CREATE INDEX IF NOT EXISTS idx_pantry_logs_date ON pantry_logs(created_at);
 ```
 
 ### Struktur `DrinkIngredient` (JSON Terstruktur & Kompatibel ke Belakang)
@@ -94,25 +111,43 @@ export interface DrinkIngredient {
     category?: 'beans' | 'milk' | 'syrup' | 'sugar' | 'other_ingredient'; // Pemetaan ke kategori pantry
     default_pantry_item_id?: string;                                       // Item default di pantry (opsional)
 }
+
+export interface PantryLog {
+    id: string;
+    pantry_item_id: string;
+    change_amount: number;
+    unit?: string;
+    action_type: 'brew' | 'drink' | 'restock' | 'adjustment' | 'waste';
+    reference_id?: string;
+    reference_name?: string;
+    notes?: string;
+    created_at: string;
+}
 ```
 
 ---
 
 ## 4. Rencana Implementasi Bertahap (Phased Roadmap)
 
-### Phase 1: Database Migration & Core Domain Repositories
-* **Tujuan**: Mempersiapkan fondasi data dan repository agar siap menampung relasi Pantry, Brew, dan parameter rasa.
+### Phase 1: Database Migration & Core Domain Repositories (Include Pantry Logs)
+* **Tujuan**: Mempersiapkan fondasi data dan repository agar siap menampung relasi Pantry, Brew, dan riwayat stok keluar-masuk.
 * **Tugas**:
-  1. Tambahkan `version: 16` di `src/core/database/schema.ts`.
-  2. Perbarui entity TypeScript di `src/shared/domain/entities.ts`:
+  1. Tambahkan `version: 16` di `src/core/database/schema.ts` (mencakup tabel `pantry_logs`).
+  2. Perbarui entity TypeScript di `src/shared/domain/entities.ts` & `src/features/pantry/domain/entities.ts`:
      - Tambahkan field baru di `Drink` (`base_recipe_id?: string`).
-     - Definisikan `DrinkIngredient` interface.
+     - Definisikan `DrinkIngredient` dan `PantryLog` interface.
      - Tambahkan field baru di `DrinkLog` (`bean_id`, `milk_id`, `recipe_id`, `ingredients_snapshot_json`, `sweetness`, `coffee_strength`, `creaminess`, `flavor_tags`).
-     - Buat interface `DrinkLogWithDetails` (join nama drink, nama bean, nama milk, nama recipe).
-  3. Perbarui `SQLiteDrinkRepository.ts` & `SQLiteDrinkLogRepository.ts` untuk mendukung query CRUD data baru.
-  4. Perbarui `DrinkService.ts`:
+  3. Buat `SQLitePantryLogRepository.ts` & perbarui `SQLiteDrinkRepository.ts`, `SQLiteDrinkLogRepository.ts`, `SQLitePantryRepository.ts`.
+  4. Perbarui `PantryService.ts`:
+     - Method `deductStock` diperkaya menerima metadata audit: `actionType`, `referenceId`, `referenceName`, `unit`.
+     - Otomatis mencatat baris baru di `pantry_logs` setiap ada pemotongan stok dari Brew maupun Drink.
+     - Method `logRestock(itemId, amount, unit, notes)` untuk mencatat stok masuk/restock.
+     - Method `getItemLogs(itemId)` untuk mengambil riwayat pemakaian & keluar-masuk stok.
+  5. Perbarui `BrewService.ts`:
+     - Saat `logBrew` memotong stok beans & filter, teruskan nama resep (`recipe.name`) ke `pantryService.deductStock` agar tercatat di `pantry_logs` (misal: `-16g used by V60 Tetsu Kasuya`).
+  6. Perbarui `DrinkService.ts`:
      - Method `logDrink` menerima parameter beans, milk, recipe, sensory profile, dan snapshot ingredients.
-     - Perbaiki logika pengurangan stok Pantry agar memotong item yang benar-benar dipilih pengguna.
+     - Meneruskan nama minuman ke `pantryService.deductStock` saat memotong stok beans, susu, sirup, dll.
 
 ---
 
@@ -158,7 +193,7 @@ export interface DrinkIngredient {
        - (Opsional) Dropdown Resep Ekstraksi Kopi (filter dari `recipes` method `espresso` atau `cold_brew`).
      - Tampilkan peringatan jika kuantitas bahan di Pantry tidak mencukupi.
      - Tambahkan timer langkah opsional untuk proses yang memerlukan durasi (misal: *shake 15 detik*, *infuse 5 menit*).
-  2. Eksekusi pemotongan stok bahan di Pantry secara presisi saat tombol *"Finish & Log"* ditekan.
+  2. Eksekusi pemotongan stok bahan di Pantry secara presisi saat tombol *"Finish & Log"* ditekan, otomatis mencatat ke `pantry_logs`.
 
 ---
 
@@ -169,6 +204,20 @@ export interface DrinkIngredient {
      - **Yield / Servings Multiplier**: Tombol scaling porsi (1x / 1.5x / 2x / Bottle 500ml) yang mengalikan takaran bahan secara proporsional.
      - **Trial History Tab**: Menampilkan riwayat log percobaan khusus untuk minuman tersebut langsung di bawah resep (melihat perkembangan rasa dari Trial 1 ke Trial berikutnya).
      - **"Tweak as New Version"**: Tombol duplikasi resep untuk mencoba variasi baru tanpa menimpa resep asli.
+
+---
+
+### Phase 6: Pantry Usage History & Stock In/Out View
+* **Tujuan**: Memberikan visibilitas penuh pergerakan stok Pantry (kapan diambil, berapa gram/ml, untuk resep/minuman apa).
+* **Tugas**:
+  1. Di `PantryEditPage.tsx` (atau modal detail item pantry), tambahkan section **"Usage History / Riwayat Penggunaan"**:
+     - Menampilkan daftar transaksi keluar-masuk barang dengan timestamp.
+     - Badge jenis transaksi (misal: badge `Brew` warna primer, badge `Drink` warna sekunder, badge `Restock` warna hijau).
+     - Contoh tampilan baris:
+       - `Hari ini, 08:30` · `-18g` · Digunakan untuk **V60 Tetsu Kasuya 4:6**
+       - `Kemarin, 14:15` · `-36g` · Digunakan untuk **Iced Spanish Latte**
+       - `10 Okt, 10:00` · `+250g` · Restock / Beli baru
+  2. Tombol cepat *"Quick Restock (+)"* di Pantry untuk menambah stok tanpa harus edit manual field quantity.
 
 ---
 
