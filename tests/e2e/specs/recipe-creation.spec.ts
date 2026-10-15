@@ -16,7 +16,7 @@ test.describe('Brew Recipe Creation Test Suite', () => {
     await recipeEditPage.totalWaterInput.fill('320');
     await recipeEditPage.selectDifficulty('Intermediate');
     await recipeEditPage.tempInput.fill('93');
-    await recipeEditPage.grindSizeInput.fill('Medium-Fine');
+    await recipeEditPage.selectGrindSize('Medium-Fine');
     await recipeEditPage.shortDescriptionInput.fill('Sweet & clean fruit forward extraction.');
 
     // Save Recipe

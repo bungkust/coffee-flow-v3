@@ -7,7 +7,6 @@ export class RecipeEditPage {
   readonly ratioInput: Locator;
   readonly totalWaterInput: Locator;
   readonly tempInput: Locator;
-  readonly grindSizeInput: Locator;
   readonly shortDescriptionInput: Locator;
   readonly addStepButton: Locator;
   readonly saveButton: Locator;
@@ -18,7 +17,6 @@ export class RecipeEditPage {
     this.ratioInput = page.getByPlaceholder('1:15');
     this.totalWaterInput = page.getByPlaceholder('250');
     this.tempInput = page.getByPlaceholder('92');
-    this.grindSizeInput = page.getByPlaceholder('Medium');
     this.shortDescriptionInput = page.getByPlaceholder('A brief summary...');
     this.addStepButton = page.getByRole('button', { name: 'Add Step' });
     this.saveButton = page.getByRole('button', { name: /Save Recipe/i });
@@ -29,10 +27,18 @@ export class RecipeEditPage {
     await this.page.goto('/recipes/new/edit');
   }
 
+  async selectDropdown(labelRegex: RegExp, value: string) {
+    const container = this.page.locator('div').filter({ hasText: labelRegex });
+    await container.getByRole('button').first().click();
+    await container.getByRole('button').filter({ hasText: value }).last().click();
+  }
+
+  async selectGrindSize(size: string) {
+    return this.selectDropdown(/^Grind Size/, size);
+  }
+
   async selectDifficulty(level: 'Beginner' | 'Intermediate' | 'Advanced') {
-    const diffContainer = this.page.locator('div').filter({ hasText: /^Difficulty/ });
-    await diffContainer.getByRole('button').first().click();
-    await diffContainer.getByRole('button').filter({ hasText: level }).last().click();
+    return this.selectDropdown(/^Difficulty/, level);
   }
 
   async fillStep(index: number, label: string, duration: number, weight: number) {

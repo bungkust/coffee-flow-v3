@@ -5,7 +5,11 @@ import { BottomNav } from '../components/BottomNav';
 import { Dropdown } from '../components/Dropdown';
 import { SaveBar } from '../components/SaveBar';
 import { brewService } from '../core/services';
+import { GRIND_SIZE_OPTIONS } from '../shared/domain/entities';
 import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
+
+const STANDARD_GRIND = new Set<string>(GRIND_SIZE_OPTIONS.map((o) => o.value));
+const isStandardGrind = (v?: string) => !!v && STANDARD_GRIND.has(v);
 
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -256,14 +260,22 @@ export const RecipeEditPage = () => {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Grind Size</label>
+                                <Dropdown
+                                    value={isStandardGrind(recipe.grind_size) ? recipe.grind_size! : ''}
+                                    options={[...GRIND_SIZE_OPTIONS, { value: '', label: 'Custom…' }]}
+                                    onChange={(val: string) => setRecipe((prev: Recipe | null) => prev ? { ...prev, grind_size: val } : prev)}
+                                    placeholder="Select"
+                                />
+                            </div>
+                            {!isStandardGrind(recipe.grind_size) && (
                                 <input
                                     type="text"
                                     value={recipe.grind_size || ''}
-                                    onChange={(e) => setRecipe({ ...recipe, grind_size: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecipe((prev: Recipe | null) => prev ? { ...prev, grind_size: e.target.value } : prev)}
                                     className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                                    placeholder="Medium"
+                                    placeholder="e.g. 15 clicks"
                                 />
-                            </div>
+                            )}
                         </div>
                     </div>
                 </section>
@@ -346,7 +358,7 @@ export const RecipeEditPage = () => {
                     </div>
 
                     <div className="space-y-3">
-                        {recipe.steps.map((step, index) => (
+                            {recipe.steps.map((step: BrewStep, index: number) => (
                             <div key={step.id} className="bg-md-surface-container-high border border-md-outline-variant/30 rounded-xl p-3.5 space-y-3">
                                 <div className="flex items-start gap-3">
                                     <div className="size-7 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center typescale-label-medium font-bold shrink-0">
@@ -356,7 +368,7 @@ export const RecipeEditPage = () => {
                                         <input
                                             type="text"
                                             value={step.label}
-                                            onChange={(e) => updateStep(index, { label: e.target.value })}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStep(index, { label: e.target.value })}
                                             className="w-full bg-transparent border-none p-0 typescale-title-small font-bold text-md-on-surface focus:ring-0 placeholder:text-md-on-surface-variant/50 outline-none"
                                             placeholder="Step label..."
                                         />

@@ -147,7 +147,7 @@ export const RecipeDetailPage = () => {
 
                 {/* Stats Card */}
                 <div className="bg-md-surface-container-low p-4 rounded-2xl border border-md-outline-variant/30 shadow-md-1">
-                    <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                         <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
                             <Icon name="coffee" className="text-md-primary mb-1 text-xl" />
                             <span className="typescale-title-small font-bold text-md-on-surface">
@@ -164,6 +164,11 @@ export const RecipeDetailPage = () => {
                             <Icon name="thermostat" className="text-md-primary mb-1 text-xl" />
                             <span className="typescale-title-small font-bold text-md-on-surface">{recipe.temperature ? `${recipe.temperature}°C` : '—'}</span>
                             <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Temp</span>
+                        </div>
+                        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20">
+                            <Icon name="grain" className="text-md-primary mb-1 text-xl" />
+                            <span className="typescale-title-small font-bold text-md-on-surface line-clamp-1">{recipe.grind_size || '—'}</span>
+                            <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Grind</span>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">

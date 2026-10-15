@@ -81,6 +81,14 @@ export interface BrewStats {
 
 export type DrinkCategory = 'hot' | 'cold';
 
+export const GRIND_SIZE_OPTIONS = [
+    { value: 'Fine', label: 'Fine' },
+    { value: 'Medium-Fine', label: 'Medium-Fine' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Medium-Coarse', label: 'Medium-Coarse' },
+    { value: 'Coarse', label: 'Coarse' },
+] as const;
+
 export interface Drink {
     id: EntityId;
     name: string;
