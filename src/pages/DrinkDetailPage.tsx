@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
@@ -10,6 +10,7 @@ import { useSafeBack } from '../shared/utils/backNavigation';
 export const DrinkDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const safeBack = useSafeBack();
     const [drink, setDrink] = useState<Drink | null>(null);
     const [loading, setLoading] = useState(true);
@@ -26,7 +27,7 @@ export const DrinkDetailPage = () => {
             }
         };
         loadDrink();
-    }, [id]);
+    }, [id, location.key]);
 
     if (loading) {
         return (

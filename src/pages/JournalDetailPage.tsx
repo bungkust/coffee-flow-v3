@@ -193,7 +193,7 @@ export const JournalDetailPage = () => {
                             {[
                                 { label: 'Sweetness', val: drinkLog.sweetness },
                                 { label: 'Strength', val: drinkLog.coffee_strength },
-                                { label: 'Creaminess', val: drinkLog.creaminess },
+                                { label: 'Body', val: drinkLog.creaminess },
                             ].filter(m => m.val != null).map(m => (
                                 <div key={m.label} className="p-2.5 rounded-xl bg-md-surface-container-high/60 border border-md-outline-variant/20">
                                     <span className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider block">{m.label}</span>

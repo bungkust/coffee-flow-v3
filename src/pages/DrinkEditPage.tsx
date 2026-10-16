@@ -7,6 +7,7 @@ import { SaveBar } from '../components/SaveBar';
 import { drinkService } from '../core/services';
 import type { Drink, DrinkBaseType } from '../shared/domain/entities';
 import { useSafeBack } from '../shared/utils/backNavigation';
+import { parseList, ingredientToString } from '../shared/utils/drinks';
 
 export const DrinkEditPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,6 +20,11 @@ export const DrinkEditPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+
+    const normalizeList = (json?: string, isIng = false): string => {
+        const list = parseList(json || '[]').map(item => isIng ? ingredientToString(item) : (typeof item === 'string' ? item : String(item || '')));
+        return JSON.stringify(list.length > 0 ? list : ['']);
+    };
 
     useEffect(() => {
         const fetchDrink = async () => {
@@ -34,14 +40,20 @@ export const DrinkEditPage = () => {
                         name: p.name || '',
                         category: p.category || 'hot',
                         base_type: p.base_type || 'coffee',
-                        ingredients_json: p.ingredients_json || '[]',
-                        instructions_json: p.instructions_json || '[]',
+                        ingredients_json: normalizeList(p.ingredients_json, true),
+                        instructions_json: normalizeList(p.instructions_json),
                         created_at: now,
                         updated_at: now,
                     });
                 } else {
                     const data = await drinkService.getDrink(id);
-                    setDrink(data);
+                    if (data) {
+                        setDrink({
+                            ...data,
+                            ingredients_json: normalizeList(data.ingredients_json, true),
+                            instructions_json: normalizeList(data.instructions_json),
+                        });
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching drink:', err);
@@ -66,7 +78,7 @@ export const DrinkEditPage = () => {
             if (id === 'new') {
                 navigate(`/drinks/list?base=${drink.base_type || 'coffee'}`);
             } else {
-                safeBack(`/drinks/${drink.id}`);
+                navigate(`/drinks/${drink.id}`, { replace: true });
             }
         } catch (err) {
             console.error('Error saving drink:', err);
@@ -78,7 +90,7 @@ export const DrinkEditPage = () => {
 
     const updateList = (field: 'ingredients_json' | 'instructions_json', transform: (list: string[]) => string[]) => {
         if (!drink) return;
-        const current = JSON.parse(drink[field] || '[]');
+        const current = parseList(drink[field] || '[]').map(item => typeof item === 'string' ? item : (field === 'ingredients_json' ? ingredientToString(item) : String(item || '')));
         setDrink({ ...drink, [field]: JSON.stringify(transform(current)) } as Drink);
     };
 
@@ -103,8 +115,8 @@ export const DrinkEditPage = () => {
 
     if (!drink) return null;
 
-    const ingredients = JSON.parse(drink.ingredients_json || '[]');
-    const instructions = JSON.parse(drink.instructions_json || '[]');
+    const ingredients: string[] = parseList(drink.ingredients_json || '[]').map(ingredientToString);
+    const instructions: string[] = parseList(drink.instructions_json || '[]').map(item => typeof item === 'string' ? item : String(item || ''));
 
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">

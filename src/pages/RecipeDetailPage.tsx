@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
@@ -22,6 +22,7 @@ const sourceMeta = (url: string): { icon: string; label: string } => {
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const safeBack = useSafeBack();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -42,7 +43,7 @@ export const RecipeDetailPage = () => {
         };
         fetchRecipe();
         settingsService.getAppUnit().then(setUnitSystem);
-    }, [id]);
+    }, [id, location.key]);
 
     if (loading) {
         return (

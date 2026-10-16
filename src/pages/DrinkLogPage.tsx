@@ -169,9 +169,9 @@ export const DrinkLogPage = () => {
                         Sensory Evaluation
                     </h2>
                     {[
-                        { key: 'sweetness', label: 'Sweetness', value: sweetness, onChange: setSweetness, color: 'bg-amber-600', desc: sweetness === 1 ? 'Barely' : sweetness === 3 ? 'Balanced' : sweetness === 5 ? 'Very Sweet' : `${sweetness}/5` },
-                        ...(isCoffeeBase ? [{ key: 'strength', label: 'Coffee Strength', value: coffeeStrength, onChange: setCoffeeStrength, color: 'bg-amber-800', desc: coffeeStrength === 1 ? 'Mild' : coffeeStrength === 3 ? 'Medium' : coffeeStrength === 5 ? 'Very Bold' : `${coffeeStrength}/5` }] : []),
-                        { key: 'creaminess', label: 'Creaminess', value: creaminess, onChange: setCreaminess, color: 'bg-sky-600', desc: creaminess === 1 ? 'Light' : creaminess === 3 ? 'Silky' : creaminess === 5 ? 'Heavy / Rich' : `${creaminess}/5` }
+                        { key: 'sweetness', label: 'Sweetness', value: sweetness, onChange: setSweetness, color: 'bg-amber-600', desc: ['Barely', 'Subtle', 'Balanced', 'Sweet', 'Very Sweet'][sweetness - 1] },
+                        ...(isCoffeeBase ? [{ key: 'strength', label: 'Coffee Strength', value: coffeeStrength, onChange: setCoffeeStrength, color: 'bg-amber-800', desc: ['Mild', 'Light-Med', 'Medium', 'Bold', 'Very Bold'][coffeeStrength - 1] }] : []),
+                        { key: 'creaminess', label: 'Body / Texture', value: creaminess, onChange: setCreaminess, color: 'bg-sky-600', desc: ['Light / Tea-like', 'Smooth', 'Medium', 'Silky / Creamy', 'Heavy / Rich'][creaminess - 1] }
                     ].map((m) => (
                         <div key={m.key} className="space-y-1.5">
                             <div className="flex justify-between items-center text-xs">

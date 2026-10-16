@@ -18,7 +18,7 @@ export const getDrinkImage = (drink: { id: string; image_url?: string; base_type
     DRINK_IMAGES[drink.id] ||
     (drink.base_type === 'non_coffee' ? '/assets/drinks/non_coffee.png' : '/assets/drinks/espresso.png');
 
-export const parseList = (json: string): string[] => {
+export const parseList = (json: string): any[] => {
     try {
         return JSON.parse(json);
     } catch {
@@ -33,8 +33,17 @@ export interface ParsedIngredient {
     name: string;
 }
 
-export const parseIngredient = (raw: string): ParsedIngredient => {
-    const trimmed = raw.trim();
+export const parseIngredient = (raw: unknown): ParsedIngredient => {
+    if (typeof raw === 'object' && raw !== null) {
+        const item = raw as { amount?: number | string | null; unit?: string | null; name?: string | null };
+        const amt = typeof item.amount === 'number' ? item.amount : (parseFloat(String(item.amount || '')) || null);
+        const unit = item.unit ? String(item.unit).trim() : null;
+        const name = String(item.name || '').trim();
+        const original = `${amt !== null ? `${amt}${unit ? ` ${unit}` : ''} ` : ''}${name}`.trim();
+        return { original, amount: amt, unit, name };
+    }
+
+    const trimmed = String(raw || '').trim();
     const match = trimmed.match(/^([\d./]+)\s*([a-zA-Z]+)?\s+(.*)$/);
     if (!match) {
         return { original: trimmed, amount: null, unit: null, name: trimmed };
@@ -56,10 +65,11 @@ export const parseIngredient = (raw: string): ParsedIngredient => {
     return { original: trimmed, amount, unit, name };
 };
 
-export const formatScaledIngredient = (raw: string, scale: number): string => {
-    if (scale === 1) return raw;
+export const ingredientToString = (raw: unknown): string => parseIngredient(raw).original;
+
+export const formatScaledIngredient = (raw: unknown, scale: number): string => {
     const parsed = parseIngredient(raw);
-    if (parsed.amount === null) return raw;
+    if (scale === 1 || parsed.amount === null) return parsed.original;
     const scaledAmount = Math.round(parsed.amount * scale * 10) / 10;
     const unitStr = parsed.unit ? ` ${parsed.unit}` : '';
     return `${scaledAmount}${unitStr} ${parsed.name}`.trim();
