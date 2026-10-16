@@ -34,11 +34,14 @@ export const JournalDetailPage = () => {
             setRating(data.rating || 0);
             setNotes(data.notes || '');
             const brewData = type === 'brews' ? (data as BrewLogWithRecipe) : null;
+            const drinkData = type !== 'brews' ? (data as DrinkLogWithDrink) : null;
             if (brewData) {
                 setProfile({ sweetness: brewData.sweetness, acidity: brewData.acidity, body: brewData.body, bitterness: brewData.bitterness });
                 setTags(parseFlavorTags(brewData.flavor_tags));
+            } else if (drinkData?.flavor_tags) {
+                setTags(parseFlavorTags(drinkData.flavor_tags));
             }
-            const beanId = brewData?.bean_id;
+            const beanId = brewData?.bean_id || drinkData?.bean_id;
             if (beanId) {
                 pantryService.getPantryItems()
                     .then(items => setBeanName(items.find(item => item.id === beanId)?.name ?? null))
@@ -98,6 +101,7 @@ export const JournalDetailPage = () => {
         : ((log as DrinkLogWithDrink).drink_name || 'Drink Log');
 
     const brewLog = type === 'brews' ? (log as BrewLogWithRecipe) : null;
+    const drinkLog = type !== 'brews' ? (log as DrinkLogWithDrink) : null;
     const brewedAt = new Date(brewLog ? brewLog.brewed_at : (log as DrinkLogWithDrink).logged_at)
         .toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const detailCells = (brewLog
@@ -108,7 +112,9 @@ export const JournalDetailPage = () => {
             { key: 'brewed', icon: 'schedule', label: 'Brewed', value: brewedAt }
         ]
         : [
-            { key: 'category', icon: 'local_cafe', label: 'Category', value: (log as DrinkLogWithDrink).category },
+            { key: 'category', icon: 'local_cafe', label: 'Category', value: drinkLog?.category },
+            { key: 'beans', icon: 'inventory_2', label: 'Beans', value: drinkLog?.bean_name || beanName || undefined },
+            { key: 'milk', icon: 'water_drop', label: 'Milk', value: drinkLog?.milk_name },
             { key: 'logged', icon: 'schedule', label: 'Logged', value: brewedAt }
         ]
     ).filter(cell => Boolean(cell.value));
@@ -176,6 +182,33 @@ export const JournalDetailPage = () => {
                         tags={tags}
                         onTagsChange={setTags}
                     />
+                )}
+
+                {drinkLog && (drinkLog.sweetness != null || drinkLog.coffee_strength != null || drinkLog.creaminess != null || tags.length > 0) && (
+                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface">Sensory & Flavor</h2>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            {[
+                                { label: 'Sweetness', val: drinkLog.sweetness },
+                                { label: 'Strength', val: drinkLog.coffee_strength },
+                                { label: 'Creaminess', val: drinkLog.creaminess },
+                            ].filter(m => m.val != null).map(m => (
+                                <div key={m.label} className="p-2.5 rounded-xl bg-md-surface-container-high/60 border border-md-outline-variant/20">
+                                    <span className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider block">{m.label}</span>
+                                    <span className="text-sm font-bold text-md-on-surface mt-0.5 block">{m.val}/5</span>
+                                </div>
+                            ))}
+                        </div>
+                        {tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                {tags.map(t => (
+                                    <span key={t} className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-md-secondary-container text-md-on-secondary-container">
+                                        {t}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-2">

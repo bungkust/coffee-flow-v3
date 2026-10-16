@@ -7,6 +7,11 @@ import type { Drink } from '../shared/domain/entities';
 import { getDrinkImage, parseList } from '../shared/utils/drinks';
 import { PageHeader } from '../components/PageHeader';
 
+const formatIngredient = (item: unknown): string =>
+    typeof item === 'object' && item !== null && 'name' in (item as Record<string, unknown>)
+        ? `${(item as { amount?: number; unit?: string; name: string }).amount ?? ''} ${(item as { amount?: number; unit?: string; name: string }).unit ?? ''} ${(item as { amount?: number; unit?: string; name: string }).name}`.replace(/\s+/g, ' ').trim()
+        : String(item);
+
 export const DrinkDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -70,7 +75,18 @@ export const DrinkDetailPage = () => {
                 <div className="overflow-hidden rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1">
                     <img src={getDrinkImage(drink)} alt={drink.name} className="h-48 w-full object-cover" />
                     <div className="p-5 space-y-2">
-                        <span className="rounded-full bg-md-primary-container/40 px-3 py-1 typescale-label-medium font-bold uppercase tracking-wider text-md-primary">{drink.category}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-md-primary-container/40 px-3 py-1 typescale-label-medium font-bold uppercase tracking-wider text-md-primary">
+                                {drink.category}
+                            </span>
+                            <span className={`rounded-full px-3 py-1 typescale-label-medium font-bold uppercase tracking-wider ${
+                                (drink.base_type || 'coffee') === 'coffee'
+                                    ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200'
+                                    : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200'
+                            }`}>
+                                {(drink.base_type || 'coffee') === 'coffee' ? '☕ Coffee Base' : '🍵 Non-Coffee'}
+                            </span>
+                        </div>
                         <p className="typescale-body-medium text-md-on-surface-variant leading-relaxed">Prepare this drink step by step, then save the result into your journal.</p>
                     </div>
                 </div>
@@ -78,10 +94,10 @@ export const DrinkDetailPage = () => {
                 <section className="rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low p-5 shadow-md-1 space-y-3">
                     <h2 className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Ingredients</h2>
                     <div className="space-y-2">
-                        {ingredients.map((item) => (
-                            <p key={item} className="typescale-body-medium font-medium text-md-on-surface flex items-center gap-2">
+                        {ingredients.map((item, idx) => (
+                            <p key={idx} className="typescale-body-medium font-medium text-md-on-surface flex items-center gap-2">
                                 <span className="size-2 rounded-full bg-md-primary shrink-0" />
-                                {item}
+                                {formatIngredient(item)}
                             </p>
                         ))}
                     </div>
