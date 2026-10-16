@@ -3,6 +3,13 @@ import type { PantryService } from '../../pantry/application/PantryService';
 import { SQLiteDrinkRepository } from '../infrastructure/SQLiteDrinkRepository';
 import { SQLiteDrinkLogRepository } from '../infrastructure/SQLiteDrinkLogRepository';
 
+export interface ExtraPantryItemUsage {
+    pantryItemId: string;
+    amount: number;
+    unit?: string;
+    name?: string;
+}
+
 export interface LogDrinkOptions {
     rating?: number;
     notes?: string;
@@ -13,6 +20,7 @@ export interface LogDrinkOptions {
     coffeeStrength?: number;
     creaminess?: number;
     flavorTags?: string[];
+    extraPantryItems?: ExtraPantryItemUsage[];
 }
 
 export class DrinkService {
@@ -157,6 +165,22 @@ export class DrinkService {
                         referenceName: drinkName,
                         unit
                     });
+                }
+            }
+
+            // Deduct any extra custom pantry items selected by the user
+            if (opts.extraPantryItems && opts.extraPantryItems.length > 0) {
+                for (const extra of opts.extraPantryItems) {
+                    if (!extra.pantryItemId || extra.amount <= 0) continue;
+                    const pItem = pantryItems.find(p => p.id === extra.pantryItemId);
+                    if (pItem) {
+                        await this.pantryService.deductStock(pItem.id, extra.amount, {
+                            actionType: 'drink',
+                            referenceId: logId,
+                            referenceName: `${drinkName} (Add-on: ${pItem.name})`,
+                            unit: extra.unit || pItem.unit || 'g'
+                        });
+                    }
                 }
             }
         } catch (error) {

@@ -73,7 +73,7 @@ src/
 - Modify: `src/shared/domain/entities.ts:80-120`
 - Modify: `src/features/pantry/domain/entities.ts:1-37`
 
-- [ ] **Step 1.1: Tambahkan migration v16 di `src/core/database/schema.ts`**
+- [x] **Step 1.1: Tambahkan migration v16 di `src/core/database/schema.ts`**
   Tambahkan entry migration `version: 16` di `MIGRATIONS` array:
   - `ALTER TABLE drinks ADD COLUMN base_recipe_id TEXT REFERENCES recipes(id) ON DELETE SET NULL;`
   - `ALTER TABLE drinks ADD COLUMN base_type TEXT DEFAULT 'coffee';`
@@ -91,7 +91,7 @@ src/
   - Indexing: `idx_drink_logs_bean`, `idx_drink_logs_date`, `idx_drinks_base_recipe`, `idx_drinks_base_type`, `idx_pantry_logs_item`, `idx_pantry_logs_date`.
   - Insert initial non-coffee seeds (`matcha_latte`, `iced_chocolate`, `chai_latte`).
 
-- [ ] **Step 1.2: Perbarui entity TypeScript di `src/features/pantry/domain/entities.ts`**
+- [x] **Step 1.2: Perbarui entity TypeScript di `src/features/pantry/domain/entities.ts`**
   Tambahkan interface `PantryLog`:
   ```typescript
   export type PantryLogAction = 'brew' | 'drink' | 'restock' | 'adjustment' | 'waste';
@@ -109,7 +109,7 @@ src/
   }
   ```
 
-- [ ] **Step 1.3: Perbarui entity TypeScript di `src/shared/domain/entities.ts`**
+- [x] **Step 1.3: Perbarui entity TypeScript di `src/shared/domain/entities.ts`**
   - Perbarui interface `Drink`:
     - `base_type?: 'coffee' | 'non_coffee';`
     - `is_favorite?: boolean;`
@@ -136,10 +136,10 @@ src/
     - `flavor_tags?: string;`
   - Tambahkan interface `DrinkLogWithDetails` untuk join data di Journal.
 
-- [ ] **Step 1.4: Validasi kompilasi TypeScript**
+- [x] **Step 1.4: Validasi kompilasi TypeScript**
   Jalankan `npm run build` dan pastikan tidak ada type error pada entity dan schema.
 
-- [ ] **Step 1.5: Commit perubahan Task 1**
+- [x] **Step 1.5: Commit perubahan Task 1**
   `git add src/core/database/schema.ts src/shared/domain/entities.ts src/features/pantry/domain/entities.ts && git commit -m "feat(core): add migration v16 and entities for Drink-Pantry synergy"`
 
 ---
@@ -153,13 +153,13 @@ src/
 - Modify: `src/core/services.ts:10-32`
 - Modify: `src/features/brew/application/BrewService.ts:60-80`
 
-- [ ] **Step 2.1: Buat `SQLitePantryLogRepository.ts`**
+- [x] **Step 2.1: Buat `SQLitePantryLogRepository.ts`**
   Implementasikan repository dengan method:
   - `save(log: PantryLog): Promise<void>`
   - `findByItemId(itemId: string): Promise<PantryLog[]>` (order by `created_at DESC`)
   - `getRecentLogs(limit?: number): Promise<PantryLog[]>`
 
-- [ ] **Step 2.2: Perbarui `PantryService.ts` untuk mendukung audit logging**
+- [x] **Step 2.2: Perbarui `PantryService.ts` untuk mendukung audit logging**
   - Inject `SQLitePantryLogRepository`.
   - Update `deductStock(id: string, amount: number, metadata?: { actionType: PantryLogAction; referenceId?: string; referenceName?: string; unit?: string; notes?: string }): Promise<void>`:
     - Kurangi kuantitas stok di `pantry_items`.
@@ -169,16 +169,16 @@ src/
     - Buat record log positif di `pantry_logs` (`change_amount: +amount`, `action_type: 'restock'`).
   - Tambahkan method `getItemLogs(itemId: string): Promise<PantryLog[]>`.
 
-- [ ] **Step 2.3: Perbarui `src/core/services.ts`**
+- [x] **Step 2.3: Perbarui `src/core/services.ts`**
   Inisialisasi `SQLitePantryLogRepository` dan berikan ke `PantryService`.
 
-- [ ] **Step 2.4: Perbarui `BrewService.ts` agar mencatat nama resep saat memotong stok**
+- [x] **Step 2.4: Perbarui `BrewService.ts` agar mencatat nama resep saat memotong stok**
   Di `logBrew`:
   - Ambil detail resep (`recipe.name`).
   - Saat memanggil `pantryService.deductStock(beanId, coffeeConsumed)`, teruskan metadata `{ actionType: 'brew', referenceId: logId, referenceName: recipe.name, unit: 'g' }`.
   - Lakukan hal yang sama untuk `filterId` jika ada.
 
-- [ ] **Step 2.5: Validasi kompilasi build & commit Task 2**
+- [x] **Step 2.5: Validasi kompilasi build & commit Task 2**
   - Jalankan `npm run build`.
   - Commit: `git add src/features/pantry/ src/core/services.ts src/features/brew/application/BrewService.ts && git commit -m "feat(pantry): implement pantry_logs repository and audit-aware stock deduction"`
 
@@ -191,18 +191,18 @@ src/
 - Modify: `src/features/brew/infrastructure/SQLiteDrinkLogRepository.ts:1-80`
 - Modify: `src/features/brew/application/DrinkService.ts:35-97`
 
-- [ ] **Step 3.1: Perbarui `SQLiteDrinkRepository.ts`**
+- [x] **Step 3.1: Perbarui `SQLiteDrinkRepository.ts`**
   - Update mapping `toDomainDrink`: sertakan `base_type`, `is_favorite`, `base_recipe_id`.
   - Tambahkan method `findByBaseType(baseType: 'coffee' | 'non_coffee'): Promise<Drink[]>`.
   - Tambahkan method `toggleFavorite(id: string): Promise<void>`.
   - Tambahkan method `cloneDrink(id: string): Promise<Drink>`: menduplikasi resep minuman dengan nama `"${drink.name} (Copy)"`.
   - Update `save(drink: Drink)` agar menyimpan kolom `base_type`, `is_favorite`, dan `base_recipe_id`.
 
-- [ ] **Step 3.2: Perbarui `SQLiteDrinkLogRepository.ts`**
+- [x] **Step 3.2: Perbarui `SQLiteDrinkLogRepository.ts`**
   - Simpan kolom baru saat `save(log: DrinkLog)`: `drink_name`, `bean_id`, `milk_id`, `recipe_id`, `ingredients_snapshot_json`, `sweetness`, `coffee_strength`, `creaminess`, `flavor_tags`.
   - Update query `getRecentWithDrinks` agar mengambil snapshot `drink_name` jika relasi drink terhapus.
 
-- [ ] **Step 3.3: Perbarui `DrinkService.ts` dengan konversi takaran barista & pemotongan stok akurat**
+- [x] **Step 3.3: Perbarui `DrinkService.ts` dengan konversi takaran barista & pemotongan stok akurat**
   - Definisikan konversi standar:
     ```typescript
     const GRAMS_PER_SHOT = 18;
@@ -220,7 +220,7 @@ src/
     - Catat setiap pemotongan ke `pantryService.deductStock` dengan `actionType: 'drink'` dan `referenceName: drink.name`.
   - Tambahkan wrapper `cloneDrink(id: string)` dan `toggleFavorite(id: string)`.
 
-- [ ] **Step 3.4: Validasi kompilasi build & commit Task 3**
+- [x] **Step 3.4: Validasi kompilasi build & commit Task 3**
   - Jalankan `npm run build`.
   - Commit: `git add src/features/brew/ && git commit -m "feat(drink): enhance SQLiteDrinkRepository and DrinkService with unit conversions and favorite support"`
 
@@ -231,7 +231,7 @@ src/
 **Files:**
 - Create: `src/components/DrinkSmartImportModal.tsx`
 
-- [ ] **Step 4.1: Buat komponen `DrinkSmartImportModal.tsx`**
+- [x] **Step 4.1: Buat komponen `DrinkSmartImportModal.tsx`**
   Komponen modal khusus import minuman:
   - **Props**: `isOpen`, `onClose`, `onImport`, `onSaveDirect`, `defaultBaseType?: 'coffee' | 'non_coffee'`.
   - **AI Prompt Template**:
@@ -249,7 +249,7 @@ src/
     - Tombol *"Save Directly"* dan *"Edit & Customize"*.
     - Multi-drink queue counter (`Recipe 1 of 3`, tombol Next/Prev).
 
-- [ ] **Step 4.2: Validasi kompilasi build & commit Task 4**
+- [x] **Step 4.2: Validasi kompilasi build & commit Task 4**
   - Jalankan `npm run build`.
   - Commit: `git add src/components/DrinkSmartImportModal.tsx && git commit -m "feat(ui): add dedicated DrinkSmartImportModal component"`
 
@@ -263,7 +263,7 @@ src/
 - Modify: `src/pages/DrinkEditPage.tsx:20-55`
 - Modify: `src/App.tsx:24-32, 90-100`
 
-- [ ] **Step 5.1: Buat halaman `DrinkListPage.tsx` (Mengadopsi UI `RecipeListPage`)**
+- [x] **Step 5.1: Buat halaman `DrinkListPage.tsx` (Mengadopsi UI `RecipeListPage`)**
   - URL: `/drinks/list?base=coffee` atau `/drinks/list?base=non_coffee` (default: All).
   - Header: Judul dinamis (*"Coffee Base Drinks"* atau *"Non-Coffee Drinks"* atau *"Drinks"*), SearchBar, tombol Back ke `/drinks`.
   - Filter Chips Bar: `[ All ]` `[ ♨️ Hot ]` `[ 🧊 Cold ]` `[ ⭐ Favorites ]`.
@@ -280,7 +280,7 @@ src/
     - ✏️ `New Drink`: navigasi ke `/drinks/new/edit`.
   - BottomNav: `activeTab="drinks"` (atau tab yang aktif).
 
-- [ ] **Step 5.2: Perbarui `DrinkMenuPage.tsx` menjadi Category Hub (Mengadopsi UI `BrewMethodsPage`)**
+- [x] **Step 5.2: Perbarui `DrinkMenuPage.tsx` menjadi Category Hub (Mengadopsi UI `BrewMethodsPage`)**
   - Menampilkan 2 kartu kategori utama besar:
     - ☕ **Coffee Base Drinks**: Ikon kopi/espresso, deskripsi *"Espresso, Latte, Cappuccino, Kopi Susu, Cold Brew"*, counter jumlah resep.
     - 🍵 **Non-Coffee Base Drinks**: Ikon matcha/teh, deskripsi *"Matcha, Artisan Tea, Chocolate, Milk-based"*, counter jumlah resep.
@@ -288,7 +288,7 @@ src/
   - Quick Tools Section di bawah kartu: Tombol cepat ke Ratio Calculator / Quick Timer.
   - FAB Speed-Dial untuk Quick Import / New Drink.
 
-- [ ] **Step 5.3: Daftarkan Route di `src/App.tsx`**
+- [x] **Step 5.3: Daftarkan Route di `src/App.tsx`**
   - Tambahkan route `/drinks/list` dengan lazy loading `DrinkListPage`:
     ```tsx
     const DrinkListPage = lazy(() => import('./pages/DrinkListPage').then(m => ({ default: m.DrinkListPage })));
@@ -297,10 +297,10 @@ src/
     <Route path="/drinks/list" element={<DrinkListPage />} />
     ```
 
-- [ ] **Step 5.4: Perbaiki rute prefill di `DrinkEditPage.tsx`**
+- [x] **Step 5.4: Perbaiki rute prefill di `DrinkEditPage.tsx`**
   - Pastikan `DrinkEditPage` menerima `base_type` dari `state.prefill` atau query param (misal: jika membuat minuman dari halaman Non-Coffee, otomatis terpilih `base_type: 'non_coffee'`).
 
-- [ ] **Step 5.5: Validasi kompilasi build & commit Task 5**
+- [x] **Step 5.5: Validasi kompilasi build & commit Task 5**
   - Jalankan `npm run build`.
   - Commit: `git add src/pages/DrinkListPage.tsx src/pages/DrinkMenuPage.tsx src/pages/DrinkEditPage.tsx src/App.tsx && git commit -m "feat(ui): implement symmetric 2-level drink navigation matching Brew module"`
 
@@ -311,20 +311,20 @@ src/
 **Files:**
 - Test: Build verification & Capacitor asset sync
 
-- [ ] **Step 6.1: Jalankan kompilasi TypeScript & Vite build**
+- [x] **Step 6.1: Jalankan kompilasi TypeScript & Vite build**
   Jalankan `npm run build`. Pastikan:
   - Tidak ada lint atau TypeScript error (`tsc -b` lulus).
   - Bundle `dist/` terbentuk tanpa warning kompilasi.
 
-- [ ] **Step 6.2: Verifikasi Alur Fungsionalitas**
+- [x] **Step 6.2: Verifikasi Alur Fungsionalitas**
   - Verifikasi Category Hub: membuka `/drinks` menampilkan 2 kartu besar (Coffee Base & Non-Coffee).
   - Verifikasi Filter: membuka `/drinks/list?base=coffee` hanya menampilkan minuman kopi; membuka `base=non_coffee` menampilkan 3 seed non-coffee.
   - Verifikasi Smart Import Drink: modal terbuka, paste teks resep menghasilkan nama, bahan terukur, dan langkah racik.
   - Verifikasi Clone/Duplicate: menekan tombol Clone di kebab menu menduplikasi resep menjadi `"(Copy)"`.
   - Verifikasi Bookmark Favorite: menekan tombol bookmark langsung memperbarui status favorit.
 
-- [ ] **Step 6.3: Sinkronisasi Web Assets ke Android (Capacitor)**
+- [x] **Step 6.3: Sinkronisasi Web Assets ke Android (Capacitor)**
   Jalankan `npx cap copy android`.
 
-- [ ] **Step 6.4: Commit Akhir & Dokumentasi**
+- [x] **Step 6.4: Commit Akhir & Dokumentasi**
   `git commit --allow-empty -m "chore: complete drink, brew, and pantry synergy implementation Phase 1 & 2"`

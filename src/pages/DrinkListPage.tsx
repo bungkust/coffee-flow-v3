@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Icon } from '../components/Icons';
+import { Icon, SplashLogoIcon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
+import { StatCard } from '../components/StatCard';
+import { SpeedDialFab } from '../components/SpeedDialFab';
 import { drinkService } from '../core/services';
 import type { Drink, DrinkBaseType } from '../shared/domain/entities';
 import { parseList } from '../shared/utils/drinks';
@@ -24,7 +26,6 @@ export const DrinkListPage = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [drinkToDelete, setDrinkToDelete] = useState<Drink | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
     const fetchDrinks = useCallback(async () => {
         try {
@@ -75,7 +76,7 @@ export const DrinkListPage = () => {
         e.preventDefault();
         try {
             await drinkService.cloneDrink(id);
-            setActiveMenuId(null);
+            setTimeout(() => setActiveMenuId(null), 50);
             fetchDrinks();
         } catch (err) {
             console.error('Failed to clone drink:', err);
@@ -100,7 +101,7 @@ export const DrinkListPage = () => {
         e.preventDefault();
         setDrinkToDelete(drink);
         setIsDeleteModalOpen(true);
-        setActiveMenuId(null);
+        setTimeout(() => setActiveMenuId(null), 50);
     };
 
     const confirmDelete = async () => {
@@ -116,255 +117,196 @@ export const DrinkListPage = () => {
         }
     };
 
-    const parseIngredientPreview = (ingredientsJson: string): string =>
-        parseList(ingredientsJson)
-            .slice(0, 3)
-            .map((i: unknown) =>
-                typeof i === 'object' && i !== null && 'name' in i
-                    ? `${(i as { amount?: number; unit?: string; name: string }).amount ? `${(i as { amount?: number; unit?: string; name: string }).amount} ` : ''}${(i as { amount?: number; unit?: string; name: string }).unit ? `${(i as { amount?: number; unit?: string; name: string }).unit} ` : ''}${(i as { amount?: number; unit?: string; name: string }).name}`.trim()
-                    : String(i)
-            )
-            .join(' • ');
-
     const chips = ['All', 'Favorites', 'Hot', 'Cold'];
 
-    const title = baseType === 'non_coffee' ? '🍵 Non-Coffee Drinks' : '☕ Coffee Base Drinks';
-    const subtitle =
-        baseType === 'non_coffee'
-            ? 'Matcha, Chocolate, Tea & Milk'
-            : 'Espresso & Cold Brew Drinks';
+    const title = baseType === 'non_coffee' ? 'Non-Coffee Drinks' : 'Coffee Base Drinks';
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
-            {/* Header */}
-            <PageHeader title={title} subtitle={subtitle} onBack={() => navigate('/drinks')} />
-
-            {/* Sticky Search and Filter Controls */}
-            <div className="sticky top-14 z-20 bg-md-surface/95 backdrop-blur-md pt-2 pb-3 px-5 border-b border-md-outline-variant/30 space-y-3">
+            {/* Sticky Header matching RecipeListPage */}
+            <PageHeader
+                title={title}
+                onBack={() => navigate('/drinks')}
+                titleClassName="truncate"
+                rowClassName="mb-3"
+            >
                 <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}
                     placeholder={`Search ${baseType === 'non_coffee' ? 'non-coffee' : 'coffee'} recipes...`}
+                    className="mb-1"
                 />
+            </PageHeader>
 
-                {/* Filter Chips */}
-                <div className="flex gap-2 overflow-x-auto no-scrollbar py-0.5">
-                    {chips.map((chip) => {
-                        const active = activeChip === chip;
-                        return (
-                            <button
-                                key={chip}
-                                onClick={() => setActiveChip(chip)}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                                    active
-                                        ? 'bg-md-primary text-md-on-primary shadow-sm'
-                                        : 'bg-md-surface-container-high text-md-on-surface-variant hover:text-md-on-surface'
-                                }`}
-                            >
-                                {chip}
-                            </button>
-                        );
-                    })}
-                </div>
+            {/* Filter Chips matching RecipeListPage */}
+            <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-hide">
+                {chips.map((chip) => (
+                    <button
+                        key={chip}
+                        onClick={() => setActiveChip(chip)}
+                        className={`h-8 px-4 rounded-full typescale-label-medium whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                            activeChip === chip
+                                ? 'bg-md-secondary-container text-md-on-secondary-container font-semibold shadow-sm'
+                                : 'bg-md-surface-container-low text-md-on-surface-variant border border-md-outline-variant/40 hover:bg-md-surface-container-high'
+                        }`}
+                    >
+                        {chip}
+                    </button>
+                ))}
             </div>
 
-            {/* Drink Cards List */}
-            <main className="flex-1 px-5 pt-4 space-y-3">
+            {/* Drink List */}
+            <main className="flex-1 px-5 pt-2 pb-24 flex flex-col gap-3">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="size-8 border-3 border-md-primary border-t-transparent rounded-full animate-spin" />
-                    </div>
-                ) : filteredDrinks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                        <div className="w-16 h-16 rounded-3xl bg-md-surface-container-high flex items-center justify-center text-md-on-surface-variant mb-4">
-                            <Icon
-                                name={baseType === 'non_coffee' ? 'eco' : 'local_cafe'}
-                                className="text-3xl"
-                            />
-                        </div>
-                        <h3 className="text-base font-bold text-md-on-surface mb-1">No drinks found</h3>
-                        <p className="text-xs text-md-on-surface-variant max-w-xs mb-6">
-                            {searchQuery
-                                ? 'No drinks match your current search or filters.'
-                                : `Start creating your ${baseType === 'non_coffee' ? 'non-coffee' : 'coffee'} beverage menu.`}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">
-                            <button
-                                onClick={() => navigate('/drinks/new', { state: { prefill: { base_type: baseType } } })}
-                                className="w-full py-2.5 px-4 rounded-xl bg-md-primary text-white text-xs font-bold flex items-center justify-center gap-2"
-                            >
-                                <Icon name="add" className="text-base" />
-                                <span>Create New Drink</span>
-                            </button>
-                            <button
-                                onClick={() => setIsImportModalOpen(true)}
-                                className="w-full py-2.5 px-4 rounded-xl border border-md-outline text-md-primary text-xs font-bold flex items-center justify-center gap-2"
-                            >
-                                <Icon name="auto_awesome" className="text-base" />
-                                <span>Smart Import</span>
-                            </button>
-                        </div>
-                    </div>
-                ) : (
+                    [1, 2, 3].map((i) => (
+                        <div
+                            key={i}
+                            className="h-36 bg-md-surface-container-low rounded-xl animate-pulse border border-md-outline-variant/20"
+                        />
+                    ))
+                ) : filteredDrinks.length > 0 ? (
                     filteredDrinks.map((drink) => {
-                        const isMenuOpen = activeMenuId === drink.id;
-                        const isHot = drink.category.toLowerCase() === 'hot';
-                        const ingredientSummary = parseIngredientPreview(drink.ingredients_json);
+                        const ingredients = parseList(drink.ingredients_json);
 
                         return (
                             <div
                                 key={drink.id}
                                 onClick={() => handleSelectDrink(drink)}
-                                className="group relative bg-md-surface-container-low hover:bg-md-surface-container border border-md-outline-variant/30 rounded-2xl p-4 transition-all shadow-md-1 cursor-pointer"
+                                className={`group relative p-4 rounded-xl shadow-md-1 border transition-all duration-200 cursor-pointer ${
+                                    drink.is_favorite
+                                        ? 'bg-md-primary-container/20 border-md-primary/40'
+                                        : 'bg-md-surface-container-low border-md-outline-variant/30 hover:bg-md-surface-container-high'
+                                }`}
                             >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span
-                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                                                    isHot
-                                                        ? 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-200'
-                                                        : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-200'
-                                                }`}
-                                            >
-                                                <Icon
-                                                    name={isHot ? 'local_fire_department' : 'ac_unit'}
-                                                    className="text-[12px]"
-                                                />
-                                                {drink.category}
-                                            </span>
-                                        </div>
-
-                                        <h3 className="text-sm font-bold text-md-on-surface truncate">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="min-w-0 pr-2">
+                                        <h3 className="typescale-title-medium font-bold text-md-on-surface mb-0.5 truncate">
                                             {drink.name}
                                         </h3>
-
-                                        {ingredientSummary && (
-                                            <p className="text-[11px] text-md-on-surface-variant truncate mt-1">
-                                                {ingredientSummary}
-                                            </p>
-                                        )}
+                                        <p className="typescale-body-small text-md-on-surface-variant font-medium truncate">
+                                            {drink.base_type === 'non_coffee' ? 'Non-Coffee' : 'Coffee Base'} • {drink.category}
+                                        </p>
                                     </div>
-
-                                    {/* Action Buttons: Favorite + Kebab */}
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={(e) => handleToggleFavorite(e, drink.id)}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:text-amber-500 hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                                            title={drink.is_favorite ? 'Remove favorite' : 'Add favorite'}
+                                            className="size-9 flex items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                                            aria-label="Favorite drink"
                                         >
                                             <Icon
                                                 name="bookmark"
-                                                className={`text-[18px] ${
-                                                    drink.is_favorite ? 'text-amber-500' : 'text-md-on-surface-variant/40'
-                                                }`}
-                                                style={
-                                                    drink.is_favorite
-                                                        ? { fontVariationSettings: "'FILL' 1" }
-                                                        : undefined
-                                                }
+                                                className={`text-xl ${drink.is_favorite ? 'text-md-primary' : 'text-md-outline'}`}
+                                                style={{ fontVariationSettings: drink.is_favorite ? "'FILL' 1" : "'FILL' 0" }}
                                             />
                                         </button>
-
                                         <div className="relative">
                                             <button
                                                 onClick={(e) => handleKebabClick(e, drink.id)}
-                                                className="w-8 h-8 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                                                title="Options"
+                                                className="size-9 flex items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                                                aria-label="More options"
                                             >
-                                                <Icon name="more_vert" className="text-[18px]" />
+                                                <Icon name="more_vert" className="text-xl" />
                                             </button>
 
-                                            {/* Dropdown Menu */}
-                                            {isMenuOpen && (
-                                                <div
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="absolute right-0 top-9 z-30 w-44 rounded-2xl bg-md-surface border border-md-outline-variant/40 shadow-xl py-1.5 animate-in fade-in zoom-in-95 duration-150"
-                                                >
-                                                    <button
-                                                        onClick={(e) => handleClone(e, drink.id)}
-                                                        className="w-full px-3.5 py-2 text-left text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high flex items-center gap-2.5 transition-colors"
-                                                    >
-                                                        <Icon name="content_copy" className="text-[16px] text-md-on-surface-variant" />
-                                                        <span>Duplicate</span>
-                                                    </button>
-                                                    <button
+                                            {activeMenuId === drink.id && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-20"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            navigate(`/drinks/${drink.id}/edit`);
+                                                            e.preventDefault();
+                                                            setActiveMenuId(null);
                                                         }}
-                                                        className="w-full px-3.5 py-2 text-left text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high flex items-center gap-2.5 transition-colors"
+                                                    />
+                                                    <div
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                        }}
+                                                        className="absolute right-0 top-10 w-36 bg-md-surface-container-high text-md-on-surface rounded-md shadow-md-3 border border-md-outline-variant/30 py-1.5 z-30 animate-in fade-in duration-150"
                                                     >
-                                                        <Icon name="edit" className="text-[16px] text-md-on-surface-variant" />
-                                                        <span>Edit Recipe</span>
-                                                    </button>
-                                                    <div className="h-px bg-md-outline-variant/30 my-1" />
-                                                    <button
-                                                        onClick={(e) => handleDeleteClick(e, drink)}
-                                                        className="w-full px-3.5 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center gap-2.5 transition-colors"
-                                                    >
-                                                        <Icon name="delete" className="text-[16px] text-red-500" />
-                                                        <span>Delete</span>
-                                                    </button>
-                                                </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                setTimeout(() => setActiveMenuId(null), 50);
+                                                                navigate(`/drinks/${drink.id}/edit`);
+                                                            }}
+                                                            className="w-full px-4 py-2.5 text-left typescale-body-medium font-semibold text-md-on-surface hover:bg-md-surface-container-highest flex items-center gap-2 transition-colors cursor-pointer"
+                                                        >
+                                                            <Icon name="edit" className="text-lg text-md-on-surface-variant" />
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => handleClone(e, drink.id)}
+                                                            className="w-full px-4 py-2.5 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors cursor-pointer"
+                                                        >
+                                                            <Icon name="content_copy" className="text-[18px] text-gray-400" />
+                                                            Clone
+                                                        </button>
+                                                        <div className="h-[1px] bg-gray-50 my-1" />
+                                                        <button
+                                                            onClick={(e) => handleDeleteClick(e, drink)}
+                                                            className="w-full px-4 py-2.5 text-left text-sm font-bold text-red-500 hover:bg-red-50 flex items-center gap-2 transition-colors cursor-pointer"
+                                                        >
+                                                            <Icon name="delete" className="text-[18px]" />
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* 3 Metric StatCards matching RecipeListPage */}
+                                <div className="flex gap-2 mt-3">
+                                    <StatCard label="Type" value={drink.category} />
+                                    <StatCard label="Base" value={drink.base_type === 'non_coffee' ? 'Non-Coffee' : 'Coffee'} />
+                                    <StatCard label="Ingredients" value={`${ingredients.length} items`} />
+                                </div>
                             </div>
                         );
                     })
+                ) : (
+                    <div className="bg-white dark:bg-md-surface-container-low p-12 rounded-2xl border border-dashed border-gray-200 dark:border-md-outline-variant/30 text-center flex flex-col items-center justify-center">
+                        <SplashLogoIcon className="w-12 h-12 text-gray-200 dark:text-md-outline-variant mb-3" />
+                        <p className="text-sm text-gray-400 dark:text-md-on-surface-variant font-medium">
+                            No drinks found matching your criteria.
+                        </p>
+                    </div>
                 )}
             </main>
 
-            {/* Floating Action Button (FAB) Speed Dial */}
-            <div className="fixed bottom-24 right-5 z-30 flex flex-col items-end gap-2.5">
-                {isFabMenuOpen && (
-                    <>
-                        <button
-                            onClick={() => {
-                                setIsFabMenuOpen(false);
-                                setIsImportModalOpen(true);
-                            }}
-                            className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-md-surface border border-md-outline-variant/40 shadow-lg text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-md-surface-container-high transition-all animate-in slide-in-from-bottom-2 duration-150"
-                        >
-                            <Icon name="auto_awesome" className="text-[16px]" />
-                            <span>Smart Import</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                setIsFabMenuOpen(false);
-                                navigate('/drinks/new', {
-                                    state: { prefill: { base_type: baseType } }
-                                });
-                            }}
-                            className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-md-surface border border-md-outline-variant/40 shadow-lg text-xs font-bold text-md-primary hover:bg-md-surface-container-high transition-all animate-in slide-in-from-bottom-2 duration-150"
-                        >
-                            <Icon name="add" className="text-[16px]" />
-                            <span>New Drink</span>
-                        </button>
-                    </>
-                )}
+            {/* Reusable Floating Speed Dial FAB */}
+            <SpeedDialFab
+                actions={[
+                    {
+                        label: 'Import Drink',
+                        customIcon: <SplashLogoIcon className="w-4 h-4 text-primary" />,
+                        className: 'text-primary border-primary/10 hover:bg-primary/5',
+                        onClick: () => setIsImportModalOpen(true),
+                    },
+                    {
+                        label: 'New Drink',
+                        icon: 'edit',
+                        onClick: () =>
+                            navigate('/drinks/new/edit', {
+                                state: { prefill: { base_type: baseType } },
+                            }),
+                    },
+                ]}
+            />
 
-                <button
-                    onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-                    className="w-14 h-14 rounded-full bg-md-primary hover:bg-md-primary/90 text-md-on-primary shadow-xl flex items-center justify-center transition-transform active:scale-95 cursor-pointer"
-                    aria-label="Actions"
-                >
-                    <Icon
-                        name={isFabMenuOpen ? 'close' : 'add'}
-                        className={`text-2xl transition-transform ${isFabMenuOpen ? 'rotate-90' : ''}`}
-                    />
-                </button>
-            </div>
+            <BottomNav activeTab="brewing" />
 
             {/* Smart Import Modal */}
             <DrinkSmartImportModal
                 isOpen={isImportModalOpen}
-                onClose={() => setIsImportModalOpen(false)}
                 defaultBaseType={baseType}
+                onClose={() => setIsImportModalOpen(false)}
                 onImportToEdit={(imported) => {
-                    navigate('/drinks/new', { state: { prefill: imported } });
+                    navigate('/drinks/new/edit', { state: { prefill: imported } });
                 }}
                 onSaveDirect={async (imported) => {
                     await drinkService.saveDrink(imported as Drink);
@@ -372,25 +314,17 @@ export const DrinkListPage = () => {
                 }}
             />
 
-            {/* Delete Confirmation Modal */}
+            {/* Modal Delete Confirmation matching RecipeListPage */}
             <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
-                title="Delete Drink Recipe"
-                message={
-                    <p className="text-xs text-md-on-surface-variant leading-relaxed">
-                        Are you sure you want to delete{' '}
-                        <span className="font-bold text-md-on-surface">{drinkToDelete?.name}</span>? This will remove the
-                        drink from your list, but past journal logs referencing it will be preserved.
-                    </p>
-                }
                 onConfirm={confirmDelete}
+                title="Delete Drink?"
+                message={`Are you sure you want to delete "${drinkToDelete?.name}"? This will hide the drink from your list, but your existing journal history will be kept.`}
                 confirmText="Delete"
-                type="warning"
+                cancelText="Cancel"
+                type="error"
             />
-
-            {/* Bottom Navigation */}
-            <BottomNav activeTab="brewing" />
         </div>
     );
 };

@@ -45,7 +45,7 @@ test.describe('End-to-End User Journey: Complete Lifecycle & Backup/Restore Audi
     await page.goto('/drinks/new/edit');
     await drinkEditPage.createDrink('E2E Lifecycle Iced Latte', 'Cold', ['18g Espresso']);
 
-    await page.waitForURL('**/drinks');
+    await page.waitForURL(/.*\/drinks.*/);
     await expect(page.getByText('E2E Lifecycle Iced Latte')).toBeVisible();
     await page.waitForTimeout(500);
 
@@ -102,7 +102,7 @@ test.describe('End-to-End User Journey: Complete Lifecycle & Backup/Restore Audi
     await expect(page.getByText('Barista Lifecycle Test')).toBeVisible();
 
     // Verify Restored Custom Drink Recipe
-    await page.goto('/drinks');
+    await page.goto('/drinks/list?base=coffee');
     await expect(page.getByText('E2E Lifecycle Iced Latte')).toBeVisible();
 
     // Verify Restored Gear Item on Pantry Gear Tab

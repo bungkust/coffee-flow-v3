@@ -25,6 +25,7 @@ const DrinkMenuPage = lazy(() => import('./pages/DrinkMenuPage').then(m => ({ de
 const DrinkListPage = lazy(() => import('./pages/DrinkListPage').then(m => ({ default: m.DrinkListPage })));
 const DrinkDetailPage = lazy(() => import('./pages/DrinkDetailPage').then(m => ({ default: m.DrinkDetailPage })));
 const DrinkPreparationPage = lazy(() => import('./pages/DrinkPreparationPage').then(m => ({ default: m.DrinkPreparationPage })));
+const DrinkFlowPage = lazy(() => import('./pages/DrinkFlowPage').then(m => ({ default: m.DrinkFlowPage })));
 const DrinkLogPage = lazy(() => import('./pages/DrinkLogPage').then(m => ({ default: m.DrinkLogPage })));
 const DrinkEditPage = lazy(() => import('./pages/DrinkEditPage').then(m => ({ default: m.DrinkEditPage })));
 const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage').then(m => ({ default: m.PlaygroundPage })));
@@ -95,6 +96,7 @@ function App() {
           <Route path="/drinks/:id/edit" element={<DrinkEditPage />} />
           <Route path="/drinks/:id" element={<DrinkDetailPage />} />
           <Route path="/drinks/:id/prepare" element={<DrinkPreparationPage />} />
+          <Route path="/drinks/:id/flow" element={<DrinkFlowPage />} />
           <Route path="/drink-log/:id" element={<DrinkLogPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/backup" element={<BackupRestorePage />} />

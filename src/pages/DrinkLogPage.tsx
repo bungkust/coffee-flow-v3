@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { StarRating } from '../components/StarRating';
@@ -14,9 +14,22 @@ const PRESET_DRINK_TAGS = [
     'Nutty', 'Fruity', 'Floral', 'Caramel', 'Chocolatey', 'Refreshing'
 ];
 
+import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
+
+interface LogLocationState {
+    servings?: number;
+    selectedBeanId?: string;
+    selectedMilkId?: string;
+    extraPantryItems?: ExtraPantryItemUsage[];
+    durationSeconds?: number;
+}
+
 export const DrinkLogPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const logState = (location.state as LogLocationState) || {};
+
     const [drink, setDrink] = useState<Drink | null>(null);
     const [rating, setRating] = useState(4);
     const [notes, setNotes] = useState('');
@@ -25,8 +38,8 @@ export const DrinkLogPage = () => {
     // Pantry integration
     const [beans, setBeans] = useState<PantryItem[]>([]);
     const [milks, setMilks] = useState<PantryItem[]>([]);
-    const [selectedBeanId, setSelectedBeanId] = useState<string>('');
-    const [selectedMilkId, setSelectedMilkId] = useState<string>('');
+    const [selectedBeanId, setSelectedBeanId] = useState<string>(logState.selectedBeanId || '');
+    const [selectedMilkId, setSelectedMilkId] = useState<string>(logState.selectedMilkId || '');
 
     // Sensory metrics (1-5)
     const [sweetness, setSweetness] = useState<number>(3);
@@ -42,10 +55,19 @@ export const DrinkLogPage = () => {
             .catch((error) => console.error('Failed to load drink:', error));
 
         pantryService.getPantryItems().then((items) => {
-            setBeans(items.filter((i) => i.category === 'beans'));
-            setMilks(items.filter((i) => i.category === 'milk'));
+            const availableBeans = items.filter((i) => i.category === 'beans');
+            const availableMilks = items.filter((i) => i.category === 'milk');
+            setBeans(availableBeans);
+            setMilks(availableMilks);
+
+            if (logState.selectedBeanId) {
+                setSelectedBeanId(logState.selectedBeanId);
+            }
+            if (logState.selectedMilkId) {
+                setSelectedMilkId(logState.selectedMilkId);
+            }
         }).catch(console.error);
-    }, [id]);
+    }, [id, logState.selectedBeanId, logState.selectedMilkId]);
 
     const handleSave = async () => {
         if (!drink) return;
@@ -59,7 +81,8 @@ export const DrinkLogPage = () => {
                 sweetness,
                 coffeeStrength: isCoffeeBase ? coffeeStrength : undefined,
                 creaminess,
-                flavorTags: selectedTags
+                flavorTags: selectedTags,
+                extraPantryItems: logState.extraPantryItems,
             });
             navigate('/journal?tab=drinks');
         } catch (error) {

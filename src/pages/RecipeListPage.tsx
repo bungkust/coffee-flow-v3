@@ -10,6 +10,8 @@ import { formatDuration, getBrewDuration } from '../shared/utils/brewMath';
 import { SmartImportModal, type ImportableRecipe } from '../components/SmartImportModal';
 import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
+import { StatCard } from '../components/StatCard';
+import { SpeedDialFab } from '../components/SpeedDialFab';
 
 export const RecipeListPage = () => {
     const navigate = useNavigate();
@@ -24,7 +26,6 @@ export const RecipeListPage = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [recipeToDelete, setRecipeToDelete] = useState<Recipe | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
     const [restoredQueue, setRestoredQueue] = useState<ImportableRecipe[]>([]);
 
     const fetchRecipes = useCallback(async () => {
@@ -277,50 +278,22 @@ export const RecipeListPage = () => {
                 )}
             </main>
 
-            {/* Backdrop overlay when FAB menu is open */}
-            {isFabMenuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 animate-in fade-in duration-150"
-                    onClick={() => setIsFabMenuOpen(false)}
-                />
-            )}
-
             {/* Floating Speed Dial FAB */}
-            <div className="fixed bottom-28 right-6 z-40 flex flex-col items-end gap-3">
-                {isFabMenuOpen && (
-                    <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
-                        <button
-                            onClick={() => {
-                                setIsFabMenuOpen(false);
-                                setIsImportModalOpen(true);
-                            }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-primary rounded-2xl shadow-xl border border-primary/10 text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all cursor-pointer"
-                        >
-                            <SplashLogoIcon className="w-4 h-4 text-primary" />
-                            <span>Import Recipe</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setIsFabMenuOpen(false);
-                                navigate(`/recipes/new/edit?method=${methodFilter?.toUpperCase() || 'V60'}`);
-                            }}
-                            className="flex items-center gap-2.5 px-4 py-2.5 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
-                        >
-                            <Icon name="edit" className="text-[18px] text-gray-500" />
-                            <span>New Recipe</span>
-                        </button>
-                    </div>
-                )}
-
-                <button
-                    onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-                    className={`w-14 h-14 rounded-full text-white shadow-lg shadow-primary/40 flex items-center justify-center transition-all duration-300 active:scale-90 border-[3px] border-white cursor-pointer ${isFabMenuOpen ? 'bg-gray-800 rotate-45' : 'bg-primary hover:bg-primary-dark'
-                        }`}
-                >
-                    <Icon name="add" className="text-[32px]" />
-                </button>
-            </div>
+            <SpeedDialFab
+                actions={[
+                    {
+                        label: 'Import Recipe',
+                        customIcon: <SplashLogoIcon className="w-4 h-4 text-primary" />,
+                        className: 'text-primary border-primary/10 hover:bg-primary/5',
+                        onClick: () => setIsImportModalOpen(true),
+                    },
+                    {
+                        label: 'New Recipe',
+                        icon: 'edit',
+                        onClick: () => navigate(`/recipes/new/edit?method=${methodFilter?.toUpperCase() || 'V60'}`),
+                    },
+                ]}
+            />
 
             <BottomNav activeTab="brewing" />
 
@@ -393,9 +366,4 @@ export const RecipeListPage = () => {
     );
 };
 
-const StatCard = ({ label, value }: { label: string, value: string }) => (
-    <div className="flex-1 bg-md-surface-container-high rounded-md py-1.5 px-2 text-center border border-md-outline-variant/20">
-        <span className="block typescale-label-small text-md-on-surface-variant font-bold uppercase tracking-wide">{label}</span>
-        <span className="block typescale-label-large font-bold text-md-primary">{value}</span>
-    </div>
-);
+
