@@ -10,6 +10,7 @@ import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { Modal } from '../components/Modal';
 import { calculateCoffeeDose, formatWeight, formatVolume, formatStepSeconds, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, getTotalTargetWeight, getBrewSteps, withDerivedPourDurations, type UnitSystem } from '../shared/utils/brewMath';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 // Steps that only set things up (ice, rinse, dosing) belong on this screen, not the brew flow.
 const DEFAULT_ICE_RATIO = 4.375;
@@ -30,6 +31,7 @@ const parseExplicitIce = (recipe: Recipe): number | null => {
 export const RecipePreparationPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [searchParams] = useSearchParams();
     const startBrew = useBrewStore(state => state.startBrew);
 
@@ -250,7 +252,7 @@ export const RecipePreparationPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold text-md-on-surface">Recipe not found</h2>
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => safeBack(id ? `/recipes/${id}` : '/recipes')}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to previous page
@@ -287,7 +289,7 @@ export const RecipePreparationPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title="Preparation" onBack={() => navigate(-1)} />
+            <PageHeader title="Preparation" onBack={() => safeBack(id ? `/recipes/${id}` : '/recipes')} />
 
             {/* Preparation Banner Title */}
             <div className="px-5 py-5 border-b border-md-outline-variant/20 bg-md-surface-container-low/60 space-y-1">

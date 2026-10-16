@@ -1,5 +1,6 @@
 import { Icon } from './Icons';
 import { type ReactNode } from 'react';
+import { useBackHandler } from '../shared/utils/backNavigation';
 
 type ModalSize = 'sm' | 'md' | 'lg';
 
@@ -26,6 +27,8 @@ export const Modal = ({
     type = 'info',
     size = 'sm'
 }: ModalProps) => {
+    useBackHandler(isOpen, onClose);
+
     if (!isOpen) return null;
 
     const typeConfig = {

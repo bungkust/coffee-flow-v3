@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app';
 
@@ -32,21 +32,37 @@ const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage').then(m => ({ 
 const QuickTimerPage = lazy(() => import('./pages/QuickTimerPage').then(m => ({ default: m.QuickTimerPage })));
 const RatioCalculatorPage = lazy(() => import('./pages/RatioCalculatorPage').then(m => ({ default: m.RatioCalculatorPage })));
 
+import { handleBackPress, useSafeBack } from './shared/utils/backNavigation';
+
 function AndroidBackButtonHandler() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const safeBack = useSafeBack();
 
   useEffect(() => {
     let listener: { remove: () => Promise<void> } | null = null;
     const setupListener = async () => {
       try {
         listener = await CapApp.addListener('backButton', () => {
+          // 1. Check if any open modal, dialog, or active flow intercepts back press
+          if (handleBackPress()) {
+            return;
+          }
+
+          // 2. Root entry pages exit app
           const rootPages = ['/home', '/welcome', '/', '/onboarding'];
           if (rootPages.includes(location.pathname)) {
             CapApp.exitApp();
-          } else {
-            navigate(-1);
+            return;
           }
+
+          // 3. Top-level tabs: go back if history exists, otherwise fallback to home
+          if (['/brew-methods', '/drinks', '/pantry', '/journal'].includes(location.pathname)) {
+            safeBack('/home');
+            return;
+          }
+
+          // 4. All other subpages: perform safe back navigation
+          safeBack();
         });
       } catch (e) {
         console.warn('Capacitor App backButton listener failed:', e);
@@ -59,7 +75,7 @@ function AndroidBackButtonHandler() {
         listener.remove();
       }
     };
-  }, [navigate, location.pathname]);
+  }, [location.pathname, safeBack]);
 
   return null;
 }

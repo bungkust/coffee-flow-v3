@@ -4,15 +4,22 @@ import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Toast } from '../components/Toast';
 import { ProgressBar } from '../components/ProgressBar';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const PlaygroundPage = () => {
+    const safeBack = useSafeBack();
+
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-white shadow-2xl">
             {/* Header */}
             <div className="flex items-center bg-white p-4 sticky top-0 z-10 border-b border-neutral-border">
-                <div className="text-neutral-text flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-neutral-100 rounded-full transition-colors">
+                <button
+                    onClick={() => safeBack('/home')}
+                    className="text-neutral-text flex size-10 shrink-0 items-center justify-center cursor-pointer hover:bg-neutral-100 rounded-full transition-colors"
+                    aria-label="Go back"
+                >
                     <Icon name="arrow_back" className="text-2xl" />
-                </div>
+                </button>
                 <h2 className="text-neutral-text text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Design System</h2>
             </div>
 

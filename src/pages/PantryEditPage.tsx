@@ -8,10 +8,12 @@ import { SaveBar } from '../components/SaveBar';
 import { pantryService } from '../core/services';
 import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, parseBeanTags, formatBeanTags } from '../features/pantry/domain/beanOptions';
 import type { PantryItem } from '../features/pantry/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const PantryEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [item, setItem] = useState<PantryItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -78,7 +80,7 @@ export const PantryEditPage = () => {
             <div className="flex min-h-screen flex-col items-center justify-center bg-md-surface p-6 text-center">
                 <Icon name="error" className="mb-4 text-5xl text-md-error" />
                 <h1 className="typescale-title-large font-bold text-md-on-surface">Item not found</h1>
-                <button onClick={() => navigate('/pantry')} className="mt-4 font-bold text-md-primary hover:underline cursor-pointer">
+                <button onClick={() => safeBack('/pantry')} className="mt-4 font-bold text-md-primary hover:underline cursor-pointer">
                     Back to pantry
                 </button>
             </div>
@@ -88,7 +90,7 @@ export const PantryEditPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title="Edit Item" onBack={() => navigate(-1)} />
+            <PageHeader title="Edit Item" onBack={() => safeBack('/pantry')} />
 
             <main className="flex-1 px-5 pt-4 space-y-6">
                 {error && (

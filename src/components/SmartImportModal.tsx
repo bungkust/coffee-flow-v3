@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
 import { Dropdown } from './Dropdown';
+import { useBackHandler } from '../shared/utils/backNavigation';
 import { brewService } from '../core/services';
 import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
 
@@ -355,8 +356,6 @@ export const SmartImportModal = ({
         }
     }, [isOpen, initialParsedRecipes]);
 
-    if (!isOpen) return null;
-
     const reset = () => {
         setRawInput('');
         setAiJsonResponse('');
@@ -371,6 +370,10 @@ export const SmartImportModal = ({
         reset();
         onClose();
     };
+
+    useBackHandler(isOpen, handleClose);
+
+    if (!isOpen) return null;
 
     const handleCopyPrompt = async () => {
         if (!rawInput.trim()) {

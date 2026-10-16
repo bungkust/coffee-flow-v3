@@ -6,10 +6,12 @@ import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { drinkService } from '../core/services';
 import type { Drink, DrinkBaseType } from '../shared/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const DrinkEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const location = useLocation();
     const prefill = (location.state as { prefill?: Partial<Drink> } | null)?.prefill;
 
@@ -61,7 +63,11 @@ export const DrinkEditPage = () => {
         setError('');
         try {
             await drinkService.saveDrink(drink);
-            navigate(`/drinks/list?base=${drink.base_type || 'coffee'}`);
+            if (id === 'new') {
+                navigate(`/drinks/list?base=${drink.base_type || 'coffee'}`);
+            } else {
+                safeBack(`/drinks/${drink.id}`);
+            }
         } catch (err) {
             console.error('Error saving drink:', err);
             alert('Failed to save drink');
@@ -103,7 +109,7 @@ export const DrinkEditPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title={id === 'new' ? 'Create Drink' : 'Edit Drink'} onBack={() => navigate(-1)} />
+            <PageHeader title={id === 'new' ? 'Create Drink' : 'Edit Drink'} onBack={() => safeBack(id === 'new' ? '/drinks/list' : `/drinks/${id}`)} />
 
             <main className="flex-1 px-5 pt-4 space-y-6">
                 {error && (

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Icon } from './Icons';
+import { useBackHandler } from '../shared/utils/backNavigation';
 
 export interface SpeedDialAction {
     label: string;
@@ -17,6 +18,7 @@ export interface SpeedDialFabProps {
 
 export const SpeedDialFab = ({ actions, mainIcon = 'add', className = '' }: SpeedDialFabProps) => {
     const [isOpen, setIsOpen] = useState(false);
+    useBackHandler(isOpen, () => setIsOpen(false));
 
     return (
         <>

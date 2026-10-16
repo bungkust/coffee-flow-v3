@@ -6,6 +6,7 @@ import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { drinkService, settingsService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { parseList, formatScaledIngredient } from '../shared/utils/drinks';
+import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
 import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
 
 interface FlowLocationState {
@@ -87,6 +88,7 @@ export const DrinkFlowPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+    const safeBack = useSafeBack();
     const flowState = (location.state as FlowLocationState) || {};
     const servings = flowState.servings || 1;
 
@@ -101,6 +103,9 @@ export const DrinkFlowPage = () => {
     const [isExitModalOpen, setIsExitModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const timerRef = useRef<number | null>(null);
+
+    // Intercept back navigation to prompt exit confirmation modal
+    useBackHandler(!isExitModalOpen, () => setIsExitModalOpen(true));
 
     // Keep screen awake while in flow
     useWakeLock(true);
@@ -224,7 +229,7 @@ export const DrinkFlowPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold">No Instructions Found</h2>
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => safeBack(`/drinks/${id}`)}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to previous page
@@ -492,7 +497,7 @@ export const DrinkFlowPage = () => {
                 title="Exit Crafting Flow?"
                 confirmText="Exit Flow"
                 cancelText="Stay Here"
-                onConfirm={() => navigate(`/drinks/${drink.id}`)}
+                onConfirm={() => safeBack(`/drinks/${drink.id}`)}
                 onClose={() => setIsExitModalOpen(false)}
                 message="Are you sure you want to stop? Your preparation will not be saved to journal yet."
             />

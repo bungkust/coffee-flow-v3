@@ -6,9 +6,11 @@ import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { backupService } from '../core/services';
 import type { Backup } from '../features/settings/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const BackupRestorePage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const location = useLocation();
     const restoreOnly = (location.state as { restore?: boolean } | null)?.restore === true;
     const [backups, setBackups] = useState<Backup[]>([]);
@@ -122,7 +124,7 @@ export const BackupRestorePage = () => {
             />
 
             {/* Header */}
-            <PageHeader title={restoreOnly ? 'Restore Backup' : 'Backup & Restore'} onBack={() => navigate(-1)} />
+            <PageHeader title={restoreOnly ? 'Restore Backup' : 'Backup & Restore'} onBack={() => safeBack(restoreOnly ? '/' : '/settings')} />
 
             {/* Main Content */}
             <main className="flex-1 px-5 pt-4 space-y-6">

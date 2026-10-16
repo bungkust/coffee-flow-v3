@@ -5,10 +5,12 @@ import { drinkService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import { getDrinkImage, parseList, parseIngredient } from '../shared/utils/drinks';
 import { PageHeader } from '../components/PageHeader';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const DrinkDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [drink, setDrink] = useState<Drink | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -40,7 +42,7 @@ export const DrinkDetailPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold text-md-on-surface">Drink not found</h2>
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => safeBack('/drinks')}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to previous page
@@ -59,7 +61,7 @@ export const DrinkDetailPage = () => {
             {/* Header matching RecipeDetailPage */}
             <PageHeader
                 title={drink.name}
-                onBack={() => navigate(-1)}
+                onBack={() => safeBack('/drinks')}
                 titleClassName="line-clamp-1"
                 action={(
                     <button

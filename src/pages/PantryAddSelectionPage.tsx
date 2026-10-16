@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import { GEAR_CATEGORIES, SUPPLIES_CATEGORIES } from '../features/pantry/domain/pantryCategories';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const PantryAddSelectionPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [activeTab, setActiveTab] = useState<'supplies' | 'gear'>('supplies');
 
     const categories = activeTab === 'supplies' ? SUPPLIES_CATEGORIES : GEAR_CATEGORIES;
@@ -17,7 +19,7 @@ export const PantryAddSelectionPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            <PageHeader title="Add Pantry Item" onBack={() => navigate(-1)} />
+            <PageHeader title="Add Pantry Item" onBack={() => safeBack('/pantry')} />
 
             {/* Tab Selection */}
             <div className="px-5 py-4 flex gap-3">

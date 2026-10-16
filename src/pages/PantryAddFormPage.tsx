@@ -11,10 +11,12 @@ import { pantryService } from '../core/services';
 import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { BlendComponent } from '../features/pantry/domain/beanOptions';
 import { PANTRY_CATEGORY_MAP, isPantryCategory } from '../features/pantry/domain/pantryCategories';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const PantryAddFormPage = () => {
     const { category } = useParams<{ category: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [loading, setLoading] = useState(false);
 
     const validCategory = isPantryCategory(category) ? category : 'beans';
@@ -84,7 +86,7 @@ export const PantryAddFormPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title={`New ${info.name}`} onBack={() => navigate(-1)} />
+            <PageHeader title={`New ${info.name}`} onBack={() => safeBack('/pantry/add')} />
 
             <main className="flex-1 px-5 pt-4 space-y-6">
                 {/* Core Shared Fields */}

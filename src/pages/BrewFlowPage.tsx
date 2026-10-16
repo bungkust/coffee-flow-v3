@@ -8,6 +8,7 @@ import { brewService, settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import type { Recipe } from '../shared/domain/entities';
+import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
 import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, type UnitSystem } from '../shared/utils/brewMath';
 
 const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
@@ -30,6 +31,7 @@ const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) 
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
@@ -38,6 +40,9 @@ export const BrewFlowPage = () => {
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const hasHydratedRef = useRef(false);
     const stopTarget = useRef<'back' | 'home'>('home');
+
+    // Intercept hardware / web back button to prompt stop confirmation
+    useBackHandler(!isStopModalOpen && !isSkipModalOpen, () => openStopConfirm('back'));
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
@@ -152,8 +157,11 @@ export const BrewFlowPage = () => {
 
     const confirmStop = () => {
         stopBrew();
-        if (stopTarget.current === 'back') navigate(-1);
-        else navigate('/brew-methods');
+        if (stopTarget.current === 'back') {
+            safeBack(activeRecipe ? `/recipes/${activeRecipe.id}` : '/recipes');
+        } else {
+            navigate('/brew-methods');
+        }
     };
 
     const handleSkipStep = () => {

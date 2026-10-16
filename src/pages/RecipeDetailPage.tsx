@@ -5,6 +5,7 @@ import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
 import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, formatStepSeconds, getBrewDuration, getBrewSteps, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 import { PageHeader } from '../components/PageHeader';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 const sourceMeta = (url: string): { icon: string; label: string } => {
     const u = url.toLowerCase();
@@ -21,6 +22,7 @@ const sourceMeta = (url: string): { icon: string; label: string } => {
 export const RecipeDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ export const RecipeDetailPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold text-md-on-surface">Recipe not found</h2>
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => safeBack('/recipes')}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to previous page
@@ -79,7 +81,7 @@ export const RecipeDetailPage = () => {
             {/* Header */}
             <PageHeader
                 title={recipe.name}
-                onBack={() => navigate(-1)}
+                onBack={() => safeBack('/recipes')}
                 titleClassName="line-clamp-1"
                 action={(
                     <button

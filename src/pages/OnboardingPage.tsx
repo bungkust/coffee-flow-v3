@@ -11,6 +11,7 @@ import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS,
 import type { BlendComponent } from '../features/pantry/domain/beanOptions';
 import type { UnitSystem } from '../shared/utils/brewMath';
 import type { BrewingMethod } from '../shared/domain/entities';
+import { useBackHandler } from '../shared/utils/backNavigation';
 
 const CATEGORIES = [
     'Pressure Brewing Methods',
@@ -172,10 +173,15 @@ export const OnboardingPage = () => {
         }
     };
 
+    useBackHandler(step !== 'name', () => {
+        handleBack();
+        return true;
+    });
+
     const handleBack = () => {
         if (step === 'beans') setStep('equipment');
         else if (step === 'equipment') setStep('name');
-        else navigate('/');
+        else navigate('/', { replace: true });
     };
 
     return (

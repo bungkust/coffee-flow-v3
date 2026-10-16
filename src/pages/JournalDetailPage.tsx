@@ -9,12 +9,14 @@ import { TasteEditor } from '../components/TasteEditor';
 import { formatMethodName } from '../shared/utils/brewMath';
 import { parseFlavorTags, serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
 import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const JournalDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const [searchParams] = useSearchParams();
     const type = searchParams.get('type') || 'brews';
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
 
     const [log, setLog] = useState<BrewLogWithRecipe | DrinkLogWithDrink | null>(null);
     const [rating, setRating] = useState(0);
@@ -123,7 +125,7 @@ export const JournalDetailPage = () => {
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             <PageHeader
                 title={title}
-                onBack={() => navigate(-1)}
+                onBack={() => safeBack(`/journal?tab=${type}`)}
                 titleClassName="truncate"
                 action={(
                     <button

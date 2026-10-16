@@ -10,10 +10,12 @@ import type { Drink } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
 import { parseList, formatScaledIngredient } from '../shared/utils/drinks';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const DrinkPreparationPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
 
     const [drink, setDrink] = useState<Drink | null>(null);
     const [loading, setLoading] = useState(true);
@@ -160,7 +162,7 @@ export const DrinkPreparationPage = () => {
                 <Icon name="error" className="text-5xl text-md-error mb-4" />
                 <h2 className="typescale-title-large font-bold text-md-on-surface">Drink not found</h2>
                 <button
-                    onClick={() => navigate(-1)}
+                    onClick={() => safeBack(id ? `/drinks/${id}` : '/drinks')}
                     className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
                 >
                     Back to previous page
@@ -189,7 +191,7 @@ export const DrinkPreparationPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title="Preparation" onBack={() => navigate(-1)} />
+            <PageHeader title="Preparation" onBack={() => safeBack(id ? `/drinks/${id}` : '/drinks')} />
 
             {/* Preparation Banner Title */}
             <div className="px-5 py-5 border-b border-md-outline-variant/20 bg-md-surface-container-low/60 space-y-1">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
+import { useBackHandler } from '../shared/utils/backNavigation';
 import type { Drink, DrinkBaseType, DrinkCategory, DrinkIngredient } from '../shared/domain/entities';
 
 export interface ImportableDrink extends Partial<Drink> {
@@ -334,8 +335,6 @@ export const DrinkSmartImportModal = ({
         }
     }, [isOpen, initialParsedDrinks]);
 
-    if (!isOpen) return null;
-
     const resetState = () => {
         setRawInput('');
         setAiJsonResponse('');
@@ -350,6 +349,10 @@ export const DrinkSmartImportModal = ({
         resetState();
         onClose();
     };
+
+    useBackHandler(isOpen, handleClose);
+
+    if (!isOpen) return null;
 
     const handleCopyPrompt = async () => {
         const sourceUrl = extractUrl(rawInput);

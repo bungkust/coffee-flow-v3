@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 const formatStopwatch = (ms: number): string => {
     const totalHundredths = Math.floor(Math.max(0, ms) / 10);
@@ -14,7 +14,7 @@ const formatStopwatch = (ms: number): string => {
 };
 
 export const QuickTimerPage = () => {
-    const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [elapsedMs, setElapsedMs] = useState(0);
     const [running, setRunning] = useState(false);
     const [laps, setLaps] = useState<number[]>([]);
@@ -67,7 +67,7 @@ export const QuickTimerPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <PageHeader title="Quick Timer" onBack={() => navigate(-1)} />
+            <PageHeader title="Quick Timer" onBack={() => safeBack('/home')} />
 
             <main className="flex flex-1 flex-col items-center px-5 py-6 overflow-y-auto">
                 <div className="w-full bg-md-surface-container-low px-6 py-6 rounded-3xl border border-md-outline-variant/30 shadow-md-1 mb-6 flex items-baseline justify-center tabular-nums">

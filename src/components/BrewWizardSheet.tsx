@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from './Icons';
 import { WizardRow } from './WizardRow';
+import { useBackHandler } from '../shared/utils/backNavigation';
 import { brewService, pantryService, settingsService } from '../core/services';
 import { suggestMethods } from '../shared/utils/beanMatching';
 import { stripTagPrefix } from '../features/pantry/domain/beanOptions';
@@ -85,6 +86,11 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
             setStep(1);
         }
     };
+
+    useBackHandler(open, () => {
+        if (step === 1) onClose();
+        else goBack();
+    });
 
     if (!open) return null;
 

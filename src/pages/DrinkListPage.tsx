@@ -10,10 +10,12 @@ import { SpeedDialFab } from '../components/SpeedDialFab';
 import { drinkService } from '../core/services';
 import type { Drink, DrinkBaseType } from '../shared/domain/entities';
 import { parseList } from '../shared/utils/drinks';
+import { useSafeBack } from '../shared/utils/backNavigation';
 import { DrinkSmartImportModal } from '../components/DrinkSmartImportModal';
 
 export const DrinkListPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [searchParams] = useSearchParams();
     const baseParam = searchParams.get('base') as DrinkBaseType | null;
     const baseType: DrinkBaseType = baseParam === 'non_coffee' ? 'non_coffee' : 'coffee';
@@ -126,7 +128,7 @@ export const DrinkListPage = () => {
             {/* Sticky Header matching RecipeListPage */}
             <PageHeader
                 title={title}
-                onBack={() => navigate('/drinks')}
+                onBack={() => safeBack('/drinks')}
                 titleClassName="truncate"
                 rowClassName="mb-3"
             >

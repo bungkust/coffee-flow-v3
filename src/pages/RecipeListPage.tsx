@@ -12,9 +12,11 @@ import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
 import { StatCard } from '../components/StatCard';
 import { SpeedDialFab } from '../components/SpeedDialFab';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const RecipeListPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [searchParams] = useSearchParams();
     const methodFilter = searchParams.get('method');
 
@@ -139,7 +141,7 @@ export const RecipeListPage = () => {
             {/* Sticky Header */}
             <PageHeader
                 title={methodFilter ? `${methodFilter} Recipes` : 'Recipes'}
-                onBack={() => navigate(-1)}
+                onBack={() => safeBack('/brew-methods')}
                 titleClassName="capitalize truncate"
                 rowClassName="mb-3"
             >

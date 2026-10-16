@@ -10,9 +10,11 @@ import { TasteEditor } from '../components/TasteEditor';
 import { brewService } from '../core/services';
 import { formatMethodName } from '../shared/utils/brewMath';
 import { serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
+import { useSafeBack, useBackHandler } from '../shared/utils/backNavigation';
 
 export const BrewLogPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew, hydrateBrew } = useBrewStore();
 
     const [rating, setRating] = useState(0);
@@ -98,13 +100,18 @@ export const BrewLogPage = () => {
             }
             sessionStorage.removeItem('coffee_flow_last_logged_id');
             stopBrew();
-            navigate('/home');
+            navigate('/journal?tab=brews', { replace: true });
         } catch (error) {
             console.error('Failed to save brew log:', error);
             stopBrew();
-            navigate('/home');
+            navigate('/home', { replace: true });
         }
     };
+
+    useBackHandler(!isDiscardModalOpen, () => {
+        setIsDiscardModalOpen(true);
+        return true;
+    });
 
     const confirmDiscard = async () => {
         // The brew was journalled the moment the timer finished, so discarding means removing that entry.
@@ -113,13 +120,17 @@ export const BrewLogPage = () => {
             sessionStorage.removeItem('coffee_flow_last_logged_id');
         }
         stopBrew();
-        navigate('/home');
+        safeBack('/home');
     };
 
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-36">
             {/* Header */}
-            <PageHeader title="How was it?" subtitle={`${formatMethodName(activeRecipe.method_id)} • ${activeRecipe.name}`} />
+            <PageHeader
+                title="How was it?"
+                subtitle={`${formatMethodName(activeRecipe.method_id)} • ${activeRecipe.name}`}
+                onBack={() => setIsDiscardModalOpen(true)}
+            />
 
             <main className="flex-1 px-5 py-5 space-y-6">
                 {/* Rating */}

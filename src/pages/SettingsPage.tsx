@@ -6,6 +6,7 @@ import { seedInitialData } from '../core/database/seeding';
 
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 // Google Form URLs
 // View form: https://docs.google.com/forms/d/1c0okral6Qh0uZZqWyp9NvhsXSqhpfsemkWGZB6HxYMs/viewform
@@ -39,6 +40,7 @@ const Toggle = ({ icon, label, checked, onToggle }: { icon: string, label: strin
 
 export const SettingsPage = () => {
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [appUnit, setAppUnit] = useState<'metric' | 'imperial'>('metric');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [timerFeedbackEnabled, setTimerFeedbackEnabled] = useState(true);
@@ -142,7 +144,7 @@ export const SettingsPage = () => {
     return (
         <div className="flex h-auto min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
             {/* Header */}
-            <PageHeader title="Settings" onBack={() => navigate(-1)} />
+            <PageHeader title="Settings" onBack={() => safeBack('/home')} />
 
             {/* Settings Groups */}
             <div className="px-5 space-y-6">

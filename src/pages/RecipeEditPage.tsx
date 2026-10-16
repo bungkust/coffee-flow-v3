@@ -7,6 +7,7 @@ import { SaveBar } from '../components/SaveBar';
 import { brewService } from '../core/services';
 import { GRIND_SIZE_OPTIONS } from '../shared/domain/entities';
 import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 const STANDARD_GRIND = new Set<string>(GRIND_SIZE_OPTIONS.map((o) => o.value));
 const isStandardGrind = (v?: string) => !!v && STANDARD_GRIND.has(v);
@@ -14,6 +15,7 @@ const isStandardGrind = (v?: string) => !!v && STANDARD_GRIND.has(v);
 export const RecipeEditPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const prefill = (location.state as { prefill?: Partial<Recipe> } | null)?.prefill;
@@ -157,7 +159,7 @@ export const RecipeEditPage = () => {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => navigate(-1)}
+                            onClick={() => safeBack(id === 'new' ? '/recipes' : `/recipes/${id}`)}
                             className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
                             aria-label="Go back"
                         >

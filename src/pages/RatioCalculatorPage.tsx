@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { settingsService } from '../core/services';
 import { formatWeight, formatVolume, roundTo, type UnitSystem } from '../shared/utils/brewMath';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const RatioCalculatorPage = () => {
-    const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const [coffee, setCoffee] = useState(18);
     const [ratio, setRatio] = useState(16);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
@@ -20,7 +20,7 @@ export const RatioCalculatorPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <PageHeader title="Ratio Calculator" onBack={() => navigate(-1)} />
+            <PageHeader title="Ratio Calculator" onBack={() => safeBack('/home')} />
 
             <main className="flex-1 px-5 py-6 space-y-5">
                 <div className="rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low p-5 shadow-md-1 space-y-2">

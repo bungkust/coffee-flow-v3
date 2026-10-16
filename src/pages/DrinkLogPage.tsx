@@ -8,6 +8,7 @@ import { Icon } from '../components/Icons';
 import { drinkService, pantryService } from '../core/services';
 import type { Drink } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
+import { useSafeBack } from '../shared/utils/backNavigation';
 
 const PRESET_DRINK_TAGS = [
     'Sweet', 'Creamy', 'Balanced', 'Silky', 'Rich', 'Bitter',
@@ -27,6 +28,7 @@ interface LogLocationState {
 export const DrinkLogPage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const safeBack = useSafeBack();
     const location = useLocation();
     const logState = (location.state as LogLocationState) || {};
 
@@ -84,7 +86,7 @@ export const DrinkLogPage = () => {
                 flavorTags: selectedTags,
                 extraPantryItems: logState.extraPantryItems,
             });
-            navigate('/journal?tab=drinks');
+            navigate('/journal?tab=drinks', { replace: true });
         } catch (error) {
             console.error('Failed to save drink log:', error);
         } finally {
@@ -111,7 +113,7 @@ export const DrinkLogPage = () => {
     return (
         <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
             {/* Header */}
-            <PageHeader title="How was it?" subtitle={drink.name} onBack={() => navigate(-1)} />
+            <PageHeader title="How was it?" subtitle={drink.name} onBack={() => safeBack(id ? `/drinks/${id}` : '/drinks')} />
 
             <main className="flex-1 px-5 py-5 space-y-5">
                 {/* Rating */}
