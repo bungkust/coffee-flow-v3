@@ -4,7 +4,6 @@ import { Icon } from '../components/Icons';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
-import { StarRating } from '../components/StarRating';
 import { useBrewStore } from '../state/useBrewStore';
 import { TasteEditor } from '../components/TasteEditor';
 import { brewService } from '../core/services';
@@ -17,7 +16,6 @@ export const BrewLogPage = () => {
     const safeBack = useSafeBack();
     const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew, hydrateBrew } = useBrewStore();
 
-    const [rating, setRating] = useState(0);
     const [notes, setNotes] = useState('');
     const [profile, setProfile] = useState<TasteProfileValues>({});
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -62,20 +60,8 @@ export const BrewLogPage = () => {
         );
     }
 
-    const getRatingLabel = (r: number) => {
-        const labels: Record<number, string> = {
-            1: '1.0 - Poor',
-            2: '2.0 - Fair',
-            3: '3.0 - Good',
-            4: '4.0 - Very Good',
-            5: '5.0 - Excellent'
-        };
-        return labels[r] || '';
-    };
-
     const handleSave = async () => {
         const payload = {
-            rating: rating || undefined,
             notes,
             sweetness: profile.sweetness,
             acidity: profile.acidity,
@@ -89,7 +75,7 @@ export const BrewLogPage = () => {
             } else {
                 await brewService.logBrew(
                     activeRecipe.id,
-                    rating || undefined,
+                    undefined,
                     notes,
                     profile,
                     selectedTags,
@@ -133,11 +119,6 @@ export const BrewLogPage = () => {
             />
 
             <main className="flex-1 px-5 py-5 space-y-6">
-                {/* Rating */}
-                <div className="flex flex-col items-center justify-center p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
-                    <StarRating rating={rating} onChange={setRating} />
-                    <p className="typescale-title-medium font-bold text-md-primary mt-2">{getRatingLabel(rating)}</p>
-                </div>
 
                 {/* Taste Profile & Flavor Tags */}
                 <TasteEditor

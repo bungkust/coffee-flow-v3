@@ -65,20 +65,21 @@ export const JournalPage = () => {
         return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     };
 
-    const formatDateTime = (dateString: string) =>
-        new Date(dateString).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    const formatTimeOnly = (dateString: string) => {
+        const d = new Date(dateString);
+        return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    };
 
     const rows = logs.map(log => ({
         id: log.id,
         name: ('recipe_name' in log ? log.recipe_name : log.drink_name) || 'Drink',
-        subtitle: [
-            'method_id' in log && log.bean_id ? beanNames[log.bean_id] : undefined,
-            'method_id' in log ? formatMethodName(log.method_id) : log.category
-        ].filter(Boolean).join(' · '),
+        subtitle: ('method_id' in log
+            ? [log.bean_id ? beanNames[log.bean_id] : undefined, formatMethodName(log.method_id)]
+            : [log.category?.toLowerCase() === 'cold' ? 'Iced' : 'Hot', ('bean_name' in log && log.bean_name) || ('milk_name' in log && log.milk_name)]
+        ).filter(Boolean).join(' · '),
         image: 'method_id' in log ? `/assets/methods/${log.method_id}.png` : getDrinkImage({ id: log.drink_id }),
         icon: 'method_id' in log ? 'coffee_maker' : 'local_cafe',
         date: 'brewed_at' in log ? log.brewed_at : log.logged_at,
-        rating: log.rating,
         notes: log.notes,
         flavor_tags: 'flavor_tags' in log ? log.flavor_tags : undefined,
     }));
@@ -130,13 +131,10 @@ export const JournalPage = () => {
                             </div>
                             <div className="w-px bg-gray-300/50"></div>
                             <div className="flex-1">
-                                <p className="text-sm text-gray-500 mb-1">Avg Rating</p>
-                                <div className="flex items-center gap-1.5">
-                                    <Icon name="star" className="text-primary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                    <p className="text-lg font-bold text-[#181411] leading-tight">
-                                        {stats.avgRating || '0.0'}
-                                    </p>
-                                </div>
+                                <p className="text-sm text-gray-500 mb-1">Total Recorded</p>
+                                <p className="text-3xl font-extrabold text-[#181411]">
+                                    {logs.length}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -151,7 +149,7 @@ export const JournalPage = () => {
                                 <span className="h-px flex-1 bg-[#f4f2f0]"></span>
                             </h3>
 
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-2.5">
                                 {groupLogs.map((row) => (
                                     <BrewLogCard
                                         key={row.id}
@@ -159,8 +157,7 @@ export const JournalPage = () => {
                                         icon={row.icon}
                                         name={row.name}
                                         subtitle={row.subtitle}
-                                        date={formatDateTime(row.date)}
-                                        rating={row.rating}
+                                        date={formatTimeOnly(row.date)}
                                         tags={parseFlavorTags(row.flavor_tags)}
                                         notes={row.notes}
                                         onClick={() => navigate(`/journal/${activeTab}/${row.id}`)}

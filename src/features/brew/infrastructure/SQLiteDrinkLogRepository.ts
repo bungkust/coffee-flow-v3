@@ -92,8 +92,8 @@ export class SQLiteDrinkLogRepository {
         await dbService.saveToLocalStore();
     }
 
-    async update(id: EntityId, rating: number, notes: string): Promise<void> {
-        await this.db.run('UPDATE drink_logs SET rating = ?, notes = ? WHERE id = ?', [rating, notes, id]);
+    async update(id: EntityId, notes: string): Promise<void> {
+        await this.db.run('UPDATE drink_logs SET notes = ? WHERE id = ?', [notes || '', id]);
         await dbService.saveToLocalStore();
     }
 

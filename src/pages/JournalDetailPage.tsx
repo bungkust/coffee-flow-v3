@@ -12,14 +12,14 @@ import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/enti
 import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const JournalDetailPage = () => {
-    const { id } = useParams<{ id: string }>();
+    const { type: paramType, id } = useParams<{ type?: string; id: string }>();
     const [searchParams] = useSearchParams();
-    const type = searchParams.get('type') || 'brews';
+    const type = paramType || searchParams.get('type') || 'brews';
     const navigate = useNavigate();
     const safeBack = useSafeBack();
 
     const [log, setLog] = useState<BrewLogWithRecipe | DrinkLogWithDrink | null>(null);
-    const [rating, setRating] = useState(0);
+    const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -30,26 +30,28 @@ export const JournalDetailPage = () => {
     useEffect(() => {
         if (!id) return;
         const getLog = () => type === 'brews' ? brewService.getLog(id) : drinkService.getLog(id);
-        getLog().then((data) => {
-            setLog(data);
-            if (!data) return;
-            setRating(data.rating || 0);
-            setNotes(data.notes || '');
-            const brewData = type === 'brews' ? (data as BrewLogWithRecipe) : null;
-            const drinkData = type !== 'brews' ? (data as DrinkLogWithDrink) : null;
-            if (brewData) {
-                setProfile({ sweetness: brewData.sweetness, acidity: brewData.acidity, body: brewData.body, bitterness: brewData.bitterness });
-                setTags(parseFlavorTags(brewData.flavor_tags));
-            } else if (drinkData?.flavor_tags) {
-                setTags(parseFlavorTags(drinkData.flavor_tags));
-            }
-            const beanId = brewData?.bean_id || drinkData?.bean_id;
-            if (beanId) {
-                pantryService.getPantryItems()
-                    .then(items => setBeanName(items.find(item => item.id === beanId)?.name ?? null))
-                    .catch(console.error);
-            }
-        });
+        getLog()
+            .then((data) => {
+                setLog(data);
+                if (!data) return;
+                setNotes(data.notes || '');
+                const brewData = type === 'brews' ? (data as BrewLogWithRecipe) : null;
+                const drinkData = type !== 'brews' ? (data as DrinkLogWithDrink) : null;
+                if (brewData) {
+                    setProfile({ sweetness: brewData.sweetness, acidity: brewData.acidity, body: brewData.body, bitterness: brewData.bitterness });
+                    setTags(parseFlavorTags(brewData.flavor_tags));
+                } else if (drinkData?.flavor_tags) {
+                    setTags(parseFlavorTags(drinkData.flavor_tags));
+                }
+                const beanId = brewData?.bean_id || drinkData?.bean_id;
+                if (beanId) {
+                    pantryService.getPantryItems()
+                        .then(items => setBeanName(items.find(item => item.id === beanId)?.name ?? null))
+                        .catch(console.error);
+                }
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, [id, type]);
 
     const handleSave = async () => {
@@ -58,7 +60,6 @@ export const JournalDetailPage = () => {
         try {
             if (type === 'brews') {
                 await brewService.updateLog(log.id, {
-                    rating,
                     notes,
                     sweetness: profile.sweetness,
                     acidity: profile.acidity,
@@ -67,7 +68,7 @@ export const JournalDetailPage = () => {
                     flavor_tags: serializeFlavorTags(tags)
                 });
             } else {
-                await drinkService.updateLog(log.id, rating, notes);
+                await drinkService.updateLog(log.id, notes);
             }
             navigate(`/journal?tab=${type}`);
         } catch (error) {
@@ -90,10 +91,25 @@ export const JournalDetailPage = () => {
         }
     };
 
-    if (!log) {
+    if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-md-surface">
                 <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    if (!log) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-md-surface p-6 text-center">
+                <Icon name="error" className="text-5xl text-md-error mb-4" />
+                <h2 className="typescale-title-large font-bold text-md-on-surface">Log entry not found</h2>
+                <button
+                    onClick={() => safeBack(`/journal?tab=${type}`)}
+                    className="mt-4 text-md-primary font-bold hover:underline cursor-pointer"
+                >
+                    Back to Journal
+                </button>
             </div>
         );
     }
@@ -157,25 +173,6 @@ export const JournalDetailPage = () => {
                         </div>
                     </div>
                 )}
-                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3 text-center">
-                    <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider block">Rating</span>
-                    <div className="flex justify-center gap-2">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                                key={star}
-                                type="button"
-                                onClick={() => setRating(star)}
-                                className="p-1 transition-transform active:scale-95 cursor-pointer"
-                            >
-                                <Icon
-                                    name="star"
-                                    className={`text-3xl ${star <= rating ? 'text-amber-500' : 'text-md-outline-variant/40'}`}
-                                    style={star <= rating ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                                />
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 {brewLog && (
                     <TasteEditor

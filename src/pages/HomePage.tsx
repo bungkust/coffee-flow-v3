@@ -135,7 +135,6 @@ export const HomePage = () => {
                                         name={brew.recipe_name}
                                         subtitle={[beanNames[brew.bean_id ?? ''], formatMethodName(brew.method_id)].filter(Boolean).join(' · ')}
                                         date={formatDateTime(brew.brewed_at)}
-                                        rating={brew.rating}
                                         tags={parseFlavorTags(brew.flavor_tags)}
                                         notes={brew.notes}
                                         onClick={() => navigate(`/journal/brews/${brew.id}`)}

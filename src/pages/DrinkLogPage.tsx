@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
-import { StarRating } from '../components/StarRating';
 import { Dropdown } from '../components/Dropdown';
 import { Icon } from '../components/Icons';
 import { drinkService, pantryService } from '../core/services';
@@ -10,12 +9,12 @@ import type { Drink } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
 import { useSafeBack } from '../shared/utils/backNavigation';
 
+import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
+
 const PRESET_DRINK_TAGS = [
     'Sweet', 'Creamy', 'Balanced', 'Silky', 'Rich', 'Bitter',
     'Nutty', 'Fruity', 'Floral', 'Caramel', 'Chocolatey', 'Refreshing'
 ];
-
-import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
 
 interface LogLocationState {
     servings?: number;
@@ -33,7 +32,6 @@ export const DrinkLogPage = () => {
     const logState = (location.state as LogLocationState) || {};
 
     const [drink, setDrink] = useState<Drink | null>(null);
-    const [rating, setRating] = useState(4);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
 
@@ -76,7 +74,6 @@ export const DrinkLogPage = () => {
         setSaving(true);
         try {
             await drinkService.logDrink(drink, {
-                rating,
                 notes,
                 beanId: selectedBeanId || undefined,
                 milkId: selectedMilkId || undefined,
@@ -116,10 +113,6 @@ export const DrinkLogPage = () => {
             <PageHeader title="How was it?" subtitle={drink.name} onBack={() => safeBack(id ? `/drinks/${id}` : '/drinks')} />
 
             <main className="flex-1 px-5 py-5 space-y-5">
-                {/* Rating */}
-                <div className="flex flex-col items-center justify-center p-6 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1">
-                    <StarRating rating={rating} onChange={setRating} />
-                </div>
 
                 {/* Pantry Link Section */}
                 {(beans.length > 0 || milks.length > 0) && (
