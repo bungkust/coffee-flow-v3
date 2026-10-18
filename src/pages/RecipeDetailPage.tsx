@@ -5,6 +5,7 @@ import { brewService, settingsService } from '../core/services';
 import type { Recipe } from '../shared/domain/entities';
 import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, formatStepSeconds, getBrewDuration, getBrewSteps, getPourAmount, getStepIntervalInfo, type UnitSystem } from '../shared/utils/brewMath';
 import { PageHeader } from '../components/PageHeader';
+import { RecipeShareModal } from '../components/RecipeShareModal';
 import { useSafeBack } from '../shared/utils/backNavigation';
 
 const sourceMeta = (url: string): { icon: string; label: string } => {
@@ -28,6 +29,7 @@ export const RecipeDetailPage = () => {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+    const [showShareModal, setShowShareModal] = useState(false);
 
     useEffect(() => {
         const fetchRecipe = async () => {
@@ -85,12 +87,22 @@ export const RecipeDetailPage = () => {
                 onBack={() => safeBack('/recipes')}
                 titleClassName="line-clamp-1"
                 action={(
-                    <button
-                        onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
-                        className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
-                    >
-                        <Icon name="edit" className="text-2xl" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setShowShareModal(true)}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            title="Share Recipe"
+                        >
+                            <Icon name="share" className="text-2xl" />
+                        </button>
+                        <button
+                            onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+                            className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                            title="Edit Recipe"
+                        >
+                            <Icon name="edit" className="text-2xl" />
+                        </button>
+                    </div>
                 )}
             />
 
@@ -297,6 +309,14 @@ export const RecipeDetailPage = () => {
                     Start Brewing
                 </button>
             </div>
+
+            {/* Share Recipe Modal */}
+            <RecipeShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                recipe={recipe}
+                unitSystem={unitSystem}
+            />
         </div>
     );
 };
