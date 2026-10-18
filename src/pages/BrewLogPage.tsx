@@ -6,6 +6,7 @@ import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { useBrewStore } from '../state/useBrewStore';
 import { TasteEditor } from '../components/TasteEditor';
+import { TasteRatingSelector, getTasteRatingLabel } from '../components/TasteRatingSelector';
 import { brewService } from '../core/services';
 import { formatMethodName } from '../shared/utils/brewMath';
 import { serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
@@ -16,6 +17,7 @@ export const BrewLogPage = () => {
     const safeBack = useSafeBack();
     const { activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed, stopBrew, hydrateBrew } = useBrewStore();
 
+    const [rating, setRating] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState('');
     const [profile, setProfile] = useState<TasteProfileValues>({});
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -62,6 +64,7 @@ export const BrewLogPage = () => {
 
     const handleSave = async () => {
         const payload = {
+            rating,
             notes,
             sweetness: profile.sweetness,
             acidity: profile.acidity,
@@ -75,7 +78,7 @@ export const BrewLogPage = () => {
             } else {
                 await brewService.logBrew(
                     activeRecipe.id,
-                    undefined,
+                    rating,
                     notes,
                     profile,
                     selectedTags,
@@ -119,6 +122,22 @@ export const BrewLogPage = () => {
             />
 
             <main className="flex-1 px-5 py-5 space-y-6">
+                {/* Overall Taste Rating */}
+                <div className="p-5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="typescale-title-medium font-bold text-md-on-surface">Overall Impression</label>
+                        {rating ? (
+                            <span className="typescale-label-medium font-bold text-md-primary">
+                                {getTasteRatingLabel(rating)}
+                            </span>
+                        ) : (
+                            <span className="typescale-label-small font-medium text-md-on-surface-variant/60">
+                                Optional
+                            </span>
+                        )}
+                    </div>
+                    <TasteRatingSelector value={rating} onChange={setRating} />
+                </div>
 
                 {/* Taste Profile & Flavor Tags */}
                 <TasteEditor

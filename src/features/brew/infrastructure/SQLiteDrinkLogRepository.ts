@@ -92,9 +92,22 @@ export class SQLiteDrinkLogRepository {
         await dbService.saveToLocalStore();
     }
 
-    async update(id: EntityId, notes: string): Promise<void> {
-        await this.db.run('UPDATE drink_logs SET notes = ? WHERE id = ?', [notes || '', id]);
-        await dbService.saveToLocalStore();
+    async update(id: EntityId, updates: { notes?: string; rating?: number }): Promise<void> {
+        const fields: string[] = [];
+        const values: unknown[] = [];
+        if (updates.notes !== undefined) {
+            fields.push('notes = ?');
+            values.push(updates.notes || null);
+        }
+        if (updates.rating !== undefined) {
+            fields.push('rating = ?');
+            values.push(updates.rating ?? null);
+        }
+        if (fields.length > 0) {
+            values.push(id);
+            await this.db.run(`UPDATE drink_logs SET ${fields.join(', ')} WHERE id = ?`, values);
+            await dbService.saveToLocalStore();
+        }
     }
 
     async delete(id: EntityId): Promise<void> {

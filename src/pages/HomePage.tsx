@@ -18,7 +18,6 @@ export const HomePage = () => {
     const [beans, setBeans] = useState<PantryItem[]>([]);
     const [userName, setUserName] = useState('Brewmaster');
     const [loading, setLoading] = useState(true);
-    const [showTip, setShowTip] = useState(() => localStorage.getItem('coffee_flow_tip_dismissed') !== 'true');
     const [wizardOpen, setWizardOpen] = useState(false);
 
     useEffect(() => {
@@ -137,6 +136,7 @@ export const HomePage = () => {
                                         date={formatDateTime(brew.brewed_at)}
                                         tags={parseFlavorTags(brew.flavor_tags)}
                                         notes={brew.notes}
+                                        rating={brew.rating}
                                         onClick={() => navigate(`/journal/brews/${brew.id}`)}
                                     />
                                 ))}
@@ -172,7 +172,7 @@ export const HomePage = () => {
                     </div>
                     {beans.length > 0 ? (
                         <div className="flex flex-col gap-3">
-                            {beans.slice(0, 2).map(bean => {
+                            {beans.slice(0, 1).map(bean => {
                                 const days = daysOffRoast(bean.roast_date);
                                 return (
                                     <button
@@ -214,26 +214,6 @@ export const HomePage = () => {
                         </div>
                     )}
                 </section>
-
-                {/* Tip */}
-                {showTip && (
-                    <div className="flex items-center gap-3 rounded-xl bg-md-tertiary-container text-md-on-tertiary-container p-3.5 shadow-md-1 shrink-0">
-                        <Icon name="lightbulb" className="shrink-0 text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-                        <p className="flex-1 typescale-body-medium leading-snug">
-                            <span className="font-bold">Tip:</span> Filtered water significantly improves brew clarity & taste.
-                        </p>
-                        <button
-                            onClick={() => {
-                                localStorage.setItem('coffee_flow_tip_dismissed', 'true');
-                                setShowTip(false);
-                            }}
-                            className="size-8 shrink-0 rounded-full flex items-center justify-center hover:bg-md-on-tertiary-container/10 transition-colors cursor-pointer"
-                            aria-label="Dismiss tip"
-                        >
-                            <Icon name="close" className="text-lg" />
-                        </button>
-                    </div>
-                )}
             </main>
 
             <BottomNav activeTab="home" />

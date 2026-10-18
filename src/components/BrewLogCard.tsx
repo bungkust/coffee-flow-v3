@@ -1,4 +1,5 @@
 import { MethodImage } from './MethodImage';
+import { TasteRatingBadge } from './TasteRatingSelector';
 
 interface BrewLogCardProps {
     image?: string;
@@ -8,10 +9,11 @@ interface BrewLogCardProps {
     date: string;
     tags?: string[];
     notes?: string;
+    rating?: number;
     onClick: () => void;
 }
 
-export const BrewLogCard = ({ image, icon, name, subtitle, date, tags = [], notes, onClick }: BrewLogCardProps) => (
+export const BrewLogCard = ({ image, icon, name, subtitle, date, tags = [], notes, rating, onClick }: BrewLogCardProps) => (
     <div
         onClick={onClick}
         className="group relative flex items-start gap-3 rounded-2xl bg-md-surface-container-low p-3 shadow-xs border border-md-outline-variant/30 transition-all hover:border-md-primary/40 active:scale-[0.99] cursor-pointer"
@@ -38,6 +40,9 @@ export const BrewLogCard = ({ image, icon, name, subtitle, date, tags = [], note
                     <span className="truncate typescale-body-small font-medium text-md-on-surface-variant">
                         {subtitle}
                     </span>
+                )}
+                {rating != null && rating > 0 && (
+                    <TasteRatingBadge rating={rating} />
                 )}
                 {tags.slice(0, 2).map(tag => (
                     <span key={tag} className="rounded-md bg-md-primary/10 border border-md-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-md-primary leading-none">

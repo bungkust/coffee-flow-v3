@@ -82,6 +82,7 @@ export const JournalPage = () => {
         date: 'brewed_at' in log ? log.brewed_at : log.logged_at,
         notes: log.notes,
         flavor_tags: 'flavor_tags' in log ? log.flavor_tags : undefined,
+        rating: log.rating,
     }));
 
     const groupedLogs = rows.reduce<Record<string, typeof rows>>((acc, row) => {
@@ -160,6 +161,7 @@ export const JournalPage = () => {
                                         date={formatTimeOnly(row.date)}
                                         tags={parseFlavorTags(row.flavor_tags)}
                                         notes={row.notes}
+                                        rating={row.rating}
                                         onClick={() => navigate(`/journal/${activeTab}/${row.id}`)}
                                     />
                                 ))}

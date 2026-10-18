@@ -210,8 +210,8 @@ export class DrinkService {
         return clone;
     }
 
-    async updateLog(id: EntityId, notes: string): Promise<void> {
-        await this.logRepo.update(id, notes);
+    async updateLog(id: EntityId, updates: { notes?: string; rating?: number }): Promise<void> {
+        await this.logRepo.update(id, updates);
     }
 
     async deleteLog(id: EntityId): Promise<void> {

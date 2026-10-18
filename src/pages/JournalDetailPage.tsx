@@ -6,6 +6,7 @@ import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { brewService, drinkService, pantryService } from '../core/services';
 import { TasteEditor } from '../components/TasteEditor';
+import { TasteRatingSelector, getTasteRatingLabel } from '../components/TasteRatingSelector';
 import { formatMethodName } from '../shared/utils/brewMath';
 import { parseFlavorTags, serializeFlavorTags, type TasteProfileValues } from '../shared/utils/tasteProfile';
 import type { BrewLogWithRecipe, DrinkLogWithDrink } from '../shared/domain/entities';
@@ -20,6 +21,7 @@ export const JournalDetailPage = () => {
 
     const [log, setLog] = useState<BrewLogWithRecipe | DrinkLogWithDrink | null>(null);
     const [loading, setLoading] = useState(true);
+    const [rating, setRating] = useState<number | undefined>(undefined);
     const [notes, setNotes] = useState('');
     const [saving, setSaving] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -34,6 +36,7 @@ export const JournalDetailPage = () => {
             .then((data) => {
                 setLog(data);
                 if (!data) return;
+                setRating(data.rating ?? undefined);
                 setNotes(data.notes || '');
                 const brewData = type === 'brews' ? (data as BrewLogWithRecipe) : null;
                 const drinkData = type !== 'brews' ? (data as DrinkLogWithDrink) : null;
@@ -60,6 +63,7 @@ export const JournalDetailPage = () => {
         try {
             if (type === 'brews') {
                 await brewService.updateLog(log.id, {
+                    rating,
                     notes,
                     sweetness: profile.sweetness,
                     acidity: profile.acidity,
@@ -68,7 +72,10 @@ export const JournalDetailPage = () => {
                     flavor_tags: serializeFlavorTags(tags)
                 });
             } else {
-                await drinkService.updateLog(log.id, notes);
+                await drinkService.updateLog(log.id, {
+                    notes,
+                    rating
+                });
             }
             navigate(`/journal?tab=${type}`);
         } catch (error) {
@@ -173,6 +180,23 @@ export const JournalDetailPage = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Overall Taste Rating */}
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="typescale-title-medium font-bold text-md-on-surface">Overall Impression</h2>
+                        {rating ? (
+                            <span className="typescale-label-medium font-bold text-md-primary">
+                                {getTasteRatingLabel(rating)}
+                            </span>
+                        ) : (
+                            <span className="typescale-label-small font-medium text-md-on-surface-variant/60">
+                                Optional
+                            </span>
+                        )}
+                    </div>
+                    <TasteRatingSelector value={rating} onChange={setRating} />
+                </div>
 
                 {brewLog && (
                     <TasteEditor
