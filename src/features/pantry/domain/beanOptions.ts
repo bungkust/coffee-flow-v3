@@ -121,8 +121,8 @@ const FIELD_KEY = Object.fromEntries(
 
 export const stripTagPrefix = (tag: string): string => {
     if (tag.startsWith('blend:')) return tag.slice(6);
-    const match = tag.match(/^([a-z]+):(.*)$/);
-    return match && FIELD_KEY[match[1] as TagField] ? match[2].trim() : tag;
+    const match = tag.match(/^([a-z_]+):(.*)$/i);
+    return match ? match[2].trim() : tag;
 };
 
 export const parseBeanTags = (tags: string[]): { fields: BeanTagFields; preserved: string[] } => {

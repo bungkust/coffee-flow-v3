@@ -10,7 +10,24 @@ import { TasteProfileFields } from '../components/TasteProfileFields';
 import { pantryService } from '../core/services';
 import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { BlendComponent } from '../features/pantry/domain/beanOptions';
-import { PANTRY_CATEGORY_MAP, isPantryCategory } from '../features/pantry/domain/pantryCategories';
+import {
+    PANTRY_CATEGORY_MAP,
+    isPantryCategory,
+    FILTER_SHAPE_OPTIONS,
+    FILTER_MATERIAL_OPTIONS,
+    MILK_TYPE_OPTIONS,
+    SYRUP_FLAVOR_OPTIONS,
+    SUGAR_TYPE_OPTIONS,
+    OTHER_INGREDIENT_OPTIONS,
+    DRIPPER_SHAPE_OPTIONS,
+    GEAR_MATERIAL_OPTIONS,
+    GRINDER_BURR_OPTIONS,
+    GRINDER_DRIVE_OPTIONS,
+    KETTLE_TYPE_OPTIONS,
+    MACHINE_TYPE_OPTIONS,
+    formatCategoryAttributes,
+    type CategoryAttributes
+} from '../features/pantry/domain/pantryCategories';
 import { useSafeBack } from '../shared/utils/backNavigation';
 
 export const PantryAddFormPage = () => {
@@ -47,10 +64,11 @@ export const PantryAddFormPage = () => {
     const [variety, setVariety] = useState('');
     const [altitude, setAltitude] = useState('');
     const [producer, setProducer] = useState('');
-    const [material, setMaterial] = useState('');
-    const [burrType, setBurrType] = useState('');
-    const [generalType, setGeneralType] = useState('');
+    const [categoryAttrs, setCategoryAttrs] = useState<CategoryAttributes>({});
     const [description, setDescription] = useState('');
+
+    const setAttr = (key: keyof CategoryAttributes) => (val: string) =>
+        setCategoryAttrs(prev => ({ ...prev, [key]: val }));
 
     const updateComponent = (index: number, patch: Partial<BlendComponent>) =>
         setBlendComponents(current => current.map((comp, i) => (i === index ? { ...comp, ...patch } : comp)));
@@ -59,19 +77,20 @@ export const PantryAddFormPage = () => {
         if (!name.trim()) return;
         setLoading(true);
         try {
+            const tags_json = validCategory === 'beans'
+                ? [
+                    ...formatBeanTags({ species, origin, variety, process, altitude, roastLevel, producer, ...tasteProfile }),
+                    ...buildBlendTags(beanType === 'blend' ? blendComponents : [])
+                  ]
+                : formatCategoryAttributes(categoryAttrs);
+
             await pantryService.addPantryItem(name.trim(), validCategory, {
                 brand: brand.trim() || undefined,
-                roast_date: roastDate || undefined,
+                roast_date: validCategory === 'beans' ? (roastDate || undefined) : undefined,
                 description: description.trim() || undefined,
-                quantity: parseQuantity(quantity),
-                unit: unit,
-                tags_json: [
-                    ...formatBeanTags({ species, origin, variety, process, altitude, roastLevel, producer, ...tasteProfile }),
-                    material.trim(),
-                    burrType.trim(),
-                    generalType.trim(),
-                    ...buildBlendTags(beanType === 'blend' ? blendComponents : [])
-                ].filter(Boolean)
+                quantity: info.isGear ? undefined : parseQuantity(quantity),
+                unit: info.isGear ? undefined : unit,
+                tags_json: tags_json.filter(Boolean)
             });
 
             navigate('/pantry');
@@ -357,61 +376,142 @@ export const PantryAddFormPage = () => {
                         </div>
                     )}
 
-                    {(category === 'dripper' || category === 'french_press' || category === 'aeropress') && (
-                        <div className="space-y-1.5">
-                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Material</label>
-                            <select
-                                value={material}
-                                onChange={(e) => setMaterial(e.target.value)}
-                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                            >
-                                <option value="">Select...</option>
-                                <option value="Ceramic">Ceramic</option>
-                                <option value="Glass">Glass</option>
-                                <option value="Plastic">Plastic</option>
-                                <option value="Metal">Stainless Steel / Metal</option>
-                            </select>
-                        </div>
-                    )}
-
-                    {category === 'grinder' && (
-                        <div className="space-y-1.5">
-                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Burr Type</label>
-                            <select
-                                value={burrType}
-                                onChange={(e) => setBurrType(e.target.value)}
-                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
-                            >
-                                <option value="">Select...</option>
-                                <option value="Conical">Conical Burrs</option>
-                                <option value="Flat">Flat Burrs</option>
-                                <option value="Blade">Blade Grinder</option>
-                            </select>
-                        </div>
-                    )}
-
-                    {(category === 'filter' || category === 'milk' || category === 'syrup') && (
-                        <div className="space-y-1.5">
-                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">Type / Variety</label>
-                            <input
-                                type="text"
-                                value={generalType}
-                                onChange={(e) => setGeneralType(e.target.value)}
-                                placeholder="e.g. Paper, Oat, Vanilla"
-                                className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none"
+                    {validCategory === 'filter' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <Dropdown
+                                label="Shape / Size"
+                                value={categoryAttrs.shape || ''}
+                                options={FILTER_SHAPE_OPTIONS}
+                                onChange={setAttr('shape')}
+                                placeholder="Select"
+                            />
+                            <Dropdown
+                                label="Material"
+                                value={categoryAttrs.material || ''}
+                                options={FILTER_MATERIAL_OPTIONS}
+                                onChange={setAttr('material')}
+                                placeholder="Select"
                             />
                         </div>
                     )}
 
+                    {validCategory === 'milk' && (
+                        <Dropdown
+                            label="Milk Type"
+                            value={categoryAttrs.type || ''}
+                            options={MILK_TYPE_OPTIONS}
+                            onChange={setAttr('type')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {validCategory === 'syrup' && (
+                        <Dropdown
+                            label="Flavor"
+                            value={categoryAttrs.flavor || ''}
+                            options={SYRUP_FLAVOR_OPTIONS}
+                            onChange={setAttr('flavor')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {validCategory === 'sugar' && (
+                        <Dropdown
+                            label="Sweetener Type"
+                            value={categoryAttrs.type || ''}
+                            options={SUGAR_TYPE_OPTIONS}
+                            onChange={setAttr('type')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {validCategory === 'other_ingredient' && (
+                        <Dropdown
+                            label="Ingredient Type"
+                            value={categoryAttrs.type || ''}
+                            options={OTHER_INGREDIENT_OPTIONS}
+                            onChange={setAttr('type')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {validCategory === 'dripper' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <Dropdown
+                                label="Shape"
+                                value={categoryAttrs.shape || ''}
+                                options={DRIPPER_SHAPE_OPTIONS}
+                                onChange={setAttr('shape')}
+                                placeholder="Select"
+                            />
+                            <Dropdown
+                                label="Material"
+                                value={categoryAttrs.material || ''}
+                                options={GEAR_MATERIAL_OPTIONS}
+                                onChange={setAttr('material')}
+                                placeholder="Select"
+                            />
+                        </div>
+                    )}
+
+                    {validCategory === 'grinder' && (
+                        <div className="grid grid-cols-2 gap-3">
+                            <Dropdown
+                                label="Burr Type"
+                                value={categoryAttrs.burr || ''}
+                                options={GRINDER_BURR_OPTIONS}
+                                onChange={setAttr('burr')}
+                                placeholder="Select"
+                            />
+                            <Dropdown
+                                label="Drive Mechanism"
+                                value={categoryAttrs.drive || ''}
+                                options={GRINDER_DRIVE_OPTIONS}
+                                onChange={setAttr('drive')}
+                                placeholder="Select"
+                            />
+                        </div>
+                    )}
+
+                    {validCategory === 'kettle' && (
+                        <Dropdown
+                            label="Kettle Type"
+                            value={categoryAttrs.type || ''}
+                            options={KETTLE_TYPE_OPTIONS}
+                            onChange={setAttr('type')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {validCategory === 'machine' && (
+                        <Dropdown
+                            label="Machine Type"
+                            value={categoryAttrs.type || ''}
+                            options={MACHINE_TYPE_OPTIONS}
+                            onChange={setAttr('type')}
+                            placeholder="Select"
+                        />
+                    )}
+
+                    {['french_press', 'aeropress', 'scale', 'accessory'].includes(validCategory) && (
+                        <Dropdown
+                            label="Material / Build"
+                            value={categoryAttrs.material || ''}
+                            options={GEAR_MATERIAL_OPTIONS}
+                            onChange={setAttr('material')}
+                            placeholder="Select"
+                        />
+                    )}
+
                     <div className="space-y-1.5 pt-1">
                         <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant">
-                            {category === 'beans' ? 'Tasting Notes' : 'Notes & Description'}
+                            {validCategory === 'beans' ? 'Tasting Notes' : 'Notes & Description'}
                         </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows={3}
-                            placeholder={category === 'beans' ? "e.g. Jasmine, Peach, Honey..." : "Any additional details..."}
+                            placeholder={validCategory === 'beans' ? "e.g. Jasmine, Peach, Honey..." : "Any additional details..."}
                             className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/70 rounded-xl px-4 py-3 typescale-body-medium focus:ring-2 focus:ring-md-primary/40 outline-none resize-none"
                         />
                     </div>
