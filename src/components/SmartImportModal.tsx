@@ -50,7 +50,13 @@ const cleanRecipeName = (name: string, methodId?: string): string => {
     return result || name.trim();
 };
 
-const SYSTEM_PROMPT_TEMPLATE = `Please extract all coffee recipes from this text/link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
+const SYSTEM_PROMPT_TEMPLATE = `Please extract all coffee manual brewing recipes from this text, article, or YouTube link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
+
+YOUTUBE VIDEO EXTRACTION INSTRUCTIONS:
+- If the source is a YouTube link (e.g. youtu.be or youtube.com/watch):
+  1. Access the video transcript, description, or watch the video directly.
+  2. Extract the exact brew recipe demonstrated (brewer, coffee dose in grams, total water, grind size, water temperature, and each timed pour step).
+  3. If multiple recipes or techniques are demonstrated in the video, extract each as a separate recipe object in the JSON array.
 
 PARAMETER GUIDELINES (STRICT RULES):
 Use these exact JSON field names — never rename them. The step text field is "instruction", never "value", "text" or "description".
@@ -749,6 +755,14 @@ export const SmartImportModal = ({
                                             rows={3}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                         />
+                                        {/youtube\.com|youtu\.be/i.test(rawInput) && (
+                                            <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-[11px] text-red-700">
+                                                <Icon name="smart_display" className="text-base text-red-600 shrink-0" />
+                                                <span>
+                                                    Link YouTube terdeteksi! Prompt AI otomatis meminta Gemini/ChatGPT membedah transkrip video.
+                                                </span>
+                                            </div>
+                                        )}
                                         <button
                                             onClick={handleCopyPrompt}
                                             className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer ${copiedPrompt ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primary-dark shadow-sm'}`}

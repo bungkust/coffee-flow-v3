@@ -5,6 +5,7 @@ import { settingsService } from '../core/services';
 import { seedInitialData } from '../core/database/seeding';
 
 import { Modal } from '../components/Modal';
+import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { useSafeBack } from '../shared/utils/backNavigation';
 
@@ -283,17 +284,19 @@ export const SettingsPage = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Category</label>
-                                <select
+                                <Dropdown
+                                    label="Category"
+                                    labelClassName="!text-xs !font-bold uppercase tracking-wider text-gray-400 !mb-1"
                                     value={feedbackForm.category}
-                                    onChange={(e) => handleFeedbackChange('category', e.target.value)}
-                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium outline-none focus:border-primary"
-                                >
-                                    <option value="bug">Bug Report</option>
-                                    <option value="feature">Feature Request</option>
-                                    <option value="improvement">Improvement</option>
-                                    <option value="other">Other</option>
-                                </select>
+                                    options={[
+                                        { value: 'bug', label: 'Bug Report' },
+                                        { value: 'feature', label: 'Feature Request' },
+                                        { value: 'improvement', label: 'Improvement' },
+                                        { value: 'other', label: 'Other' },
+                                    ]}
+                                    onChange={(val) => handleFeedbackChange('category', val)}
+                                    buttonClassName="!rounded-xl border-gray-200 bg-white !text-sm font-medium"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Message</label>

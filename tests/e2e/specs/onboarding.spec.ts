@@ -26,8 +26,11 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await onboarding.selectRoastLevel('Light');
     await onboarding.tastingNotesInput.fill('Jasmine, Bergamot, Peach');
 
-    // Submit
-    await onboarding.finishButton.click();
+    // Proceed to Step 4 Smart Import
+    await onboarding.nextButton.click();
+
+    // Step 4: Smart Import (test with demo extraction)
+    await onboarding.completeStep4SmartImport(true);
 
     // Verify Home
     await page.waitForURL('**/home');
@@ -38,6 +41,10 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await page.goto('/pantry');
     await expect(page.getByText('Gesha Panama Reserve')).toBeVisible();
     await expect(page.getByText('250g')).toBeVisible();
+
+    // Verify extracted demo drink saved
+    await page.goto('/drinks/list?base=coffee');
+    await expect(page.getByText('Iced Spanish Latte')).toBeVisible();
   });
 
   test('Scenario 2: Coffee Blend + Imperial Unit + "Track my brews" Goal', async ({ page }) => {
@@ -53,8 +60,11 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await onboarding.roasteryInput.fill('Kadal Roasters');
     await onboarding.selectRoastLevel('Dark');
 
-    // Submit
-    await onboarding.finishButton.click();
+    // Proceed to Step 4
+    await onboarding.nextButton.click();
+
+    // Step 4: Smart Import (skip extraction)
+    await onboarding.completeStep4SmartImport(false);
 
     // Verify Home
     await page.waitForURL('**/home');
@@ -72,6 +82,9 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     // Step 3: Skip Beans
     await onboarding.skipStep3Beans();
 
+    // Step 4: Smart Import
+    await onboarding.completeStep4SmartImport(false);
+
     // Verify Home
     await page.waitForURL('**/home');
     await expect(page).toHaveURL(/.*home/);
@@ -83,15 +96,18 @@ test.describe('Comprehensive Onboarding Options & User Flow Test Suite', () => {
     await onboarding.completeStep1Profile('Barista Frank', 'Improve my skills', 'metric');
 
     // Step 2: Custom Equipment Selection
-    await expect(page.getByText('Step 2 — Equipment')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'What do you brew with?' })).toBeVisible();
 
     // Toggle custom equipment methods
     await onboarding.toggleEquipmentMethod('Chemex');
     await onboarding.toggleEquipmentMethod('French Press');
 
-    // Proceed to Step 3 and Finish
+    // Proceed to Step 3 and skip
     await onboarding.nextButton.click();
     await onboarding.skipStep3Beans();
+
+    // Step 4: Smart Import
+    await onboarding.completeStep4SmartImport(false);
 
     // Verify Home
     await page.waitForURL('**/home');

@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "cap": "cap",
+    "android": "cap run android",
+    "cap:sync": "npm run build && cap sync",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

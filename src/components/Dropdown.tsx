@@ -4,11 +4,13 @@ import { Icon } from './Icons';
 export interface Option {
     value: string;
     label: string;
+    icon?: string;
     disabled?: boolean;
 }
 
 interface DropdownProps {
     label?: string;
+    labelClassName?: string;
     options: Option[];
     value: string;
     onChange: (value: string) => void;
@@ -20,6 +22,7 @@ interface DropdownProps {
 
 export const Dropdown = ({
     label,
+    labelClassName = '',
     options,
     value,
     onChange,
@@ -54,7 +57,7 @@ export const Dropdown = ({
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             {label && (
-                <label className="block typescale-label-medium text-md-on-surface-variant mb-1.5 flex items-center gap-2">
+                <label className={`block typescale-label-medium text-md-on-surface-variant mb-1.5 flex items-center gap-2 ${labelClassName}`}>
                     {icon && <Icon name={icon} className="text-base" />}
                     {label}
                 </label>
@@ -67,8 +70,11 @@ export const Dropdown = ({
                     isOpen ? 'border-2 border-md-primary ring-2 ring-md-primary/15' : 'hover:border-md-outline'
                 } ${buttonClassName}`}
             >
-                <span className={selectedOption ? 'text-md-on-surface' : 'text-md-outline/60'}>
-                    {selectedOption ? selectedOption.label : placeholder}
+                <span className={`truncate mr-2 flex items-center gap-2 ${selectedOption ? 'text-md-on-surface' : 'text-md-outline/60'}`}>
+                    {selectedOption?.icon && (
+                        <Icon name={selectedOption.icon} className="text-base shrink-0 text-md-primary" />
+                    )}
+                    <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
                 </span>
                 <Icon
                     name="arrow_drop_down"
@@ -79,9 +85,9 @@ export const Dropdown = ({
             {isOpen && (
                 <div className="absolute z-50 w-full mt-1.5 bg-md-surface-container-high rounded-sm shadow-md-2 border border-md-outline-variant/30 max-h-72 overflow-y-auto scrollbar-hide animate-in fade-in duration-150">
                     <div className="p-1 space-y-0.5">
-                        {options.map((option) => (
+                        {options.map((option, idx) => (
                             <button
-                                key={option.value}
+                                key={`${option.value}-${idx}`}
                                 disabled={option.disabled}
                                 onClick={() => !option.disabled && handleSelect(option.value)}
                                 className={`w-full text-left px-4 py-3 rounded-xs typescale-body-medium transition-colors flex items-center justify-between gap-2 ${
@@ -90,7 +96,17 @@ export const Dropdown = ({
                                         : 'text-md-on-surface hover:bg-md-surface-container-highest'
                                 } ${option.disabled ? 'opacity-38 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
-                                <span className="flex-1 min-w-0 pr-1 font-bold leading-snug">{option.label}</span>
+                                <div className="flex items-center gap-2 min-w-0 pr-1 flex-1">
+                                    {option.icon && (
+                                        <Icon
+                                            name={option.icon}
+                                            className={`text-base shrink-0 ${
+                                                option.value === value ? 'text-md-on-secondary-container' : 'text-md-primary'
+                                            }`}
+                                        />
+                                    )}
+                                    <span className="truncate font-bold leading-snug">{option.label}</span>
+                                </div>
                                 {option.value === value && (
                                     <Icon name="check" className="text-md-primary text-lg shrink-0" />
                                 )}

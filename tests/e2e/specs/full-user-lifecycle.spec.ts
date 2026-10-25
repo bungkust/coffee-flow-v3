@@ -25,6 +25,7 @@ test.describe('End-to-End User Journey: Complete Lifecycle & Backup/Restore Audi
     await onboardingPage.completeStep1Profile('Barista Lifecycle Test', 'Track my brews', 'metric');
     await onboardingPage.completeStep2Equipment();
     await onboardingPage.skipStep3Beans();
+    await onboardingPage.completeStep4SmartImport(false);
 
     await page.waitForURL('**/home');
     await expect(page).toHaveURL(/.*home/);

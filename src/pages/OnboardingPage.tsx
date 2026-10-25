@@ -6,7 +6,7 @@ import { MethodImage } from '../components/MethodImage';
 import { QuantityField } from '../components/QuantityField';
 import { SaveBar } from '../components/SaveBar';
 import { TasteProfileFields } from '../components/TasteProfileFields';
-import { settingsService, pantryService, brewService } from '../core/services';
+import { settingsService, pantryService, brewService, drinkService } from '../core/services';
 import { PROCESS_OPTIONS, VARIETY_OPTIONS, SPECIES_OPTIONS, ROAST_LEVEL_OPTIONS, formatBeanTags, buildBlendTags, parseQuantity } from '../features/pantry/domain/beanOptions';
 import type { BlendComponent } from '../features/pantry/domain/beanOptions';
 import type { UnitSystem } from '../shared/utils/brewMath';
@@ -37,7 +37,7 @@ function getCategoryFallback(id: string): string {
     return 'Hybrid & Portable Methods';
 }
 
-const STEP_ORDER = ['name', 'equipment', 'beans'] as const;
+const STEP_ORDER = ['name', 'equipment', 'beans', 'smart_import'] as const;
 
 function StepProgress({ step }: { step: (typeof STEP_ORDER)[number] }) {
     const current = STEP_ORDER.indexOf(step);
@@ -76,7 +76,7 @@ function StepHeader({ step, title, onBack, onSkip }: { step: (typeof STEP_ORDER)
 
 export const OnboardingPage = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState<'name' | 'equipment' | 'beans'>('name');
+    const [step, setStep] = useState<'name' | 'equipment' | 'beans' | 'smart_import'>('name');
 
     // Step 1 State
     const [name, setName] = useState('');
@@ -145,6 +145,61 @@ export const OnboardingPage = () => {
         }
     };
 
+    // Step 4 State
+    const [demoExtracted, setDemoExtracted] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+
+    const handleRunDemoExtract = () => {
+        setIsExtracting(true);
+        setTimeout(() => {
+            setIsExtracting(false);
+            setDemoExtracted(true);
+        }, 500);
+    };
+
+    const handleFinish = async () => {
+        if (demoExtracted) {
+            try {
+                await drinkService.saveDrink({
+                    id: crypto.randomUUID(),
+                    name: 'Iced Spanish Latte',
+                    base_type: 'coffee',
+                    category: 'cold',
+                    ingredients_json: JSON.stringify([
+                        { name: 'Espresso', amount: 2, unit: 'shot', category: 'beans' },
+                        { name: 'Fresh Milk', amount: 120, unit: 'ml', category: 'milk' },
+                        { name: 'Sweet Condensed Milk', amount: 30, unit: 'ml', category: 'syrup' },
+                        { name: 'Ice Cubes', amount: 120, unit: 'g' }
+                    ]),
+                    instructions_json: JSON.stringify([
+                        'Tuang 30ml susu kental manis ke dasar gelas saji.',
+                        'Isi gelas dengan 120g es batu hingga penuh.',
+                        'Tuangkan 120ml susu segar dingin secara perlahan.',
+                        'Ekstrak 2 shot espresso dan tuang di atas susu untuk efek layer.'
+                    ]),
+                    is_favorite: true,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error('Failed to save demo drink in onboarding:', err);
+            }
+        }
+        navigate('/home');
+    };
+
+    const handleBack = () => {
+        if (step === 'smart_import') setStep('beans');
+        else if (step === 'beans') setStep('equipment');
+        else if (step === 'equipment') setStep('name');
+        else navigate('/', { replace: true });
+    };
+
+    useBackHandler(step !== 'name', () => {
+        handleBack();
+        return true;
+    });
+
     const handleNext = async () => {
         if (step === 'name') {
             if (!name.trim()) return;
@@ -169,19 +224,10 @@ export const OnboardingPage = () => {
                     ]
                 });
             }
-            navigate('/home');
+            setStep('smart_import');
+        } else if (step === 'smart_import') {
+            await handleFinish();
         }
-    };
-
-    useBackHandler(step !== 'name', () => {
-        handleBack();
-        return true;
-    });
-
-    const handleBack = () => {
-        if (step === 'beans') setStep('equipment');
-        else if (step === 'equipment') setStep('name');
-        else navigate('/', { replace: true });
     };
 
     return (
@@ -354,7 +400,7 @@ export const OnboardingPage = () => {
             {/* Step 3: Bean Inventory */}
             {step === 'beans' && (
                 <div className="flex flex-col min-h-screen w-full">
-                    <StepHeader step={step} title="Current Beans" onBack={handleBack} onSkip={() => navigate('/home')} />
+                    <StepHeader step={step} title="Current Beans" onBack={handleBack} onSkip={() => setStep('smart_import')} />
 
                     <main className="flex-1 flex flex-col px-5 pt-4 pb-28 space-y-4">
                         <p className="text-center typescale-body-medium text-md-on-surface-variant">
@@ -653,7 +699,174 @@ export const OnboardingPage = () => {
                         </div>
                     </main>
 
-                    <SaveBar iconLast icon="check_circle" label="Finish Setup" onClick={handleNext} />
+                    <SaveBar iconLast icon="arrow_forward" label="Continue to Smart Import" onClick={handleNext} />
+                </div>
+            )}
+
+            {/* Step 4: Smart Import Demo */}
+            {step === 'smart_import' && (
+                <div className="flex flex-col min-h-screen w-full">
+                    <StepHeader step={step} title="Smart Import Magic" onBack={handleBack} onSkip={() => navigate('/home')} />
+
+                    <main className="flex-1 flex flex-col px-5 pt-4 pb-28 space-y-4">
+                        {/* Intro Hero Badge */}
+                        <div className="p-4 rounded-2xl bg-gradient-to-br from-md-primary/15 via-amber-500/10 to-transparent border border-md-primary/30 flex items-start gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-md-primary text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                                <Icon name="auto_awesome" className="text-xl" />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="typescale-title-medium font-bold text-md-on-surface">
+                                    Turn Social Media Posts into Timers
+                                </h2>
+                                <p className="typescale-body-small text-md-on-surface-variant mt-1 leading-relaxed">
+                                    Found a coffee recipe on Instagram or TikTok? Just copy the text, and CoffeeFlow automatically extracts the ingredients, dose, and step-by-step timer guide!
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Social Media Post Simulation */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-[11px] font-bold text-md-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                                    <Icon name="tag" className="text-xs" /> Sample Social Post
+                                </span>
+                                <span className="text-[10px] bg-md-surface-container-high px-2 py-0.5 rounded-full text-md-on-surface-variant font-medium">
+                                    Raw Caption
+                                </span>
+                            </div>
+
+                            <div className="bg-md-surface-container-low p-4 rounded-2xl border border-md-outline-variant/30 shadow-xs space-y-2.5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-full bg-amber-700/20 text-amber-800 dark:text-amber-200 flex items-center justify-center text-xs font-bold">
+                                        <Icon name="coffee" className="text-base" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-md-on-surface">@barista.daily</p>
+                                        <p className="text-[10px] text-md-on-surface-variant">Instagram Reels • 24k views</p>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-md-surface-container-high rounded-xl text-xs text-md-on-surface font-mono leading-relaxed whitespace-pre-line border border-md-outline-variant/20">
+{`Iced Spanish Latte
+Creamy iced coffee recipe:
+- 2 shots espresso (40ml)
+- 120ml cold fresh milk
+- 30ml sweet condensed milk
+- 120g ice cubes
+
+Steps:
+1. Pour condensed milk into glass base
+2. Fill glass with ice cubes
+3. Slowly pour cold fresh milk
+4. Float espresso shots on top`}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Interactive Extract Trigger */}
+                        {!demoExtracted ? (
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleRunDemoExtract}
+                                    disabled={isExtracting}
+                                    className="w-full py-4 px-5 rounded-2xl bg-md-primary hover:bg-md-primary/90 text-white font-bold text-sm shadow-md-2 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <Icon name={isExtracting ? "sync" : "auto_awesome"} className={`text-xl ${isExtracting ? "animate-spin" : ""}`} />
+                                    <span>{isExtracting ? "Extracting recipe..." : "Extract This Recipe (1-Click Demo)"}</span>
+                                </button>
+                                <p className="text-[11px] text-center text-md-on-surface-variant mt-2">
+                                    Tap button to see Smart Import in action
+                                </p>
+                            </div>
+                        ) : (
+                            /* Extracted Result Preview */
+                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[11px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Icon name="check_circle" className="text-sm" /> Automatically Extracted!
+                                    </span>
+                                    <span className="text-[10px] bg-green-100 dark:bg-green-950/60 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full font-bold">
+                                        Ready to Brew
+                                    </span>
+                                </div>
+
+                                <div className="bg-md-surface-container-low p-4 rounded-2xl border-2 border-md-primary/30 shadow-md-1 space-y-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <h3 className="font-bold text-base text-md-on-surface">Iced Spanish Latte</h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider bg-md-primary/10 text-md-primary px-2 py-0.5 rounded-md">
+                                                    Coffee Base
+                                                </span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                    <Icon name="ac_unit" className="text-[11px]" /> Cold
+                                                </span>
+                                                <span className="text-[10px] text-md-on-surface-variant font-medium">
+                                                    ~5 mins
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className="size-8 rounded-full bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 flex items-center justify-center shrink-0">
+                                            <Icon name="done" className="text-lg" />
+                                        </span>
+                                    </div>
+
+                                    {/* Ingredients */}
+                                    <div className="pt-1">
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-1.5">
+                                            Detected Ingredients (4)
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                            <div className="p-2 rounded-xl bg-md-surface-container-high flex items-center gap-2">
+                                                <Icon name="coffee" className="text-md-primary text-base shrink-0" />
+                                                <span className="font-semibold text-md-on-surface truncate">2 shots Espresso</span>
+                                            </div>
+                                            <div className="p-2 rounded-xl bg-md-surface-container-high flex items-center gap-2">
+                                                <Icon name="water_drop" className="text-sky-600 text-base shrink-0" />
+                                                <span className="font-semibold text-md-on-surface truncate">120ml Fresh Milk</span>
+                                            </div>
+                                            <div className="p-2 rounded-xl bg-md-surface-container-high flex items-center gap-2">
+                                                <Icon name="cookie" className="text-amber-700 text-base shrink-0" />
+                                                <span className="font-semibold text-md-on-surface truncate">30ml Sweet Milk</span>
+                                            </div>
+                                            <div className="p-2 rounded-xl bg-md-surface-container-high flex items-center gap-2">
+                                                <Icon name="ac_unit" className="text-sky-500 text-base shrink-0" />
+                                                <span className="font-semibold text-md-on-surface truncate">120g Ice</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Steps */}
+                                    <div className="pt-1">
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-1">
+                                            4 Structured Steps
+                                        </p>
+                                        <ol className="text-xs text-md-on-surface-variant space-y-1 list-decimal list-inside pl-0.5">
+                                            <li>Pour condensed milk into glass base</li>
+                                            <li>Fill glass with ice cubes</li>
+                                            <li>Slowly pour cold fresh milk</li>
+                                            <li>Float espresso shots on top</li>
+                                        </ol>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                                    <Icon name="lightbulb" className="text-amber-600 shrink-0 text-base mt-0.5" />
+                                    <span>
+                                        This demo recipe will be saved to your drinks collection so you can brew it right away!
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    <SaveBar
+                        iconLast
+                        icon="check_circle"
+                        label={demoExtracted ? "Finish & Go to Home" : "Skip & Go to Home"}
+                        onClick={handleFinish}
+                    />
                 </div>
             )}
         </div>

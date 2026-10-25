@@ -150,8 +150,8 @@ export const DrinkEditPage = () => {
                                     label="Base Type"
                                     value={drink.base_type || 'coffee'}
                                     options={[
-                                        { value: 'coffee', label: '☕ Coffee Base' },
-                                        { value: 'non_coffee', label: '🍵 Non-Coffee' }
+                                        { value: 'coffee', label: 'Coffee Base', icon: 'coffee' },
+                                        { value: 'non_coffee', label: 'Non-Coffee', icon: 'eco' }
                                     ]}
                                     onChange={(val) => setDrink({ ...drink, base_type: val as DrinkBaseType })}
                                     placeholder="Select"
@@ -162,8 +162,8 @@ export const DrinkEditPage = () => {
                                     label="Category"
                                     value={drink.category}
                                     options={[
-                                        { value: 'hot', label: 'Hot' },
-                                        { value: 'cold', label: 'Cold' }
+                                        { value: 'hot', label: 'Hot', icon: 'local_fire_department' },
+                                        { value: 'cold', label: 'Cold', icon: 'ac_unit' }
                                     ]}
                                     onChange={(val) => setDrink({ ...drink, category: val as Drink['category'] })}
                                     placeholder="Select"

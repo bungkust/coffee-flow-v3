@@ -168,19 +168,21 @@ export const PantryEditPage = () => {
                                 />
                             </Field>
 
-                            <Field label="Unit">
-                                <select
-                                    value={item.unit || ''}
-                                    onChange={(event) => setItem({ ...item, unit: event.target.value as PantryItem['unit'] })}
-                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/30 text-md-on-surface rounded-xl px-4 py-3 typescale-body-medium outline-none focus:ring-2 focus:ring-md-primary/40"
-                                >
-                                    <option value="">None</option>
-                                    <option value="g">g</option>
-                                    <option value="ml">ml</option>
-                                    <option value="pcs">pcs</option>
-                                    <option value="%">%</option>
-                                </select>
-                            </Field>
+                            <Dropdown
+                                label="Unit"
+                                labelClassName="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant block"
+                                value={item.unit || ''}
+                                options={[
+                                    { value: '', label: 'None' },
+                                    { value: 'g', label: 'g' },
+                                    { value: 'ml', label: 'ml' },
+                                    { value: 'pcs', label: 'pcs' },
+                                    { value: '%', label: '%' },
+                                ]}
+                                onChange={(val) => setItem({ ...item, unit: (val || undefined) as PantryItem['unit'] })}
+                                buttonClassName="!rounded-xl !bg-md-surface-container-high !border-md-outline-variant/30 !typescale-body-medium"
+                                placeholder="None"
+                            />
                         </div>
                     )}
 

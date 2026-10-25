@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
-import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
 import { SearchBar } from '../components/SearchBar';
 import { MethodImage } from '../components/MethodImage';
@@ -51,7 +50,6 @@ export const BrewMethodsPage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedMethodModal, setSelectedMethodModal] = useState<MethodCard | null>(null);
 
     useEffect(() => {
         const fetchMethods = async () => {
@@ -256,7 +254,7 @@ export const BrewMethodsPage = () => {
                             {filteredMethods.map((method) => (
                                 <div
                                     key={method.id}
-                                    onClick={() => setSelectedMethodModal(method)}
+                                    onClick={() => navigate(`/recipes?method=${method.id}`)}
                                     className="group flex items-center gap-4 p-4 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 hover:bg-md-surface-container-high hover:border-md-primary/40 transition-all active:scale-[0.98] cursor-pointer shadow-md-1"
                                 >
                                     {/* Circular Left Image / Avatar Container */}
@@ -323,41 +321,6 @@ export const BrewMethodsPage = () => {
                         </div>
                     </div>
                 </main>
-            )}
-
-            {/* Popup Detail Modal */}
-            {selectedMethodModal && (
-                <Modal
-                    isOpen={!!selectedMethodModal}
-                    onClose={() => setSelectedMethodModal(null)}
-                    title={selectedMethodModal.name}
-                    message={
-                        <div className="space-y-4 text-left">
-                            <div className="flex items-center gap-2">
-                                <span className="typescale-label-medium bg-md-primary-container text-md-on-primary-container px-3 py-1 rounded-full font-semibold">
-                                    {selectedMethodModal.category}
-                                </span>
-                            </div>
-
-                            <div className="size-32 mx-auto rounded-full bg-md-surface-container-highest flex items-center justify-center overflow-hidden border border-md-outline-variant/30 p-2 shadow-md-1">
-                                <MethodImage src={selectedMethodModal.image} alt={selectedMethodModal.name} icon={selectedMethodModal.icon} size="lg" />
-                            </div>
-
-                            <div className="bg-md-surface-container-low p-4 rounded-xl border border-md-outline-variant/30">
-                                <p className="typescale-body-medium text-md-on-surface leading-relaxed">
-                                    {selectedMethodModal.description || 'A classic coffee brewing method.'}
-                                </p>
-                            </div>
-                        </div>
-                    }
-                    confirmText="Browse Recipes"
-                    cancelText="Close"
-                    onConfirm={() => {
-                        const mId = selectedMethodModal.id;
-                        setSelectedMethodModal(null);
-                        navigate(`/recipes?method=${mId}`);
-                    }}
-                />
             )}
 
             {/* Navigation (Hide when editing) */}

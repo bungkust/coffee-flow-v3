@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
+import { Dropdown } from './Dropdown';
 import { useBackHandler } from '../shared/utils/backNavigation';
 import type { Drink, DrinkBaseType, DrinkCategory, DrinkIngredient } from '../shared/domain/entities';
 
@@ -21,7 +22,13 @@ interface DrinkSmartImportModalProps {
     initialParsedDrinks?: ImportableDrink[];
 }
 
-const DRINK_PROMPT_TEMPLATE = `Please extract all beverage and drink recipes (both coffee and non-coffee) from this text/link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
+const DRINK_PROMPT_TEMPLATE = `Please extract all beverage and drink recipes (both coffee and non-coffee) from this text, caption, or YouTube link into JSON format strictly as shown below (do not include any explanation or extra text outside JSON).
+
+YOUTUBE VIDEO EXTRACTION INSTRUCTIONS:
+- If the source is a YouTube link (e.g. youtu.be or youtube.com/watch):
+  1. Access the video transcript, description, or watch the video directly.
+  2. Extract the exact ingredients (with amounts and units), drink temperature (hot/cold), base type, and preparation instructions.
+  3. If multiple drinks are made in the video, extract each as a separate drink object in the JSON array.
 
 PARAMETER GUIDELINES (STRICT RULES):
 1. "name": Natural, concise drink title (e.g. "Iced Caramel Oat Macchiato", "Kyoto Ceremonial Dirty Matcha", "Classic Hot Chocolate", "Iced Spanish Latte").
@@ -138,6 +145,20 @@ const SAMPLE_DRINK_JSON = `[
     ]
   }
 ]`;
+
+const SAMPLE_RAW_RECIPE = `Iced Spanish Latte
+
+Bahan:
+- 2 shot espresso (40ml)
+- 120ml susu segar dingin
+- 30ml kental manis
+- 120g es batu
+
+Cara Membuat:
+1. Tuang kental manis ke dasar gelas saji
+2. Masukkan es batu hingga penuh
+3. Tuangkan susu segar perlahan
+4. Ekstrak espresso dan tuangkan di lapisan teratas`;
 
 const extractUrl = (text: string): string => (text.match(/https?:\/\/\S+/) || [])[0] || '';
 
@@ -317,6 +338,7 @@ export const DrinkSmartImportModal = ({
     const [parsedDrinks, setParsedDrinks] = useState<ImportableDrink[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [isSavingDirect, setIsSavingDirect] = useState(false);
+    const [showGuide, setShowGuide] = useState(true);
 
     // Offline overrides
     const [offlineBaseType, setOfflineBaseType] = useState<DrinkBaseType>(defaultBaseType);
@@ -586,6 +608,64 @@ export const DrinkSmartImportModal = ({
                     </div>
                 )}
 
+                {/* 3-Step Quick Guide Banner (Expandable/Collapsible) */}
+                {!activePreview && parsedDrinks.length <= 1 && (
+                    <div className="px-5 pt-3 pb-1 shrink-0 bg-md-surface">
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="size-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">
+                                        <Icon name="help" className="text-xs" />
+                                    </div>
+                                    <span className="text-xs font-bold text-md-on-surface">
+                                        Cara Kerja Smart Import (3 Langkah)
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGuide(!showGuide)}
+                                    className="text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                                >
+                                    <span>{showGuide ? 'Tutup' : 'Lihat'}</span>
+                                    <Icon name={showGuide ? 'expand_less' : 'expand_more'} className="text-sm" />
+                                </button>
+                            </div>
+
+                            {showGuide && (
+                                <div className="mt-2.5 pt-2.5 border-t border-amber-500/20 grid grid-cols-3 gap-2 text-center animate-in fade-in duration-200">
+                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
+                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
+                                            1
+                                        </div>
+                                        <span className="text-[11px] font-bold text-md-on-surface">Copy Teks</span>
+                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
+                                            Dari caption IG / TikTok
+                                        </span>
+                                    </div>
+                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
+                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
+                                            2
+                                        </div>
+                                        <span className="text-[11px] font-bold text-md-on-surface">Paste & Ekstrak</span>
+                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
+                                            Di kotak teks bawah
+                                        </span>
+                                    </div>
+                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
+                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
+                                            3
+                                        </div>
+                                        <span className="text-[11px] font-bold text-md-on-surface">Simpan & Seduh</span>
+                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
+                                            Timer otomatis jadi
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
                     {parseError && (
@@ -793,8 +873,16 @@ export const DrinkSmartImportModal = ({
                                         </div>
 
                                         <div className="flex items-center gap-2 text-[11px] text-md-on-surface-variant font-medium">
-                                            <span className="capitalize">
-                                                {String(item.category).toLowerCase() === 'hot' ? '🔥 Hot' : '❄️ Cold'}
+                                            <span className="capitalize flex items-center gap-1">
+                                                <Icon
+                                                    name={
+                                                        String(item.category).toLowerCase() === 'hot'
+                                                            ? 'local_fire_department'
+                                                            : 'ac_unit'
+                                                    }
+                                                    className="text-[13px]"
+                                                />
+                                                <span>{String(item.category).toLowerCase() === 'hot' ? 'Hot' : 'Cold'}</span>
                                             </span>
                                             <span>•</span>
                                             <span>{(item.ingredientsList || []).length} ingredients</span>
@@ -809,40 +897,28 @@ export const DrinkSmartImportModal = ({
                         /* ── Quick Parse (Offline) Form ── */
                         <div className="p-5 space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label
-                                        htmlFor="offline-base-type"
-                                        className="text-[11px] font-bold text-md-on-surface-variant block mb-1 uppercase tracking-wider"
-                                    >
-                                        Default Base
-                                    </label>
-                                    <select
-                                        id="offline-base-type"
-                                        value={offlineBaseType}
-                                        onChange={(e) => setOfflineBaseType(e.target.value as DrinkBaseType)}
-                                        className="w-full rounded-xl border border-md-outline-variant/40 bg-md-surface-container-high px-3 py-2.5 text-xs font-semibold text-md-on-surface outline-none focus:ring-2 focus:ring-md-primary/40 cursor-pointer"
-                                    >
-                                        <option value="coffee">☕ Coffee Base</option>
-                                        <option value="non_coffee">🍵 Non-Coffee</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label
-                                        htmlFor="offline-category"
-                                        className="text-[11px] font-bold text-md-on-surface-variant block mb-1 uppercase tracking-wider"
-                                    >
-                                        Default Temp
-                                    </label>
-                                    <select
-                                        id="offline-category"
-                                        value={offlineCategory}
-                                        onChange={(e) => setOfflineCategory(e.target.value as DrinkCategory)}
-                                        className="w-full rounded-xl border border-md-outline-variant/40 bg-md-surface-container-high px-3 py-2.5 text-xs font-semibold text-md-on-surface outline-none focus:ring-2 focus:ring-md-primary/40 cursor-pointer"
-                                    >
-                                        <option value="cold">❄️ Cold</option>
-                                        <option value="hot">🔥 Hot</option>
-                                    </select>
-                                </div>
+                                <Dropdown
+                                    label="Default Base"
+                                    labelClassName="!text-[11px] !font-bold text-md-on-surface-variant uppercase tracking-wider !mb-1"
+                                    value={offlineBaseType}
+                                    options={[
+                                        { value: 'coffee', label: 'Coffee Base', icon: 'coffee' },
+                                        { value: 'non_coffee', label: 'Non-Coffee', icon: 'eco' },
+                                    ]}
+                                    onChange={(val) => setOfflineBaseType(val as DrinkBaseType)}
+                                    buttonClassName="!py-2.5 !px-3 !rounded-xl !bg-md-surface-container-high !border-md-outline-variant/40 !text-xs font-semibold"
+                                />
+                                <Dropdown
+                                    label="Default Temp"
+                                    labelClassName="!text-[11px] !font-bold text-md-on-surface-variant uppercase tracking-wider !mb-1"
+                                    value={offlineCategory}
+                                    options={[
+                                        { value: 'cold', label: 'Cold', icon: 'ac_unit' },
+                                        { value: 'hot', label: 'Hot', icon: 'local_fire_department' },
+                                    ]}
+                                    onChange={(val) => setOfflineCategory(val as DrinkCategory)}
+                                    buttonClassName="!py-2.5 !px-3 !rounded-xl !bg-md-surface-container-high !border-md-outline-variant/40 !text-xs font-semibold"
+                                />
                             </div>
 
                             <div className="space-y-1.5">
@@ -853,9 +929,19 @@ export const DrinkSmartImportModal = ({
                                     >
                                         Paste Recipe Text
                                     </label>
-                                    <span className="text-[10px] text-md-on-surface-variant/70">
-                                        Single or multi-recipes (use --- to separate)
-                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRawInput(SAMPLE_RAW_RECIPE);
+                                            setOfflineBaseType('coffee');
+                                            setOfflineCategory('cold');
+                                            setParseError('');
+                                        }}
+                                        className="text-[11px] font-bold text-md-primary hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <Icon name="auto_awesome" className="text-xs" />
+                                        <span>Try Sample (1-Click Demo)</span>
+                                    </button>
                                 </div>
                                 <textarea
                                     id="offline-text-input"
@@ -898,6 +984,14 @@ export const DrinkSmartImportModal = ({
                                     rows={3}
                                     className="w-full bg-md-surface-container-high border border-md-outline-variant/40 rounded-xl p-3 text-xs text-md-on-surface focus:ring-2 focus:ring-md-primary/40 outline-none resize-none"
                                 />
+                                {/youtube\.com|youtu\.be/i.test(rawInput) && (
+                                    <div className="p-2.5 bg-red-500/10 border border-red-500/25 rounded-xl flex items-center gap-2 text-[11px] text-red-700 dark:text-red-300">
+                                        <Icon name="smart_display" className="text-base text-red-600 shrink-0" />
+                                        <span>
+                                            Link YouTube terdeteksi! Prompt AI otomatis meminta Gemini/ChatGPT membedah transkrip video.
+                                        </span>
+                                    </div>
+                                )}
                                 <button
                                     onClick={handleCopyPrompt}
                                     className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer shadow-sm ${

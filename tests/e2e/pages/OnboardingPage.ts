@@ -17,8 +17,8 @@ export class OnboardingPage {
   constructor(page: Page) {
     this.page = page;
     this.nameInput = page.getByPlaceholder('Your Name');
-    this.nextButton = page.getByRole('button', { name: /Next/i });
-    this.finishButton = page.getByRole('button', { name: 'Finish Setup' });
+    this.nextButton = page.getByRole('button', { name: /Next|Continue to Smart Import/i });
+    this.finishButton = page.getByRole('button', { name: /Finish & Go to Home|Skip & Go to Home/i });
     this.skipButton = page.getByRole('button', { name: 'Skip' });
     this.beanNameInput = page.getByPlaceholder(/Aroma Nativo|Holiday Blend/i);
     this.roasteryInput = page.getByPlaceholder(/Cap Kadal/i);
@@ -52,7 +52,7 @@ export class OnboardingPage {
   }
 
   async completeStep1Profile(name: string, goal: string, unit: 'metric' | 'imperial' = 'metric') {
-    await expect(this.page.getByText('Step 1 — Profile')).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: "Let's get to know you" })).toBeVisible();
     await this.nameInput.fill(name);
     await this.getGoalButton(goal).click();
     if (unit === 'imperial') {
@@ -62,7 +62,7 @@ export class OnboardingPage {
   }
 
   async completeStep2Equipment() {
-    await expect(this.page.getByText('Step 2 — Equipment')).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'What do you brew with?' })).toBeVisible();
     await this.page.getByRole('button', { name: 'V60 Pour Over' }).click();
     await this.nextButton.click();
   }
@@ -72,7 +72,19 @@ export class OnboardingPage {
   }
 
   async skipStep3Beans() {
-    await expect(this.page.getByText('Step 3 — Beans')).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Current Beans' })).toBeVisible();
     await this.skipButton.click();
+  }
+
+  async completeStep4SmartImport(extractDemo: boolean = false) {
+    await expect(this.page.getByRole('heading', { name: 'Smart Import Magic' })).toBeVisible();
+    if (extractDemo) {
+      await this.page.getByRole('button', { name: /Extract This Recipe/i }).click();
+      await expect(this.page.getByText('Automatically Extracted!')).toBeVisible({ timeout: 5000 });
+      await expect(this.page.getByText('Iced Spanish Latte').first()).toBeVisible();
+      await this.page.getByRole('button', { name: 'Finish & Go to Home' }).click();
+    } else {
+      await this.finishButton.click();
+    }
   }
 }
