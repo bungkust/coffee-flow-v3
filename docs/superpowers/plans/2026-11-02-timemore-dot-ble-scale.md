@@ -128,3 +128,4 @@
 - [ ] **Step 7.2**: Verify Manual Mode behaves exactly as before.
 - [ ] **Step 7.3**: Test Smart Scale Mode with simulated and live BLE connection.
 - [ ] **Step 7.4**: Final commit and summary documentation.
+

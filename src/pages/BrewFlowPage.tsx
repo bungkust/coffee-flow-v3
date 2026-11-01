@@ -37,7 +37,7 @@ export const BrewFlowPage = () => {
     const navigate = useNavigate();
     const safeBack = useSafeBack();
     const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
-    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint, clearCurveData } = useScaleStore();
+    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint } = useScaleStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
@@ -460,15 +460,6 @@ export const BrewFlowPage = () => {
                                 )}
                             </div>
                         )}
-                    </div>
-                </div>
-                            {iceWeight > 0 && (
-                                <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5">
-                                    <Icon name="ac_unit" className="text-sm text-md-primary" />
-                                    Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
-                                </p>
-                            )}
-                        </div>
                     </div>
                 </div>
 

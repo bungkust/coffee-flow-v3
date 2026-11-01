@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { BleClient, type BleDevice as CapBleDevice } from '@capacitor-community/bluetooth-le';
+import { BleClient, type ScanResult } from '@capacitor-community/bluetooth-le';
 
 // Timemore 16-bit UUIDs in standard 128-bit BLE format
 export const TIMEMORE_SERVICE_UUID = '0000fff0-0000-1000-8000-00805f9b34fb';
@@ -26,18 +26,48 @@ export interface IBleScaleAdapter {
     send(data: Uint8Array): Promise<void>;
 }
 
+// Minimal Web Bluetooth typings
+interface WebBluetoothNav {
+    bluetooth?: {
+        requestDevice(options: unknown): Promise<{
+            id: string;
+            name?: string;
+            gatt?: {
+                connect(): Promise<{
+                    connected: boolean;
+                    disconnect(): void;
+                    getPrimaryService(service: unknown): Promise<{
+                        getCharacteristic(char: unknown): Promise<{
+                            startNotifications(): Promise<void>;
+                            writeValueWithoutResponse(data: Uint8Array): Promise<void>;
+                            addEventListener(name: string, handler: (e: { target?: { value?: DataView } }) => void): void;
+                        }>;
+                    }>;
+                }>;
+            };
+            addEventListener(name: string, handler: () => void): void;
+        }>;
+    };
+}
+
 /**
  * Web Bluetooth API Implementation (For Chrome on Desktop / Android)
  */
 class WebBluetoothAdapter implements IBleScaleAdapter {
-    private device: BluetoothDevice | null = null;
-    private server: BluetoothRemoteGATTServer | null = null;
-    private notifyChar: BluetoothRemoteGATTCharacteristic | null = null;
-    private writeChar: BluetoothRemoteGATTCharacteristic | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private device: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private server: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private writeChar: any = null;
     private onDisconnectCallback: (() => void) | null = null;
 
+    private getNav(): WebBluetoothNav {
+        return (typeof navigator !== 'undefined' ? navigator : {}) as WebBluetoothNav;
+    }
+
     async isAvailable(): Promise<boolean> {
-        return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
+        return Boolean(this.getNav().bluetooth);
     }
 
     async requestPermissions(): Promise<boolean> {
@@ -45,10 +75,11 @@ class WebBluetoothAdapter implements IBleScaleAdapter {
     }
 
     async startScan(onDiscovered: (device: ScaleDevice) => void): Promise<void> {
-        if (!navigator.bluetooth) throw new Error('Web Bluetooth not supported in this browser');
+        const bt = this.getNav().bluetooth;
+        if (!bt) throw new Error('Web Bluetooth not supported in this browser');
         try {
             // Web Bluetooth requires user gesture and opens browser device picker
-            const device = await navigator.bluetooth.requestDevice({
+            const device = await bt.requestDevice({
                 filters: [
                     { namePrefix: 'TIMEMORE' },
                     { namePrefix: 'DOT' },
@@ -79,10 +110,12 @@ class WebBluetoothAdapter implements IBleScaleAdapter {
         onDisconnect: () => void
     ): Promise<void> {
         this.onDisconnectCallback = onDisconnect;
+        const bt = this.getNav().bluetooth;
+        if (!bt) throw new Error('Web Bluetooth not supported');
 
         // If we don't have the device instance yet (e.g. from picker), request it
         if (!this.device || this.device.id !== deviceId) {
-            this.device = await navigator.bluetooth.requestDevice({
+            this.device = await bt.requestDevice({
                 filters: [
                     { namePrefix: 'TIMEMORE' },
                     { namePrefix: 'DOT' },
@@ -94,7 +127,6 @@ class WebBluetoothAdapter implements IBleScaleAdapter {
 
         this.device.addEventListener('gattserverdisconnected', () => {
             this.server = null;
-            this.notifyChar = null;
             this.writeChar = null;
             if (this.onDisconnectCallback) this.onDisconnectCallback();
         });
@@ -107,14 +139,12 @@ class WebBluetoothAdapter implements IBleScaleAdapter {
         const notifyChar = await service.getCharacteristic(0xFFF1);
         const writeChar = await service.getCharacteristic(0xFFF2);
 
-        this.notifyChar = notifyChar;
         this.writeChar = writeChar;
 
         await notifyChar.startNotifications();
-        notifyChar.addEventListener('characteristicvaluechanged', (e: Event) => {
-            const target = e.target as unknown as { value?: DataView };
-            if (target && target.value) {
-                onData(target.value);
+        notifyChar.addEventListener('characteristicvaluechanged', (e: { target?: { value?: DataView } }) => {
+            if (e.target && e.target.value) {
+                onData(e.target.value);
             }
         });
     }
@@ -166,10 +196,10 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
             {
                 services: [TIMEMORE_SERVICE_UUID]
             },
-            (result: CapBleDevice) => {
-                const name = result.name || result.device?.name || 'Timemore Scale';
+            (result: ScanResult) => {
+                const name = result.localName || result.device.name || 'Timemore Scale';
                 onDiscovered({
-                    id: result.deviceId,
+                    id: result.device.deviceId,
                     name,
                     rssi: result.rssi
                 });
