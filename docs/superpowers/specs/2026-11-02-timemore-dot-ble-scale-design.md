@@ -1,6 +1,6 @@
 # Specification: Timemore Dot BLE Smart Scale Integration
 
-**Status:** Draft / Proposed  
+**Status:** Approved / Validated  
 **Date:** 2026-11-02  
 **Target:** Timemore Black Mirror Scale family (DOT TES017)  
 **Protocol Reference:** [Timemore Open Scale Protocol v1.0.3](https://raw.githubusercontent.com/TIMEMORE-COFFEE/open-scale-protocol/main/Timemore%20Black%20Mirror%20SCALE%20BLE%20Protocol.md)
@@ -13,7 +13,7 @@ The user owns a **Timemore Dot (TES017)** Bluetooth smart coffee scale and wants
 
 The user explicitly requires **two distinct modes**:
 1. **Manual Timer Mode (As-Is)**: 100% identical to the existing app flow — theoretical target weight estimation calculated from timer progress, no scale UI or BLE overhead.
-2. **Smart Scale Mode (Timemore BLE)**: Live weight streaming (0.1g resolution), real-time flow rate (`g/s`), quick Tare button, auto-zero on brew start, and responsive target progress driven by actual poured water.
+2. **Smart Scale Mode (Timemore BLE)**: Live weight streaming (0.1g resolution), real-time flow rate (`g/s`), live dynamic ratio tracker, dual curve chart (water & flow rate), dedicated Tare button, auto-zero on brew start, and responsive target progress driven by actual poured water.
 
 ---
 
@@ -61,35 +61,38 @@ Every frame has the structure:
 ## 3. Architecture & System Design
 
 ```
-+-----------------------------------------------------------+
-|                      UI Layer                             |
-|  - RecipePreparationPage (Mode Selector: Manual vs Scale) |
-|  - BrewFlowPage (Dual Render: As-Is vs Live Scale Mode)   |
-|  - ScaleConnectPill & ScalePairingModal                   |
-+-----------------------------------------------------------+
-                             |
-                             v
-+-----------------------------------------------------------+
-|                   State Management                        |
-|  - useScaleStore (Zustand: weight, flow, battery, status) |
-|  - useBrewStore (activeMode: 'manual' | 'smart-scale')   |
-+-----------------------------------------------------------+
-                             |
-                             v
-+-----------------------------------------------------------+
-|             BLE Adapter Layer (Abstraction)               |
-|  - IBleScaleAdapter                                       |
-|     ├── CapacitorBleAdapter (Android Native APK)          |
-|     └── WebBluetoothAdapter (Chrome / Dev Preview)        |
-+-----------------------------------------------------------+
-                             |
-                             v
-+-----------------------------------------------------------+
-|              Timemore Protocol Parser                     |
-|  - CRC-16 Calculator                                      |
-|  - Frame Serializer (Tare, Timer, Battery commands)       |
-|  - Packet Deserializer (0x01 stream, 0x05 battery)        |
-+-----------------------------------------------------------+
++-------------------------------------------------------------------------+
+|                               UI Layer                                  |
+|  - RecipePreparationPage (Mode Switcher + Scale Readiness Card)         |
+|  - BrewFlowPage:                                                        |
+|      * Mode A: Manual (100% As-Is)                                      |
+|      * Mode B: Smart Scale (Live Weight, Flow Badge, Ratio, Dual Chart) |
+|  - BrewCurveChart (SVG dual line chart for Live & Brew Log)             |
+|  - ScalePairingModal & ScaleConnectPill                                 |
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+|                           State Management                              |
+|  - useScaleStore (Zustand: weight, flow, battery, chartPoints, tare)   |
+|  - useBrewStore (brewMode: 'manual' | 'smart-scale')                    |
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+|                     BLE Adapter Layer (Abstraction)                     |
+|  - IBleScaleAdapter                                                     |
+|     ├── CapacitorBleAdapter (Android Native APK)                        |
+|     └── WebBluetoothAdapter (Chrome / Dev Preview)                      |
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+|                      Timemore Protocol Parser                           |
+|  - CRC-16 Calculator                                                    |
+|  - Frame Serializer (Tare, Timer, Battery commands)                     |
+|  - Packet Deserializer (0x01 stream, 0x05 battery)                      |
++-------------------------------------------------------------------------+
 ```
 
 ### 3.1 Module Breakdown
@@ -98,85 +101,71 @@ Every frame has the structure:
    - Pure TypeScript functions for CRC-16 computation, packet decoding, and command frame generation.
    - 100% decoupled from browser or hardware APIs for easy unit testing.
 2. **`src/features/scale/infrastructure/bleAdapter.ts`**:
-   - Common interface `IBleScaleAdapter`:
-     ```ts
-     export interface BleDevice {
-       id: string;
-       name: string;
-       rssi?: number;
-     }
-     export interface IBleScaleAdapter {
-       isAvailable(): Promise<boolean>;
-       requestPermissions(): Promise<boolean>;
-       startScan(onDiscovered: (device: BleDevice) => void): Promise<void>;
-       stopScan(): Promise<void>;
-       connect(deviceId: string, onData: (data: DataView) => void, onDisconnect: () => void): Promise<void>;
-       disconnect(): Promise<void>;
-       send(data: Uint8Array): Promise<void>;
-     }
-     ```
-   - Automatically selects `CapacitorBleAdapter` when running under Capacitor (`@capacitor/core` `Capacitor.isNativePlatform()`), otherwise falls back to `WebBluetoothAdapter`.
+   - Common interface `IBleScaleAdapter` with auto-selection between Capacitor BLE (native Android) and Web Bluetooth (desktop/browser dev).
 3. **`src/features/scale/state/useScaleStore.ts`**:
-   - Zustand store tracking:
+   - Reactive Zustand store tracking:
      - `connectionState`: `'disconnected' | 'scanning' | 'connecting' | 'connected' | 'error'`
      - `device`: `{ id: string, name: string } | null`
      - `currentWeight`: `number` (grams)
      - `flowRate`: `number` (g/s)
      - `batteryPercent`: `number` (0–100%)
      - `isOverload`: `boolean`
+     - `curveData`: `Array<{ time: number; weight: number; flowRate: number }>`
      - `tare()`: sends command `0x0D`
-     - `connect()`, `disconnect()`, `scan()`
+     - `recordCurvePoint(time)`: throttled point recorder for dual curve graph
+4. **`src/components/BrewCurveChart.tsx`**:
+   - Clean, lightweight SVG-based dual-line chart:
+     - Water Weight curve (Left Y axis in grams, Primary/Blue line)
+     - Flow Rate curve (Right Y axis in g/s, Secondary/Green line)
+     - Live vertical time indicator during active brew
+     - Reusable in `BrewLogPage` / `JournalDetailPage` for post-brew analysis.
 
 ---
 
-## 4. User Experience & Screen-by-Screen Flow
+## 4. Screen-by-Screen User Experience
 
 ### 4.1 Preparation Page (`RecipePreparationPage.tsx`)
-A new segmented control / card is added: **Brew Mode Selection**:
-- **Option 1: Manual Timer (As-Is)**
-  - Subtitle: "Standard timer with theoretical pour estimation"
-  - Behaves exactly as current code.
-- **Option 2: Smart Scale (Timemore Dot)**
-  - Subtitle: "Real-time weight & flow rate via Bluetooth"
-  - Shows scale connection pill:
-    - If disconnected: Button `Connect Scale` (opens `ScalePairingModal`).
-    - If connected: Green badge `Connected: Timemore Dot (85% 🔋)`.
+A new section **Brew Mode Selection**:
+- **Segmented / Card Switcher**:
+  1. **Manual Timer (As-Is)**:
+     - Subtitle: "Standard timer with theoretical pour estimation"
+  2. **Smart Scale (Timemore Dot)**:
+     - Subtitle: "Real-time weight & flow rate via Bluetooth"
+- When **Smart Scale** is selected:
+  - **State A (Disconnected)**: Shows dripper illustration + "No scale detected. Ensure your Timemore is on and nearby." + [ Connect Now ] button.
+  - **State B (Connected)**: Shows `TIMEMORE_Dot • 100% 🔋`, live weight (`0.0 g`), and a dedicated **[ Tare ]** button so the user can zero out the rinsed server and grounds before clicking "Start Brew".
 
 ### 4.2 Brew Flow Page (`BrewFlowPage.tsx`)
 
-#### Case A: If `brewMode === 'manual'`
-- **100% As-Is**.
-- No scale indicators, no Tare buttons, no BLE calls.
-- Total Water and step targets display theoretical calculated amounts based on timer progress.
+#### Mode 1: Manual Timer (`brewMode === 'manual'`)
+- **100% Unchanged (As-Is)**: Existing flow, timer-based theoretical progress and weights. No scale pills or Tare controls.
 
-#### Case B: If `brewMode === 'smart-scale'`
-- **Header**: Displays `ScaleConnectPill`:
-  - When connected: `[ ⚖️ Timemore Dot • 85% 🔋 ]`. Clicking opens a quick sheet (Battery, Signal, Tare, Disconnect).
-- **Active Phase Card**:
-  - **Live Weight**: Large typography displaying real-time scale reading with 1 decimal place (e.g. `124.8 g` / `Target: 150.0 g`).
-  - **Flow Rate Badge**: Prominently displayed (e.g. `🌊 3.2 g/s`). Color coded:
-    - Green for smooth pour (~2.5–4.5 g/s).
-    - Amber/Muted when resting or outside optimal range.
-  - **Quick Tare Button**: One-tap `[ ⟲ Tare ]` button right beside weight.
-  - **Live Progress Gauge**: Bar fills up proportional to actual grams poured against step/recipe targets.
-- **Smart Auto-Sync**:
-  - When user presses "Start" or "Resume", the app sends a Tare (`0x0D`) command to the scale so it zeros automatically for the first pour.
-
-### 4.3 Error Handling & Fallback
-- If BLE connection drops mid-brew:
-  - App displays a toast alert: *"Scale disconnected. Switched to manual timer mode."*
-  - Seamlessly falls back to theoretical timer-based water estimation without aborting the brew.
-  - User can tap `Reconnect` to re-establish BLE stream.
+#### Mode 2: Smart Scale (`brewMode === 'smart-scale'`)
+- **Header**:
+  - `ScaleConnectPill`: `[ ⚖️ Timemore Dot • 85% 🔋 ]` with quick modal for Tare, battery info, and disconnect.
+- **Active Card**:
+  - **Big Live Weight**: e.g., `34.1 g` (0.1g resolution).
+  - **Live Flow Rate Badge**: e.g., `🌊 3.2 g/s`.
+  - **Dynamic Ratio Tracker**:
+    - Current ratio calculated against recipe coffee dose: e.g. `Ratio 1:2.3` ... [slider] ... `Target 1:16.0`.
+  - **Live Dual Curve Chart (Collapsible / Preview)**:
+    - Displays the live water curve and flow rate curve updating in real time.
+  - **Dedicated Tare Button**:
+    - High-contrast `[ ⟲ Tare ]` button right on the card for quick re-zeroing.
+- **Done State (`Brewing Result`)**:
+  - Displays the completed **Dual Curve Chart** alongside final brew stats (Time, Dose, Total Water, Ratio, Flow Rate).
+  - Saves the curve series JSON to `brew_logs.flow_profile` in SQLite.
 
 ---
 
-## 5. Verification Plan
+## 5. Verification & Testing Strategy
 1. **Unit Tests (`timemoreProtocol.test.ts`)**:
-   - Verify CRC-16 computation with known test vectors from protocol specification.
-   - Verify packet parsing for Opcode `0x01` (positive weights, negative weights, zero, decimal conversion).
-   - Verify frame generation for Tare (`0x0D`), Timer (`0x02`), Battery (`0x05`).
-2. **Component & Integration Testing**:
-   - Verify `RecipePreparationPage` toggle switches between Manual and Smart Scale modes.
-   - Verify `BrewFlowPage` renders existing As-Is view in Manual mode.
-   - Verify `BrewFlowPage` renders Live Weight, Flow Rate, and Tare in Smart Scale mode.
-   - Verify simulated BLE data updates the UI reactively at 100ms intervals.
+   - Verify CRC-16 calculation with known packet test vectors.
+   - Verify parsing of 0x01 streaming packet (signed weights, flow rate, timer, overload).
+   - Verify command byte builders (`tare`, `timer`, `battery`).
+2. **Component & Interactive Testing**:
+   - Test mode switching in `RecipePreparationPage`.
+   - Test manual mode is completely untouched.
+   - Test mock scale data stream to verify real-time chart, ratio slider, and weight updates.
+   - Test Tare command firing.
+   - Test graceful fallback if scale disconnects mid-brew.
