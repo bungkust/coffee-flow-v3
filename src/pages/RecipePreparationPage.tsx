@@ -4,7 +4,9 @@ import { Icon } from '../components/Icons';
 import { brewService, pantryService, settingsService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
 import type { PantryItem } from '../features/pantry/domain/entities';
-import { useBrewStore } from '../state/useBrewStore';
+import { useBrewStore, type BrewMode } from '../state/useBrewStore';
+import { useScaleStore } from '../features/scale/state/useScaleStore';
+import { ScalePairingModal } from '../components/ScalePairingModal';
 import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
@@ -44,6 +46,9 @@ export const RecipePreparationPage = () => {
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
     const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+    const [brewMode, setBrewMode] = useState<BrewMode>('manual');
+    const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
+    const { connectionState, device, batteryPercent, currentWeight, tare } = useScaleStore();
     const manageClicked = useRef(false);
     const [stockWarning, setStockWarning] = useState<string[] | null>(null);
 
@@ -264,7 +269,7 @@ export const RecipePreparationPage = () => {
     const proceedToBrew = () => {
         // Drop any log id from a previous brew so this one isn't saved over it.
         sessionStorage.removeItem('coffee_flow_last_logged_id');
-        startBrew(currentScaledRecipe!, selectedBeanId, selectedFilterId, adjustedCoffeeDose);
+        startBrew(currentScaledRecipe!, selectedBeanId, selectedFilterId, adjustedCoffeeDose, brewMode);
         navigate('/brew-flow');
     };
 
@@ -545,6 +550,129 @@ export const RecipePreparationPage = () => {
                     )}
                 </div>
 
+                {/* Brew Mode Selector */}
+                <div className="pt-1 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
+                            <Icon name="tune" className="text-base" /> Brewing Mode
+                        </label>
+                        <span className="typescale-label-small font-bold text-md-primary">
+                            {brewMode === 'smart-scale' ? 'Smart Scale Mode' : 'Manual Mode'}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => setBrewMode('manual')}
+                            className={`p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer ${
+                                brewMode === 'manual'
+                                    ? 'bg-md-primary/10 border-md-primary shadow-sm text-md-on-surface'
+                                    : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-high'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className={`size-8 rounded-full flex items-center justify-center ${
+                                    brewMode === 'manual' ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container-highest text-md-on-surface-variant'
+                                }`}>
+                                    <Icon name="timer" className="text-lg" />
+                                </div>
+                                {brewMode === 'manual' && (
+                                    <Icon name="check_circle" className="text-md-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                )}
+                            </div>
+                            <div>
+                                <h4 className="typescale-title-small font-bold">Manual Timer</h4>
+                                <p className="typescale-body-small text-xs opacity-75">As-is timer pace</p>
+                            </div>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setBrewMode('smart-scale')}
+                            className={`p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer ${
+                                brewMode === 'smart-scale'
+                                    ? 'bg-md-primary/10 border-md-primary shadow-sm text-md-on-surface'
+                                    : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-high'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className={`size-8 rounded-full flex items-center justify-center ${
+                                    brewMode === 'smart-scale' ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container-highest text-md-on-surface-variant'
+                                }`}>
+                                    <Icon name="scale" className="text-lg" />
+                                </div>
+                                {brewMode === 'smart-scale' && (
+                                    <Icon name="check_circle" className="text-md-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                )}
+                            </div>
+                            <div>
+                                <h4 className="typescale-title-small font-bold">Smart Scale</h4>
+                                <p className="typescale-body-small text-xs opacity-75">Timemore Dot BLE</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Scale Readiness Card when Smart Scale is active */}
+                    {brewMode === 'smart-scale' && (
+                        <div className="p-4 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low space-y-3">
+                            {connectionState === 'connected' ? (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="size-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            <span className="typescale-title-small font-bold text-md-on-surface">
+                                                {device?.name || 'TIMEMORE_Dot'}
+                                            </span>
+                                        </div>
+                                        <span className="typescale-label-small font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                            <Icon name="battery_full" className="text-xs" />
+                                            {batteryPercent}%
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-md-surface-container-high/60">
+                                        <div>
+                                            <span className="typescale-label-small text-md-on-surface-variant block">Current Scale Reading</span>
+                                            <span className="typescale-headline-small font-extrabold text-md-on-surface tabular-nums">
+                                                {currentWeight.toFixed(1)} <span className="text-sm font-normal text-md-on-surface-variant">g</span>
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => tare()}
+                                            className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                                        >
+                                            <Icon name="restart_alt" className="text-base" />
+                                            <span>Tare (0.0g)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center text-center py-2 space-y-2.5">
+                                    <div className="size-12 rounded-full bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center">
+                                        <Icon name="scale" className="text-2xl" />
+                                    </div>
+                                    <div>
+                                        <h4 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h4>
+                                        <p className="typescale-body-small text-md-on-surface-variant text-xs">
+                                            Turn on your Timemore Dot and pair to get live weight & flow rate.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPairingModalOpen(true)}
+                                        className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                                    >
+                                        <Icon name="bluetooth" className="text-base" />
+                                        <span>Connect Now</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Checklist Section */}
                 <div className="pt-2">
                     <div className="flex items-center justify-between mb-3.5">
@@ -609,6 +737,10 @@ export const RecipePreparationPage = () => {
                         </ul>
                     </div>
                 }
+            />
+            <ScalePairingModal
+                isOpen={isPairingModalOpen}
+                onClose={() => setIsPairingModalOpen(false)}
             />
         </div>
     );

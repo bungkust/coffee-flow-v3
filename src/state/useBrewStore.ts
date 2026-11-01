@@ -3,14 +3,18 @@ import { BrewEngine } from '../features/brew/application/BrewEngine';
 import type { BrewEngineState } from '../features/brew/application/BrewEngine';
 import type { Recipe } from '../shared/domain/entities';
 
+export type BrewMode = 'manual' | 'smart-scale';
+
 interface BrewStoreState {
     activeRecipe: Recipe | null;
     selectedBeanId: string | null;
     selectedFilterId: string | null;
     coffeeConsumed: number | null;
+    brewMode: BrewMode;
     engine: BrewEngine | null;
     engineState: BrewEngineState | null;
-    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number) => void;
+    setBrewMode: (mode: BrewMode) => void;
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number, mode?: BrewMode) => void;
     hydrateBrew: () => boolean;
     stopBrew: () => void;
     pauseBrew: () => void;
@@ -25,6 +29,7 @@ interface PersistedBrew {
     beanId?: string | null;
     filterId?: string | null;
     coffeeConsumed?: number | null;
+    brewMode?: BrewMode;
     stepIndex?: number;
     remainingTime?: number;
 }
@@ -51,11 +56,15 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
     selectedBeanId: null,
     selectedFilterId: null,
     coffeeConsumed: null,
+    brewMode: 'manual',
     engine: null,
     engineState: null,
 
-    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number) => {
+    setBrewMode: (mode: BrewMode) => set({ brewMode: mode }),
+
+    startBrew: (recipe: Recipe, beanId?: string, filterId?: string, coffeeConsumed?: number, mode?: BrewMode) => {
         const engine = new BrewEngine(recipe.steps);
+        const effectiveMode = mode || get().brewMode;
 
         engine.addListener((state) => {
             // Persist current position on every tick
@@ -64,6 +73,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
                 beanId: beanId || null,
                 filterId: filterId || null,
                 coffeeConsumed: coffeeConsumed ?? null,
+                brewMode: effectiveMode,
                 stepIndex: state.currentStepIndex,
                 remainingTime: state.remainingTime,
             });
@@ -75,6 +85,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
             selectedBeanId: beanId || null,
             selectedFilterId: filterId || null,
             coffeeConsumed: coffeeConsumed ?? null,
+            brewMode: effectiveMode,
             engine,
             engineState: {
                 currentStepIndex: 0,
@@ -107,6 +118,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
                 beanId: draft.beanId,
                 filterId: draft.filterId,
                 coffeeConsumed: draft.coffeeConsumed,
+                brewMode: draft.brewMode || 'manual',
                 stepIndex: state.currentStepIndex,
                 remainingTime: state.remainingTime,
             });
@@ -118,6 +130,7 @@ export const useBrewStore = create<BrewStoreState>((set, get) => ({
             selectedBeanId: draft.beanId || null,
             selectedFilterId: draft.filterId || null,
             coffeeConsumed: draft.coffeeConsumed ?? null,
+            brewMode: draft.brewMode || 'manual',
             engine,
             engineState: {
                 currentStepIndex: stepIndex,
