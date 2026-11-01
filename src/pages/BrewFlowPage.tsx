@@ -9,9 +9,12 @@ import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import type { Recipe } from '../shared/domain/entities';
 import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
-import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, type UnitSystem } from '../shared/utils/brewMath';
+import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, calculateCoffeeDose, parseRatio, type UnitSystem } from '../shared/utils/brewMath';
+import { useScaleStore } from '../features/scale/state/useScaleStore';
+import { ScaleConnectPill } from '../components/ScaleConnectPill';
+import { BrewCurveChart } from '../components/BrewCurveChart';
 
-const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
+const BrewHeader = ({ recipe, onBack, showScalePill }: { recipe: Recipe; onBack: () => void; showScalePill?: boolean }) => (
     <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
         <div className="flex items-center gap-3">
             <button
@@ -21,10 +24,11 @@ const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) 
             >
                 <Icon name="arrow_back" className="text-2xl" />
             </button>
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 flex-1">
                 <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
                 <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{recipe.name}</h1>
             </div>
+            {showScalePill && <ScaleConnectPill className="shrink-0" />}
         </div>
     </header>
 );
@@ -32,14 +36,20 @@ const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
     const safeBack = useSafeBack();
-    const { activeRecipe, engineState, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
+    const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
+    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint, clearCurveData } = useScaleStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+    const [showLiveChart, setShowLiveChart] = useState(false);
     const hasHydratedRef = useRef(false);
+    const hasAutoTaredRef = useRef(false);
     const stopTarget = useRef<'back' | 'home'>('home');
+
+    const isSmartScale = brewMode === 'smart-scale';
+    const isScaleActive = isSmartScale && connectionState === 'connected';
 
     // Intercept hardware / web back button to prompt stop confirmation
     useBackHandler(!isStopModalOpen && !isSkipModalOpen, () => openStopConfirm('back'));
@@ -147,6 +157,21 @@ export const BrewFlowPage = () => {
     }
     totalElapsed += (engineState.totalTime - engineState.remainingTime);
 
+    // Auto-Tare scale once when smart scale brew starts running
+    useEffect(() => {
+        if (isScaleActive && engineState?.isRunning && !hasAutoTaredRef.current) {
+            hasAutoTaredRef.current = true;
+            tare();
+        }
+    }, [isScaleActive, engineState?.isRunning, tare]);
+
+    // Record curve points periodically while running in smart scale mode
+    useEffect(() => {
+        if (isSmartScale && engineState?.isRunning) {
+            recordCurvePoint(totalElapsed);
+        }
+    }, [isSmartScale, engineState?.isRunning, totalElapsed, recordCurvePoint]);
+
     const valveStates = getValveStates(activeRecipe.steps);
     const currentValve = valveStates[engineState.currentStepIndex] ?? null;
 
@@ -186,6 +211,16 @@ export const BrewFlowPage = () => {
     const currentTargetWeight = Math.round(pouredBefore + (stepTarget - pouredBefore) * engineState.progress);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
     const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
+
+    // Smart scale dynamic values
+    const effectiveWaterWeight = isScaleActive ? currentWeight : currentTargetWeight;
+    const effectiveProgressPercent = isScaleActive
+        ? Math.min(100, Math.max(0, (currentWeight / (totalWaterRecipe || 1)) * 100))
+        : progressPercent;
+    const dose = coffeeConsumed || (calculateCoffeeDose(activeRecipe.total_water, activeRecipe.ratio) || 15);
+    const targetRatio = parseRatio(activeRecipe.ratio) || 16;
+    const currentRatio = dose > 0 ? (effectiveWaterWeight / dose) : 0;
+
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
         : currentStep.label;
@@ -198,7 +233,7 @@ export const BrewFlowPage = () => {
         return (
             <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
                 {/* Header for Done state */}
-                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
+                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} showScalePill={isSmartScale} />
 
                 <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                     {/* Done Card */}
@@ -221,7 +256,7 @@ export const BrewFlowPage = () => {
                                 <div className="flex justify-between items-end mb-2">
                                     <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
                                     <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
-                                        {formatVolume(totalWaterRecipe, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                        {formatVolume(isScaleActive ? currentWeight : totalWaterRecipe, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                     </span>
                                 </div>
                                 <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
@@ -231,6 +266,17 @@ export const BrewFlowPage = () => {
                                     ></div>
                                 </div>
                             </div>
+
+                            {/* Extraction Curve Chart in Done State */}
+                            {isSmartScale && curveData.length > 0 && (
+                                <div className="w-full pt-3 text-left">
+                                    <BrewCurveChart
+                                        points={curveData}
+                                        maxDurationSeconds={totalElapsed}
+                                        targetWater={totalWaterRecipe}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -280,7 +326,7 @@ export const BrewFlowPage = () => {
     return (
         <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
+            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} showScalePill={isSmartScale} />
 
             <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                 {/* Active Phase Card */}
@@ -311,6 +357,35 @@ export const BrewFlowPage = () => {
                         <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
                             {formatDuration(totalElapsed)}
                         </div>
+
+                        {/* Flow Rate & Tare Controls in Smart Scale Mode */}
+                        {isSmartScale && (
+                            <div className="flex items-center justify-center gap-2 mb-3 mt-1">
+                                {isScaleActive ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-small font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tabular-nums">
+                                        <Icon name="water_drop" className="text-xs" />
+                                        <span>{flowRate.toFixed(1)} g/s</span>
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                        <Icon name="warning" className="text-xs" />
+                                        <span>Scale Disconnected</span>
+                                    </span>
+                                )}
+
+                                {isScaleActive && (
+                                    <button
+                                        type="button"
+                                        onClick={() => tare()}
+                                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-primary/10 hover:bg-md-primary/20 text-md-primary border border-md-primary/30 transition-colors cursor-pointer"
+                                    >
+                                        <Icon name="restart_alt" className="text-xs" />
+                                        <span>Tare (0.0g)</span>
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
                             {stepTitle}
                         </h2>
@@ -323,15 +398,70 @@ export const BrewFlowPage = () => {
                             <div className="flex justify-between items-end mb-2">
                                 <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
                                 <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
-                                    {formatWeight(currentTargetWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                    {formatWeight(effectiveWaterWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                 </span>
                             </div>
                             <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
                                 <div
-                                    className="bg-md-primary h-3 rounded-full transition-[width] duration-1000 ease-linear"
-                                    style={{ width: `${progressPercent}%` }}
+                                    className="bg-md-primary h-3 rounded-full transition-[width] duration-300 ease-out"
+                                    style={{ width: `${effectiveProgressPercent}%` }}
                                 ></div>
                             </div>
+                            {iceWeight > 0 && (
+                                <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5">
+                                    <Icon name="ac_unit" className="text-sm text-md-primary" />
+                                    Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Dynamic Ratio Tracker in Smart Scale Mode */}
+                        {isSmartScale && dose > 0 && (
+                            <div className="w-full mt-3 p-2.5 rounded-2xl bg-md-surface-container-high/40 border border-md-outline-variant/20">
+                                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                                    <span className="text-amber-400 font-mono">
+                                        Ratio 1:{currentRatio.toFixed(1)}
+                                    </span>
+                                    <span className="text-md-on-surface-variant/70 font-mono">
+                                        Target 1:{targetRatio.toFixed(1)}
+                                    </span>
+                                </div>
+                                <div className="w-full bg-md-surface-container-highest rounded-full h-2 relative overflow-hidden">
+                                    <div
+                                        className="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.min(100, Math.max(0, (currentRatio / targetRatio) * 100))}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Collapsible Live Extraction Curve in Smart Scale Mode */}
+                        {isSmartScale && (
+                            <div className="w-full mt-3 pt-2.5 border-t border-md-outline-variant/20">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowLiveChart(!showLiveChart)}
+                                    className="flex items-center justify-between w-full typescale-label-small font-bold text-md-on-surface-variant hover:text-md-on-surface transition-colors cursor-pointer px-1"
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <Icon name="show_chart" className="text-sm text-md-primary" />
+                                        <span>Live Extraction Curve</span>
+                                    </span>
+                                    <Icon name={showLiveChart ? 'expand_less' : 'expand_more'} className="text-base" />
+                                </button>
+                                {showLiveChart && (
+                                    <BrewCurveChart
+                                        points={curveData}
+                                        currentTime={totalElapsed}
+                                        maxDurationSeconds={currentStepEnd}
+                                        targetWater={totalWaterRecipe}
+                                        className="mt-2.5 text-left"
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
                             {iceWeight > 0 && (
                                 <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5">
                                     <Icon name="ac_unit" className="text-sm text-md-primary" />
