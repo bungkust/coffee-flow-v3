@@ -133,3 +133,4 @@ test('parseTimemorePacket returns null for invalid header or truncated packet', 
     const view = new DataView(invalidBuf.buffer);
     assert.equal(parseTimemorePacket(view), null);
 });
+
