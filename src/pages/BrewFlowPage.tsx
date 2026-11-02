@@ -11,10 +11,9 @@ import type { Recipe } from '../shared/domain/entities';
 import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
 import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, calculateCoffeeDose, parseRatio, type UnitSystem } from '../shared/utils/brewMath';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
-import { ScaleConnectPill } from '../components/ScaleConnectPill';
 import { BrewCurveChart } from '../components/BrewCurveChart';
 
-const BrewHeader = ({ recipe, onBack, showScalePill }: { recipe: Recipe; onBack: () => void; showScalePill?: boolean }) => (
+const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
     <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
         <div className="flex items-center gap-3">
             <button
@@ -28,7 +27,6 @@ const BrewHeader = ({ recipe, onBack, showScalePill }: { recipe: Recipe; onBack:
                 <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
                 <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{recipe.name}</h1>
             </div>
-            {showScalePill && <ScaleConnectPill className="shrink-0" />}
         </div>
     </header>
 );
@@ -278,7 +276,7 @@ export const BrewFlowPage = () => {
         return (
             <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
                 {/* Header for Done state */}
-                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} showScalePill={isSmartScale} />
+                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
 
                 <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                     {/* Done Card */}
@@ -371,7 +369,7 @@ export const BrewFlowPage = () => {
     return (
         <div className="flex flex-col h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
             {/* Header */}
-            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} showScalePill={isSmartScale} />
+            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
 
             <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
                 {/* Active Phase Card */}
