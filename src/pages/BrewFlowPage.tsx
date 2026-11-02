@@ -9,7 +9,7 @@ import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import type { Recipe } from '../shared/domain/entities';
 import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
-import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, calculateCoffeeDose, parseRatio, type UnitSystem } from '../shared/utils/brewMath';
+import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getPourAmount, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, type UnitSystem } from '../shared/utils/brewMath';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
 import { BrewCurveChart } from '../components/BrewCurveChart';
 
@@ -270,9 +270,6 @@ export const BrewFlowPage = () => {
     const effectiveProgressPercent = isScaleActive
         ? Math.min(100, Math.max(0, (currentWeight / (totalWaterRecipe || 1)) * 100))
         : progressPercent;
-    const dose = coffeeConsumed || (calculateCoffeeDose(activeRecipe.total_water, activeRecipe.ratio) || 15);
-    const targetRatio = parseRatio(activeRecipe.ratio) || 16;
-    const currentRatio = dose > 0 ? (effectiveWaterWeight / dose) : 0;
 
     // Proximity to current step target for color states and audio chime
     const isTargetReached = stepTarget > 0 && currentWeight >= (stepTarget - 2);
@@ -508,26 +505,6 @@ export const BrewFlowPage = () => {
                                         </p>
                                     )}
                                 </div>
-
-                                {/* 6. Dynamic Ratio Tracker (Coffee Warm Tone) */}
-                                {dose > 0 && (
-                                    <div className="w-full mt-3 p-3 rounded-2xl bg-md-surface-container-high/50 border border-md-outline-variant/30">
-                                        <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                                            <span className="text-md-primary font-mono font-bold">
-                                                Ratio 1:{currentRatio.toFixed(1)}
-                                            </span>
-                                            <span className="text-md-on-surface-variant/70 font-mono">
-                                                Target 1:{targetRatio.toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <div className="w-full bg-md-surface-container-highest rounded-full h-2 relative overflow-hidden">
-                                            <div
-                                                className="bg-md-primary h-2 rounded-full transition-all duration-300"
-                                                style={{ width: `${Math.min(100, Math.max(0, (currentRatio / targetRatio) * 100))}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
                             <>
