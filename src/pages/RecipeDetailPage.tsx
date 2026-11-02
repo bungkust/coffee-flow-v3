@@ -74,8 +74,10 @@ export const RecipeDetailPage = () => {
     const brewSteps = getBrewSteps(recipe.steps);
     const coffeeDose = calculateCoffeeDose(recipe.total_water, recipe.ratio);
     const hasValidRatio = coffeeDose > 0;
-    const sourceUrl = recipe.source;
-    const sourceInfo = sourceUrl && /^https?:\/\//.test(sourceUrl) ? sourceMeta(sourceUrl) : null;
+    const rawSource = recipe.source?.trim() || '';
+    const urlMatch = rawSource.match(/https?:\/\/[^\s\)\"\'\]]+/);
+    const cleanUrl = urlMatch ? urlMatch[0] : (rawSource.startsWith('http') ? rawSource : null);
+    const sourceInfo = cleanUrl ? sourceMeta(cleanUrl) : null;
     const bestForTags = recipe.best_for_tags || [];
     const notRecommendedTags = recipe.not_recommended_tags || [];
 
@@ -109,7 +111,7 @@ export const RecipeDetailPage = () => {
             {/* Main Content */}
             <main className="flex-1 px-5 pt-4 space-y-4">
                 {/* About Card */}
-                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
+                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3 overflow-hidden">
                     <div className="flex flex-wrap items-center gap-2">
                         <span className="typescale-label-medium text-md-primary font-bold uppercase tracking-wider bg-md-primary-container/40 px-3 py-1 rounded-full">
                             {recipe.method_id}
@@ -147,17 +149,17 @@ export const RecipeDetailPage = () => {
                         </div>
                     )}
 
-                    {sourceUrl && (sourceInfo ? (
+                    {cleanUrl ? (
                         <button
-                            onClick={() => window.open(sourceUrl, '_blank')}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-md-secondary-container rounded-full border border-md-outline-variant/20 typescale-label-medium font-bold text-md-on-secondary-container hover:bg-md-secondary-container/80 transition-colors cursor-pointer"
+                            onClick={() => window.open(cleanUrl, '_blank')}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-md-secondary-container rounded-full border border-md-outline-variant/20 typescale-label-medium font-bold text-md-on-secondary-container hover:bg-md-secondary-container/80 transition-colors cursor-pointer max-w-full"
                         >
-                            <Icon name={sourceInfo.icon} className="text-base" />
-                            {sourceInfo.label}
+                            <Icon name={sourceInfo?.icon || 'link'} className="text-base shrink-0" />
+                            <span className="truncate">{sourceInfo?.label || 'Open source link'}</span>
                         </button>
-                    ) : (
-                        <p className="typescale-body-small text-md-on-surface-variant">Source: {sourceUrl}</p>
-                    ))}
+                    ) : rawSource ? (
+                        <p className="typescale-body-small text-md-on-surface-variant break-words">Source: {rawSource}</p>
+                    ) : null}
                 </div>
 
                 {/* Stats Card */}
