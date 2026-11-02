@@ -26,143 +26,6 @@ export interface IBleScaleAdapter {
     send(data: Uint8Array): Promise<void>;
 }
 
-// Minimal Web Bluetooth typings
-interface WebBluetoothNav {
-    bluetooth?: {
-        requestDevice(options: unknown): Promise<{
-            id: string;
-            name?: string;
-            gatt?: {
-                connect(): Promise<{
-                    connected: boolean;
-                    disconnect(): void;
-                    getPrimaryService(service: unknown): Promise<{
-                        getCharacteristic(char: unknown): Promise<{
-                            startNotifications(): Promise<void>;
-                            writeValueWithoutResponse(data: Uint8Array): Promise<void>;
-                            addEventListener(name: string, handler: (e: { target?: { value?: DataView } }) => void): void;
-                        }>;
-                    }>;
-                }>;
-            };
-            addEventListener(name: string, handler: () => void): void;
-        }>;
-    };
-}
-
-/**
- * Web Bluetooth API Implementation (For Chrome on Desktop / Android)
- */
-class WebBluetoothAdapter implements IBleScaleAdapter {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private device: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private server: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private writeChar: any = null;
-    private onDisconnectCallback: (() => void) | null = null;
-
-    private getNav(): WebBluetoothNav {
-        return (typeof navigator !== 'undefined' ? navigator : {}) as WebBluetoothNav;
-    }
-
-    async isAvailable(): Promise<boolean> {
-        return Boolean(this.getNav().bluetooth);
-    }
-
-    async requestPermissions(): Promise<boolean> {
-        return true;
-    }
-
-    async startScan(onDiscovered: (device: ScaleDevice) => void): Promise<void> {
-        const bt = this.getNav().bluetooth;
-        if (!bt) throw new Error('Web Bluetooth not supported in this browser');
-        try {
-            // Web Bluetooth requires user gesture and opens browser device picker
-            const device = await bt.requestDevice({
-                filters: [
-                    { namePrefix: 'TIMEMORE' },
-                    { namePrefix: 'DOT' },
-                    { namePrefix: 'TES' },
-                    { services: [0xFFF0] }
-                ],
-                optionalServices: [0xFFF0, 0x180A]
-            });
-            onDiscovered({
-                id: device.id,
-                name: device.name || 'Timemore Scale'
-            });
-        } catch (err: unknown) {
-            const error = err as Error;
-            if (error.name !== 'NotFoundError') {
-                throw error;
-            }
-        }
-    }
-
-    async stopScan(): Promise<void> {
-        // Web Bluetooth scans via modal picker
-    }
-
-    async connect(
-        deviceId: string,
-        onData: (data: DataView) => void,
-        onDisconnect: () => void
-    ): Promise<void> {
-        this.onDisconnectCallback = onDisconnect;
-        const bt = this.getNav().bluetooth;
-        if (!bt) throw new Error('Web Bluetooth not supported');
-
-        // If we don't have the device instance yet (e.g. from picker), request it
-        if (!this.device || this.device.id !== deviceId) {
-            this.device = await bt.requestDevice({
-                filters: [
-                    { namePrefix: 'TIMEMORE' },
-                    { namePrefix: 'DOT' },
-                    { services: [0xFFF0] }
-                ],
-                optionalServices: [0xFFF0, 0x180A]
-            });
-        }
-
-        this.device.addEventListener('gattserverdisconnected', () => {
-            this.server = null;
-            this.writeChar = null;
-            if (this.onDisconnectCallback) this.onDisconnectCallback();
-        });
-
-        const server = await this.device.gatt?.connect();
-        if (!server) throw new Error('Could not connect to GATT Server');
-        this.server = server;
-
-        const service = await server.getPrimaryService(0xFFF0);
-        const notifyChar = await service.getCharacteristic(0xFFF1);
-        const writeChar = await service.getCharacteristic(0xFFF2);
-
-        this.writeChar = writeChar;
-
-        await notifyChar.startNotifications();
-        notifyChar.addEventListener('characteristicvaluechanged', (e: { target?: { value?: DataView } }) => {
-            if (e.target && e.target.value) {
-                onData(e.target.value);
-            }
-        });
-    }
-
-    async disconnect(): Promise<void> {
-        if (this.server && this.server.connected) {
-            this.server.disconnect();
-        }
-        this.server = null;
-        this.device = null;
-    }
-
-    async send(data: Uint8Array): Promise<void> {
-        if (!this.writeChar) throw new Error('Not connected to write characteristic');
-        await this.writeChar.writeValueWithoutResponse(data);
-    }
-}
-
 /**
  * Capacitor BLE Implementation (Native Android / iOS)
  */
@@ -193,9 +56,7 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     async startScan(onDiscovered: (device: ScaleDevice) => void): Promise<void> {
         await this.ensureInit();
         await BleClient.requestLEScan(
-            {
-                services: [TIMEMORE_SERVICE_UUID]
-            },
+            { services: [TIMEMORE_SERVICE_UUID] },
             (result: ScanResult) => {
                 const name = result.localName || result.device.name || 'Timemore Scale';
                 onDiscovered({
@@ -253,16 +114,21 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     }
 }
 
-// Factory function
+class NoopBleAdapter implements IBleScaleAdapter {
+    async isAvailable(): Promise<boolean> { return false; }
+    async requestPermissions(): Promise<boolean> { return false; }
+    async startScan(): Promise<void> { throw new Error('BLE scale scanning is only available on native mobile.'); }
+    async stopScan(): Promise<void> {}
+    async connect(): Promise<void> { throw new Error('BLE scale connection is only available on native mobile.'); }
+    async disconnect(): Promise<void> {}
+    async send(): Promise<void> {}
+}
+
 let adapterInstance: IBleScaleAdapter | null = null;
 
 export function getBleScaleAdapter(): IBleScaleAdapter {
     if (!adapterInstance) {
-        if (Capacitor.isNativePlatform()) {
-            adapterInstance = new CapacitorBleAdapter();
-        } else {
-            adapterInstance = new WebBluetoothAdapter();
-        }
+        adapterInstance = Capacitor.isNativePlatform() ? new CapacitorBleAdapter() : new NoopBleAdapter();
     }
     return adapterInstance;
 }

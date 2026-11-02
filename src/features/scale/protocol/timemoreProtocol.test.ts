@@ -4,7 +4,6 @@ import {
     calculateCrc16,
     parseTimemorePacket,
     buildTareCommand,
-    buildTimerCommand,
     buildBatteryQueryCommand,
     TIMEMORE_HEADER,
 } from './timemoreProtocol.ts';
@@ -24,23 +23,6 @@ test('buildTareCommand generates valid 0xA55A frame with Cmd 0x0D and 0 payload 
     assert.equal(view.getUint8(2), 0x03); // Write Opcode
     assert.equal(view.getUint8(3), 0x0D); // Tare Cmd
     assert.equal(view.getUint16(4, false), 0x0000); // 0 payload length
-});
-
-test('buildTimerCommand generates valid frame for start, pause, reset', () => {
-    const startFrame = buildTimerCommand('start');
-    assert.equal(startFrame.length, 9); // Header(2) + Op(1) + Cmd(1) + Len(2) + Data(1) + CRC(2)
-    const view = new DataView(startFrame.buffer, startFrame.byteOffset, startFrame.byteLength);
-    assert.equal(view.getUint8(3), 0x02); // Timer Cmd
-    assert.equal(view.getUint16(4, false), 0x0001); // 1 byte payload
-    assert.equal(view.getUint8(6), 0x01); // 0x01 start
-
-    const pauseFrame = buildTimerCommand('pause');
-    const pauseView = new DataView(pauseFrame.buffer, pauseFrame.byteOffset, pauseFrame.byteLength);
-    assert.equal(pauseView.getUint8(6), 0x02); // 0x02 pause
-
-    const resetFrame = buildTimerCommand('reset');
-    const resetView = new DataView(resetFrame.buffer, resetFrame.byteOffset, resetFrame.byteLength);
-    assert.equal(resetView.getUint8(6), 0x03); // 0x03 reset
 });
 
 test('buildBatteryQueryCommand generates valid query frame', () => {

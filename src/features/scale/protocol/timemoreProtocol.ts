@@ -96,14 +96,6 @@ export function buildTareCommand(): Uint8Array {
 }
 
 /**
- * Build Timer Command (0x02)
- */
-export function buildTimerCommand(action: 'start' | 'pause' | 'reset'): Uint8Array {
-    const actionByte = action === 'start' ? 0x01 : action === 'pause' ? 0x02 : 0x03;
-    return buildFrame(OPCODE_WRITE, CMD_TIMER, new Uint8Array([actionByte]));
-}
-
-/**
  * Build Battery Query Command (0x05)
  */
 export function buildBatteryQueryCommand(): Uint8Array {

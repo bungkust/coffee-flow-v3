@@ -90,32 +90,33 @@ export const BrewFlowPage = () => {
         }
     }, []);
 
+    // Helper to play shaped audio tone
+    const playAudioTone = useCallback((ctx: AudioContext, freq: number, start: number, dur: number, gainVal: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+    }, []);
+
     // 1. Loud crisp preparatory pip for 5s countdown (5, 4, 3, 2 seconds)
     const playCountdownPip = useCallback((second: number) => {
         if (!feedbackEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
         try {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
             const freq = 659.25 + (5 - second) * 45; // E5 ascending toward ~800Hz
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-            // Punchy and loud gain (0.35)
-            gain.gain.setValueAtTime(0.35, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.1);
-
+            playAudioTone(ctx, freq, 0, 0.1, 0.35);
             if ('vibrate' in navigator) navigator.vibrate(60);
         } catch (error) {
             console.warn('Countdown pip failed', error);
         }
-    }, [feedbackEnabled, getAudioContext]);
+    }, [feedbackEnabled, getAudioContext, playAudioTone]);
 
     // 2. High double chime for step transition (1s / 0s moving to next step)
     const playStepTransitionChime = useCallback(() => {
@@ -123,26 +124,13 @@ export const BrewFlowPage = () => {
         const ctx = getAudioContext();
         if (!ctx) return;
         try {
-            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + start);
-                osc.stop(ctx.currentTime + start + dur);
-            };
-
-            playTone(880, 0, 0.12, 0.45);      // A5
-            playTone(1174.66, 0.1, 0.3, 0.5); // D6
+            playAudioTone(ctx, 880, 0, 0.12, 0.45);      // A5
+            playAudioTone(ctx, 1174.66, 0.1, 0.3, 0.5); // D6
             if ('vibrate' in navigator) navigator.vibrate([80, 50, 140]);
         } catch (error) {
             console.warn('Transition chime failed', error);
         }
-    }, [feedbackEnabled, getAudioContext]);
+    }, [feedbackEnabled, getAudioContext, playAudioTone]);
 
     // 3. Ascending chord chime when scale target weight is reached
     const playTargetReachedChime = useCallback(() => {
@@ -150,27 +138,14 @@ export const BrewFlowPage = () => {
         const ctx = getAudioContext();
         if (!ctx) return;
         try {
-            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + start);
-                osc.stop(ctx.currentTime + start + dur);
-            };
-
-            playTone(523.25, 0, 0.12, 0.35);   // C5
-            playTone(659.25, 0.09, 0.14, 0.4);  // E5
-            playTone(783.99, 0.18, 0.35, 0.45); // G5
+            playAudioTone(ctx, 523.25, 0, 0.12, 0.35);   // C5
+            playAudioTone(ctx, 659.25, 0.09, 0.14, 0.4);  // E5
+            playAudioTone(ctx, 783.99, 0.18, 0.35, 0.45); // G5
             if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
         } catch {
             // Audio context failed
         }
-    }, [feedbackEnabled, getAudioContext]);
+    }, [feedbackEnabled, getAudioContext, playAudioTone]);
 
     // 4. Brew completed celebratory fanfare
     const playBrewCompleteChime = useCallback(() => {
@@ -178,28 +153,15 @@ export const BrewFlowPage = () => {
         const ctx = getAudioContext();
         if (!ctx) return;
         try {
-            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + start);
-                osc.stop(ctx.currentTime + start + dur);
-            };
-
-            playTone(587.33, 0, 0.14, 0.4);     // D5
-            playTone(739.99, 0.11, 0.14, 0.42); // F#5
-            playTone(880, 0.22, 0.16, 0.45);    // A5
-            playTone(1174.66, 0.35, 0.45, 0.5); // D6
+            playAudioTone(ctx, 587.33, 0, 0.14, 0.4);     // D5
+            playAudioTone(ctx, 739.99, 0.11, 0.14, 0.42); // F#5
+            playAudioTone(ctx, 880, 0.22, 0.16, 0.45);    // A5
+            playAudioTone(ctx, 1174.66, 0.35, 0.45, 0.5); // D6
             if ('vibrate' in navigator) navigator.vibrate([150, 100, 250]);
         } catch {
             // Audio context failed
         }
-    }, [feedbackEnabled, getAudioContext]);
+    }, [feedbackEnabled, getAudioContext, playAudioTone]);
 
     useEffect(() => {
         if (hasHydratedRef.current) return;

@@ -4,7 +4,6 @@ import { getBleScaleAdapter, type ScaleDevice } from '../infrastructure/bleAdapt
 import {
     parseTimemorePacket,
     buildTareCommand,
-    buildTimerCommand,
     buildBatteryQueryCommand,
 } from '../protocol/timemoreProtocol';
 
@@ -22,7 +21,6 @@ interface ScaleState {
     isMock: boolean;
     currentWeight: number;
     flowRate: number;
-    scaleTimer: number;
     batteryPercent: number;
     batteryBars: number;
     isOverload: boolean;
@@ -38,11 +36,7 @@ interface ScaleState {
     setMockWeight: (weight: number, flowRate?: number) => void;
     disconnect: () => Promise<void>;
     tare: () => Promise<void>;
-    syncTimer: (action: 'start' | 'pause' | 'reset') => Promise<void>;
-    queryBattery: () => Promise<void>;
     recordCurvePoint: (timeSeconds: number) => void;
-    clearCurveData: () => void;
-    resetState: () => void;
 }
 
 const STORAGE_LAST_SCALE_ID = 'coffee_flow_last_scale_id';
@@ -54,7 +48,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     isMock: false,
     currentWeight: 0,
     flowRate: 0,
-    scaleTimer: 0,
     batteryPercent: 100,
     batteryBars: 4,
     isOverload: false,
@@ -129,7 +122,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                         set({
                             currentWeight: packet.weight,
                             flowRate: packet.flowRate,
-                            scaleTimer: packet.timer,
                             isOverload: packet.isOverload,
                         });
                     } else if (packet.type === 'battery') {
@@ -215,26 +207,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
         }
     },
 
-    syncTimer: async (action: 'start' | 'pause' | 'reset') => {
-        const adapter = getBleScaleAdapter();
-        if (get().connectionState !== 'connected') return;
-        try {
-            await adapter.send(buildTimerCommand(action));
-        } catch (error: unknown) {
-            console.warn('Timer sync failed', error);
-        }
-    },
-
-    queryBattery: async () => {
-        const adapter = getBleScaleAdapter();
-        if (get().connectionState !== 'connected') return;
-        try {
-            await adapter.send(buildBatteryQueryCommand());
-        } catch {
-            // Ignore
-        }
-    },
-
     recordCurvePoint: (timeSeconds: number) => {
         const { currentWeight, flowRate, curveData } = get();
         // Prevent recording duplicates within same second
@@ -251,20 +223,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                     flowRate,
                 },
             ],
-        });
-    },
-
-    clearCurveData: () => {
-        set({ curveData: [] });
-    },
-
-    resetState: () => {
-        set({
-            currentWeight: 0,
-            flowRate: 0,
-            scaleTimer: 0,
-            curveData: [],
-            errorMessage: null,
         });
     },
 }));

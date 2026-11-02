@@ -246,30 +246,6 @@ export const JournalDetailPage = () => {
                                 </div>
                             ))}
                         </div>
-
-                        {/* CTA button inside details card */}
-                        {brewLog && (
-                            <button
-                                type="button"
-                                onClick={handleBrewAgain}
-                                disabled={recipeExists === false}
-                                className="w-full mt-2 py-3 px-4 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-                            >
-                                <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>{recipeExists === false ? 'Recipe Not Found' : 'Brew This Recipe Again'}</span>
-                            </button>
-                        )}
-                        {drinkLog && drinkLog.drink_id && (
-                            <button
-                                type="button"
-                                onClick={handleMakeAgain}
-                                disabled={recipeExists === false}
-                                className="w-full mt-2 py-3 px-4 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
-                            >
-                                <Icon name="local_cafe" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>{recipeExists === false ? 'Drink Not Found' : 'Make This Drink Again'}</span>
-                            </button>
-                        )}
                     </div>
                 )}
 
