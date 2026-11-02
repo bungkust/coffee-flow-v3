@@ -48,7 +48,7 @@ export const RecipePreparationPage = () => {
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const [brewMode, setBrewMode] = useState<BrewMode>('manual');
     const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
-    const { connectionState, device, batteryPercent, currentWeight, tare } = useScaleStore();
+    const { connectionState, device, batteryPercent, currentWeight, tare, connectMock, isMock, disconnect } = useScaleStore();
     const manageClicked = useRef(false);
     const [stockWarning, setStockWarning] = useState<string[] | null>(null);
 
@@ -267,6 +267,10 @@ export const RecipePreparationPage = () => {
     }
 
     const proceedToBrew = () => {
+        // If smart scale mode is chosen on web or without physical scale connected, activate demo mode so UI can be fully explored
+        if (brewMode === 'smart-scale' && connectionState !== 'connected') {
+            connectMock();
+        }
         // Drop any log id from a previous brew so this one isn't saved over it.
         sessionStorage.removeItem('coffee_flow_last_logged_id');
         startBrew(currentScaledRecipe!, selectedBeanId, selectedFilterId, adjustedCoffeeDose, brewMode);
@@ -624,11 +628,27 @@ export const RecipePreparationPage = () => {
                                             <span className="typescale-title-small font-bold text-md-on-surface">
                                                 {device?.name || 'TIMEMORE_Dot'}
                                             </span>
+                                            {isMock && (
+                                                <span className="typescale-label-small text-[10px] uppercase font-bold bg-md-primary/10 text-md-primary border border-md-primary/20 px-2 py-0.5 rounded-full">
+                                                    Demo UI
+                                                </span>
+                                            )}
                                         </div>
-                                        <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                            <Icon name="battery_full" className="text-xs text-md-primary" />
-                                            {batteryPercent}%
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {isMock ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => disconnect()}
+                                                    className="typescale-label-small text-xs text-md-on-surface-variant hover:text-md-primary underline cursor-pointer"
+                                                >
+                                                    Reset
+                                                </button>
+                                            ) : null}
+                                            <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                                <Icon name="battery_full" className="text-xs text-md-primary" />
+                                                {batteryPercent}%
+                                            </span>
+                                        </div>
                                     </div>
 
                                     <div className="flex items-center justify-between p-3 rounded-xl bg-md-surface-container-high/60">
@@ -656,17 +676,27 @@ export const RecipePreparationPage = () => {
                                     <div>
                                         <h4 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h4>
                                         <p className="typescale-body-small text-md-on-surface-variant text-xs">
-                                            Turn on your Timemore Dot and pair to get live weight & flow rate.
+                                            Turn on Timemore Dot, atau gunakan Mode Demo untuk preview UI di browser.
                                         </p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPairingModalOpen(true)}
-                                        className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-                                    >
-                                        <Icon name="bluetooth" className="text-base" />
-                                        <span>Connect Now</span>
-                                    </button>
+                                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPairingModalOpen(true)}
+                                            className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                                        >
+                                            <Icon name="bluetooth" className="text-base" />
+                                            <span>Connect Now</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => connectMock()}
+                                            className="px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
+                                        >
+                                            <Icon name="science" className="text-base" />
+                                            <span>Simulasi / Demo UI</span>
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>

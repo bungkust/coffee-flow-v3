@@ -18,6 +18,7 @@ export interface CurvePoint {
 interface ScaleState {
     connectionState: ScaleConnectionState;
     device: ScaleDevice | null;
+    isMock: boolean;
     currentWeight: number;
     flowRate: number;
     scaleTimer: number;
@@ -32,6 +33,8 @@ interface ScaleState {
     startScan: () => Promise<void>;
     stopScan: () => Promise<void>;
     connectDevice: (device: ScaleDevice) => Promise<void>;
+    connectMock: () => void;
+    setMockWeight: (weight: number, flowRate?: number) => void;
     disconnect: () => Promise<void>;
     tare: () => Promise<void>;
     syncTimer: (action: 'start' | 'pause' | 'reset') => Promise<void>;
@@ -47,6 +50,7 @@ const STORAGE_LAST_SCALE_NAME = 'coffee_flow_last_scale_name';
 export const useScaleStore = create<ScaleState>((set, get) => ({
     connectionState: 'disconnected',
     device: null,
+    isMock: false,
     currentWeight: 0,
     flowRate: 0,
     scaleTimer: 0,
@@ -56,6 +60,27 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     availableDevices: [],
     errorMessage: null,
     curveData: [],
+
+    connectMock: () => {
+        set({
+            connectionState: 'connected',
+            device: { id: 'mock-timemore-dot', name: 'TIMEMORE_Dot (Demo)' },
+            isMock: true,
+            batteryPercent: 100,
+            batteryBars: 4,
+            currentWeight: 0,
+            flowRate: 0,
+            errorMessage: null,
+        });
+    },
+
+    setMockWeight: (weight: number, flowRate = 0) => {
+        if (!get().isMock) return;
+        set({
+            currentWeight: Math.round(weight * 10) / 10,
+            flowRate: Math.round(flowRate * 10) / 10,
+        });
+    },
 
     startScan: async () => {
         const adapter = getBleScaleAdapter();
@@ -154,15 +179,18 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     },
 
     disconnect: async () => {
-        const adapter = getBleScaleAdapter();
-        try {
-            await adapter.disconnect();
-        } catch {
-            // Ignore
+        if (!get().isMock) {
+            const adapter = getBleScaleAdapter();
+            try {
+                await adapter.disconnect();
+            } catch {
+                // Ignore
+            }
         }
         set({
             connectionState: 'disconnected',
             device: null,
+            isMock: false,
             currentWeight: 0,
             flowRate: 0,
             errorMessage: null,
@@ -170,6 +198,10 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     },
 
     tare: async () => {
+        if (get().isMock) {
+            set({ currentWeight: 0, flowRate: 0 });
+            return;
+        }
         const adapter = getBleScaleAdapter();
         if (get().connectionState !== 'connected') return;
         try {

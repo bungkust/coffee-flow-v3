@@ -35,7 +35,7 @@ export const BrewFlowPage = () => {
     const navigate = useNavigate();
     const safeBack = useSafeBack();
     const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
-    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint } = useScaleStore();
+    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint, isMock, connectMock, setMockWeight } = useScaleStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
@@ -47,7 +47,14 @@ export const BrewFlowPage = () => {
     const stopTarget = useRef<'back' | 'home'>('home');
 
     const isSmartScale = brewMode === 'smart-scale';
-    const isScaleActive = isSmartScale && connectionState === 'connected';
+    const isScaleActive = isSmartScale && (connectionState === 'connected' || isMock);
+
+    // In web or disconnected preview, auto-activate demo scale so user can explore the UI
+    useEffect(() => {
+        if (isSmartScale && connectionState !== 'connected') {
+            connectMock();
+        }
+    }, [isSmartScale, connectionState, connectMock]);
 
     // Intercept hardware / web back button to prompt stop confirmation
     useBackHandler(!isStopModalOpen && !isSkipModalOpen, () => openStopConfirm('back'));
@@ -198,6 +205,25 @@ export const BrewFlowPage = () => {
             recordCurvePoint(totalElapsed);
         }
     }, [isSmartScale, engineState?.isRunning, totalElapsed, recordCurvePoint]);
+
+    // Simulated pouring when running in Demo/Mock mode (e.g. web preview)
+    useEffect(() => {
+        if (!isSmartScale || !isMock || !engineState?.isRunning) return;
+
+        const currentTarget = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+        const previousTarget = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+        const pourAmount = currentTarget - previousTarget;
+
+        if (pourAmount > 0 && currentTarget > 0) {
+            const pourProgress = Math.min(1, engineState.progress * 1.5);
+            const simulatedWeight = previousTarget + (pourAmount * pourProgress);
+            const isFinishedPouring = pourProgress >= 1;
+            const simulatedFlow = isFinishedPouring ? 0 : 3.4;
+            setMockWeight(simulatedWeight, simulatedFlow);
+        } else {
+            setMockWeight(currentTarget > 0 ? currentTarget : previousTarget, 0);
+        }
+    }, [isSmartScale, isMock, engineState?.isRunning, engineState?.progress, engineState?.currentStepIndex, activeRecipe.steps, setMockWeight]);
 
     const valveStates = getValveStates(activeRecipe.steps);
     const currentValve = valveStates[engineState.currentStepIndex] ?? null;
