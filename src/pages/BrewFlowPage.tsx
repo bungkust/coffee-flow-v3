@@ -302,9 +302,8 @@ export const BrewFlowPage = () => {
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
         : currentStep.label;
-    const stepSubtitle = currentStep.target_weight && pourAmount > 0
-        ? `Target: ${formatWeight(currentStep.target_weight, unitSystem)} on scale — ${currentStep.instruction || currentStep.label}`
-        : currentStep.instruction || currentStep.label;
+    const rawInstruction = currentStep.instruction || '';
+    const stepInstruction = rawInstruction.replace(/^Target:\s*[\d.]+[a-zA-Z]*\s*on scale\s*[—–-]\s*/i, '').trim();
     const intervalInfo = getStepIntervalInfo(currentStep);
 
     if (engineState.isCompleted) {
@@ -479,20 +478,59 @@ export const BrewFlowPage = () => {
 
                                 {/* 4. Resting or Target Instruction */}
                                 {isRestingPhase ? (
-                                    <div className="w-full my-2.5 py-2.5 px-4 rounded-2xl bg-md-primary-container text-md-on-primary-container border border-md-primary/20 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
-                                        <Icon name="local_cafe" className="text-lg text-md-primary animate-pulse" />
-                                        <span className="typescale-label-medium font-bold">
-                                            Target reached! Resting for {formatStepSeconds(engineState.remainingTime)}
-                                        </span>
+                                    <div className="w-full flex flex-col items-center gap-1.5 my-2.5">
+                                        <div className="w-full py-2.5 px-4 rounded-2xl bg-md-primary-container text-md-on-primary-container border border-md-primary/20 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
+                                            <Icon name="local_cafe" className="text-lg text-md-primary animate-pulse" />
+                                            <span className="typescale-label-medium font-bold">
+                                                Target reached! Resting for {formatStepSeconds(engineState.remainingTime)}
+                                            </span>
+                                        </div>
+                                        {stepInstruction && stepInstruction !== stepTitle && (
+                                            <p className="typescale-body-small text-md-on-surface-variant max-w-[320px] text-center leading-relaxed">
+                                                {stepInstruction}
+                                            </p>
+                                        )}
                                     </div>
                                 ) : (
-                                    <div className="my-1.5">
-                                        <h2 className="typescale-title-large font-bold text-md-on-surface mb-0.5">
+                                    <div className="w-full flex flex-col items-center gap-1.5 my-2">
+                                        <h2 className="typescale-title-large font-bold text-md-on-surface text-center">
                                             {stepTitle}
                                         </h2>
-                                        <p className="typescale-body-small text-md-on-surface-variant max-w-[280px] mx-auto">
-                                            {stepSubtitle}
-                                        </p>
+
+                                        {/* Badges: Target, Live Remaining Water, Valve */}
+                                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                                            {typeof currentStep.target_weight === 'number' && currentStep.target_weight > 0 && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 tabular-nums shadow-xs">
+                                                    <Icon name="flag" className="text-xs text-md-primary" />
+                                                    <span>Target: {formatWeight(currentStep.target_weight, unitSystem)}</span>
+                                                </span>
+                                            )}
+                                            {isScaleActive && stepTarget > 0 && !isTargetReached && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold bg-md-primary-container text-md-on-primary-container border border-md-primary/20 tabular-nums shadow-xs">
+                                                    <Icon name="water_drop" className="text-xs text-md-primary" />
+                                                    <span>Remaining: {Math.max(0, stepTarget - currentWeight).toFixed(1)}g</span>
+                                                </span>
+                                            )}
+                                            {currentValve && (
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold shadow-xs ${
+                                                    currentValve === 'open'
+                                                        ? 'bg-md-primary text-md-on-primary'
+                                                        : 'bg-md-secondary-container text-md-on-secondary-container'
+                                                }`}>
+                                                    <Icon name={currentValve === 'open' ? 'lock_open' : 'lock'} className="text-xs" />
+                                                    <span>Switch {currentValve === 'open' ? 'Open' : 'Closed'}</span>
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Instruction text in clear dedicated card */}
+                                        {stepInstruction && stepInstruction !== stepTitle && (
+                                            <div className="mt-1 px-3.5 py-2 rounded-xl bg-md-surface-container/60 border border-md-outline-variant/15 max-w-[340px] text-center">
+                                                <p className="typescale-body-small text-md-on-surface-variant leading-relaxed">
+                                                    {stepInstruction}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -523,12 +561,40 @@ export const BrewFlowPage = () => {
                                 <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
                                     {formatDuration(totalElapsed)}
                                 </div>
-                                <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
-                                    {stepTitle}
-                                </h2>
-                                <p className="typescale-body-small text-md-on-surface-variant mb-6 max-w-[260px]">
-                                    {stepSubtitle}
-                                </p>
+                                <div className="w-full flex flex-col items-center gap-1.5 mb-5">
+                                    <h2 className="typescale-title-large font-bold text-md-on-surface text-center">
+                                        {stepTitle}
+                                    </h2>
+
+                                    {/* Badges: Target, Valve */}
+                                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                                        {typeof currentStep.target_weight === 'number' && currentStep.target_weight > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 tabular-nums">
+                                                <Icon name="flag" className="text-xs text-md-primary" />
+                                                <span>Target: {formatWeight(currentStep.target_weight, unitSystem)}</span>
+                                            </span>
+                                        )}
+                                        {currentValve && (
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold ${
+                                                currentValve === 'open'
+                                                    ? 'bg-md-primary text-md-on-primary'
+                                                    : 'bg-md-secondary-container text-md-on-secondary-container'
+                                            }`}>
+                                                <Icon name={currentValve === 'open' ? 'lock_open' : 'lock'} className="text-xs" />
+                                                <span>Switch {currentValve === 'open' ? 'Open' : 'Closed'}</span>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Instruction text */}
+                                    {stepInstruction && stepInstruction !== stepTitle && (
+                                        <div className="mt-1 px-3.5 py-2 rounded-xl bg-md-surface-container/60 border border-md-outline-variant/15 max-w-[340px] text-center">
+                                            <p className="typescale-body-small text-md-on-surface-variant leading-relaxed">
+                                                {stepInstruction}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Water Progress */}
                                 <div className="w-full">
@@ -600,9 +666,9 @@ export const BrewFlowPage = () => {
                                                     ? `Pour +${formatWeight(getPourAmount(activeRecipe.steps, engineState.currentStepIndex + idx + 1), unitSystem)}`
                                                     : step.label}
                                             </h4>
-                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-5">
+                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-3">
                                                 {typeof step.target_weight === 'number' && step.target_weight > 0
-                                                    ? `Target: ${formatWeight(step.target_weight)} on scale`
+                                                    ? `Target: ${formatWeight(step.target_weight, unitSystem)}`
                                                     : step.instruction || step.label}
                                             </p>
                                         </div>
