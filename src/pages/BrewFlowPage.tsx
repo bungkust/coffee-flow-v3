@@ -47,6 +47,8 @@ export const BrewFlowPage = () => {
     const stopTarget = useRef<'back' | 'home'>('home');
     const hasAutoLoggedRef = useRef(false);
     const targetReachedInStepRef = useRef<number | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const lastBeepRef = useRef<{ stepIndex: number; second: number } | null>(null);
 
     const isSmartScale = brewMode === 'smart-scale';
     const isScaleActive = isSmartScale && (connectionState === 'connected' || (!Capacitor.isNativePlatform() && isMock));
@@ -70,60 +72,134 @@ export const BrewFlowPage = () => {
         settingsService.getAppUnit().then(setUnitSystem);
     }, []);
 
-    const playFeedback = useCallback((frequency: number, duration: number) => {
-        if (!feedbackEnabled) return;
+    // Helper to get or resume audio context
+    const getAudioContext = useCallback(() => {
         try {
             const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
             const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
-            if (!AudioContextCtor) return;
-            const context = new AudioContextCtor();
-            const oscillator = context.createOscillator();
-            const gain = context.createGain();
-
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
-
-            gain.gain.setValueAtTime(0.1, context.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + duration);
-
-            oscillator.connect(gain);
-            gain.connect(context.destination);
-
-            oscillator.start();
-            oscillator.stop(context.currentTime + duration);
-        } catch (error) {
-            console.warn('Audio feedback failed', error);
+            if (!AudioContextCtor) return null;
+            if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                audioContextRef.current = new AudioContextCtor();
+            }
+            if (audioContextRef.current.state === 'suspended') {
+                void audioContextRef.current.resume();
+            }
+            return audioContextRef.current;
+        } catch {
+            return null;
         }
-    }, [feedbackEnabled]);
+    }, []);
 
-    const playTargetReachedChime = useCallback(() => {
+    // 1. Loud crisp preparatory pip for 5s countdown (5, 4, 3, 2 seconds)
+    const playCountdownPip = useCallback((second: number) => {
         if (!feedbackEnabled) return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
         try {
-            const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
-            const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
-            if (!AudioContextCtor) return;
-            const context = new AudioContextCtor();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const freq = 659.25 + (5 - second) * 45; // E5 ascending toward ~800Hz
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-            const playTone = (freq: number, start: number, dur: number) => {
-                const osc = context.createOscillator();
-                const gain = context.createGain();
+            // Punchy and loud gain (0.35)
+            gain.gain.setValueAtTime(0.35, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.1);
+
+            if ('vibrate' in navigator) navigator.vibrate(60);
+        } catch (error) {
+            console.warn('Countdown pip failed', error);
+        }
+    }, [feedbackEnabled, getAudioContext]);
+
+    // 2. High double chime for step transition (1s / 0s moving to next step)
+    const playStepTransitionChime = useCallback(() => {
+        if (!feedbackEnabled) return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        try {
+            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, context.currentTime + start);
-                gain.gain.setValueAtTime(0.12, context.currentTime + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + start + dur);
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
                 osc.connect(gain);
-                gain.connect(context.destination);
-                osc.start(context.currentTime + start);
-                osc.stop(context.currentTime + start + dur);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + dur);
             };
 
-            playTone(587.33, 0, 0.2); // D5
-            playTone(880, 0.1, 0.35); // A5
-            if ('vibrate' in navigator) navigator.vibrate(150);
+            playTone(880, 0, 0.12, 0.45);      // A5
+            playTone(1174.66, 0.1, 0.3, 0.5); // D6
+            if ('vibrate' in navigator) navigator.vibrate([80, 50, 140]);
+        } catch (error) {
+            console.warn('Transition chime failed', error);
+        }
+    }, [feedbackEnabled, getAudioContext]);
+
+    // 3. Ascending chord chime when scale target weight is reached
+    const playTargetReachedChime = useCallback(() => {
+        if (!feedbackEnabled) return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        try {
+            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + dur);
+            };
+
+            playTone(523.25, 0, 0.12, 0.35);   // C5
+            playTone(659.25, 0.09, 0.14, 0.4);  // E5
+            playTone(783.99, 0.18, 0.35, 0.45); // G5
+            if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
         } catch {
             // Audio context failed
         }
-    }, [feedbackEnabled]);
+    }, [feedbackEnabled, getAudioContext]);
+
+    // 4. Brew completed celebratory fanfare
+    const playBrewCompleteChime = useCallback(() => {
+        if (!feedbackEnabled) return;
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        try {
+            const playTone = (freq: number, start: number, dur: number, gainVal: number) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                gain.gain.setValueAtTime(gainVal, ctx.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + start);
+                osc.stop(ctx.currentTime + start + dur);
+            };
+
+            playTone(587.33, 0, 0.14, 0.4);     // D5
+            playTone(739.99, 0.11, 0.14, 0.42); // F#5
+            playTone(880, 0.22, 0.16, 0.45);    // A5
+            playTone(1174.66, 0.35, 0.45, 0.5); // D6
+            if ('vibrate' in navigator) navigator.vibrate([150, 100, 250]);
+        } catch {
+            // Audio context failed
+        }
+    }, [feedbackEnabled, getAudioContext]);
 
     useEffect(() => {
         if (hasHydratedRef.current) return;
@@ -162,26 +238,37 @@ export const BrewFlowPage = () => {
 
     const recipeName = activeRecipe?.name;
 
+    // 5-second countdown beeps before next step, and transition chime
     useEffect(() => {
-        if (!engineState) return;
+        if (!engineState || !engineState.isRunning || engineState.isCompleted) return;
 
-        if (engineState.isRunning) {
-            if (engineState.remainingTime === 0 && !engineState.isCompleted) {
-                playFeedback(440, 0.2);
-                if ('vibrate' in navigator) navigator.vibrate(200);
-            }
+        const rem = engineState.remainingTime;
+        const stepIdx = engineState.currentStepIndex;
 
-            if (engineState.remainingTime > 0 && engineState.remainingTime <= 3) {
-                playFeedback(330, 0.1);
-            }
+        // Prevent duplicate pips on sub-second re-renders
+        if (lastBeepRef.current?.stepIndex === stepIdx && lastBeepRef.current?.second === rem) {
+            return;
         }
 
-        if (engineState.isCompleted) {
-            playFeedback(880, 0.5);
-            if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+        if (rem >= 2 && rem <= 5) {
+            lastBeepRef.current = { stepIndex: stepIdx, second: rem };
+            playCountdownPip(rem);
+        } else if (rem === 1) {
+            lastBeepRef.current = { stepIndex: stepIdx, second: rem };
+            playStepTransitionChime();
+        } else if (rem === 0) {
+            lastBeepRef.current = { stepIndex: stepIdx, second: rem };
+            playStepTransitionChime();
+        }
+    }, [engineState?.remainingTime, engineState?.currentStepIndex, engineState?.isRunning, engineState?.isCompleted, playCountdownPip, playStepTransitionChime]);
+
+    // Brew completed sound and notification
+    useEffect(() => {
+        if (engineState?.isCompleted) {
+            playBrewCompleteChime();
             void sendNotification('Brew Complete', `${recipeName ?? 'Brew'} is ready to serve`);
         }
-    }, [engineState, playFeedback, recipeName]);
+    }, [engineState?.isCompleted, playBrewCompleteChime, recipeName]);
 
     let totalElapsed = 0;
     let currentStepEnd = 0;
@@ -281,10 +368,26 @@ export const BrewFlowPage = () => {
         ? Math.min(100, Math.max(0, (currentWeight / (totalWaterRecipe || 1)) * 100))
         : progressPercent;
 
+    // Timer countdown proximity (5s before next step)
+    const isTimerNear = engineState.isRunning && engineState.remainingTime > 0 && engineState.remainingTime <= 5;
+    const isTimerEnded = engineState.isRunning && engineState.remainingTime === 0;
+
+    const timerColorClass = isTimerNear
+        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent animate-pulse'
+        : isTimerEnded
+        ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent'
+        : 'text-md-on-surface';
+
     // Proximity to current step target for color states and audio chime
     const isTargetReached = stepTarget > 0 && currentWeight >= (stepTarget - 2);
-    const isTargetNear = stepTarget > 0 && !isTargetReached && currentWeight >= (stepTarget - 6);
+    const isTargetNear = stepTarget > 0 && !isTargetReached && currentWeight >= (stepTarget - 8);
     const isRestingPhase = isTargetReached && engineState.remainingTime > 3;
+
+    const waterColorClass = isTargetReached
+        ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent scale-[1.04]'
+        : isTargetNear
+        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent animate-pulse scale-[1.02]'
+        : 'text-md-primary';
 
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
@@ -407,9 +510,13 @@ export const BrewFlowPage = () => {
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
-                                <Icon name="schedule" className="text-xs" />
-                                Until {formatDuration(currentStepEnd)}
+                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold border transition-all ${
+                                isTimerNear
+                                    ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 animate-pulse'
+                                    : 'bg-md-surface-container-high text-md-on-surface-variant border-md-outline-variant/30'
+                            }`}>
+                                <Icon name="schedule" className={`text-xs ${isTimerNear ? 'text-amber-600' : 'text-md-primary'}`} />
+                                {isTimerNear ? `${engineState.remainingTime}s to next step` : `Until ${formatDuration(currentStepEnd)}`}
                             </span>
                             {intervalInfo.pourSeconds > 0 && (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
@@ -424,26 +531,28 @@ export const BrewFlowPage = () => {
                             <div className="w-full py-1 flex flex-col items-center">
                                 {/* 1. BIG TIMER */}
                                 <div className="flex flex-col items-center mb-1">
-                                    <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
-                                        Time
+                                    <span className={`typescale-label-small font-bold uppercase tracking-widest mb-0.5 transition-colors ${
+                                        isTimerNear ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse' : 'text-md-on-surface-variant/70'
+                                    }`}>
+                                        Time {isTimerNear ? `(${engineState.remainingTime}s)` : ''}
                                     </span>
-                                    <div className="typescale-display-medium text-6xl font-black text-md-on-surface leading-none tracking-tight tabular-nums font-mono">
+                                    <div className={`typescale-display-medium text-6xl font-black leading-none tracking-tight tabular-nums font-mono transition-all duration-300 ${timerColorClass}`}>
                                         {formatDuration(totalElapsed)}
                                     </div>
                                 </div>
 
                                 {/* 2. BIG WATER WEIGHT */}
                                 <div className="flex flex-col items-center my-1.5">
-                                    <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
-                                        Water (g)
-                                    </span>
-                                    <div className={`typescale-display-large text-7xl font-black leading-none tracking-tight tabular-nums transition-transform duration-200 ${
+                                    <span className={`typescale-label-small font-bold uppercase tracking-widest mb-0.5 transition-colors ${
                                         isTargetReached
-                                            ? 'text-md-primary scale-[1.03]'
+                                            ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
                                             : isTargetNear
-                                            ? 'text-md-primary animate-pulse'
-                                            : 'text-md-primary'
+                                            ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse'
+                                            : 'text-md-on-surface-variant/70'
                                     }`}>
+                                        Water (g) {isTargetReached ? '• Target Reached' : isTargetNear ? '• Almost There' : ''}
+                                    </span>
+                                    <div className={`typescale-display-large text-7xl font-black leading-none tracking-tight tabular-nums transition-all duration-300 ${waterColorClass}`}>
                                         {effectiveWaterWeight.toFixed(1)}
                                     </div>
                                 </div>
@@ -493,8 +602,12 @@ export const BrewFlowPage = () => {
                                                 </span>
                                             )}
                                             {isScaleActive && stepTarget > 0 && !isTargetReached && (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold bg-md-primary-container text-md-on-primary-container border border-md-primary/20 tabular-nums shadow-xs">
-                                                    <Icon name="water_drop" className="text-xs text-md-primary" />
+                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full typescale-label-small font-bold border tabular-nums shadow-xs transition-all ${
+                                                    isTargetNear
+                                                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 animate-pulse'
+                                                        : 'bg-md-primary-container text-md-on-primary-container border border-md-primary/20'
+                                                }`}>
+                                                    <Icon name="water_drop" className={`text-xs ${isTargetNear ? 'text-amber-600' : 'text-md-primary'}`} />
                                                     <span>Remaining: {Math.max(0, stepTarget - currentWeight).toFixed(1)}g</span>
                                                 </span>
                                             )}
@@ -545,7 +658,7 @@ export const BrewFlowPage = () => {
                             </div>
                         ) : (
                             <>
-                                <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
+                                <div className={`typescale-display-large text-7xl font-extrabold leading-none tracking-tight tabular-nums mb-4 mt-2 transition-all duration-300 ${timerColorClass}`}>
                                     {formatDuration(totalElapsed)}
                                 </div>
                                 <div className="w-full flex flex-col items-center gap-1.5 mb-5">
