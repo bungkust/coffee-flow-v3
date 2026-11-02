@@ -437,34 +437,8 @@ export const BrewFlowPage = () => {
                                     </div>
                                 </div>
 
-                                {/* 2. FLOW RATE & TARE CONTROLS (Warm Coffee Palette) */}
-                                <div className="flex items-center justify-center gap-2.5 my-2">
-                                    {isScaleActive ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full typescale-label-medium font-bold bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 tabular-nums shadow-sm font-mono">
-                                            <Icon name="water_drop" className="text-sm text-md-primary" />
-                                            <span>{flowRate.toFixed(1)} g/s</span>
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
-                                            <Icon name="warning" className="text-xs text-md-primary" />
-                                            <span>Scale Disconnected</span>
-                                        </span>
-                                    )}
-
-                                    {isScaleActive && (
-                                        <button
-                                            type="button"
-                                            onClick={() => tare()}
-                                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full typescale-label-medium font-bold bg-md-primary text-md-on-primary hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
-                                        >
-                                            <Icon name="restart_alt" className="text-sm" />
-                                            <span>Tare (0.0g)</span>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* 3. BIG WATER WEIGHT */}
-                                <div className="flex flex-col items-center mt-2 mb-2">
+                                {/* 2. BIG WATER WEIGHT */}
+                                <div className="flex flex-col items-center my-1.5">
                                     <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
                                         Water (g)
                                     </span>
@@ -477,6 +451,21 @@ export const BrewFlowPage = () => {
                                     }`}>
                                         {effectiveWaterWeight.toFixed(1)}
                                     </div>
+                                </div>
+
+                                {/* 3. FLOW RATE PILL (cleanly under water, matching Timemore) */}
+                                <div className="my-1">
+                                    {isScaleActive ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full typescale-label-medium font-bold bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 tabular-nums shadow-sm font-mono">
+                                            <Icon name="water_drop" className="text-sm text-md-primary" />
+                                            <span>{flowRate.toFixed(1)} g/s</span>
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
+                                            <Icon name="warning" className="text-xs text-md-primary" />
+                                            <span>Scale Disconnected</span>
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* 4. Resting or Target Instruction */}
@@ -647,45 +636,100 @@ export const BrewFlowPage = () => {
 
             {/* Bottom Controls */}
             <div className="sticky bottom-0 left-0 right-0 p-5 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20">
-                <div className="flex w-full gap-3">
-                    {totalElapsed === 0 && !engineState.isRunning ? (
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={resumeBrew}
-                            className="w-full"
-                        >
-                            <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
-                            <span>Start Brew</span>
-                        </Button>
+                {isSmartScale ? (
+                    totalElapsed === 0 && !engineState.isRunning ? (
+                        <div className="flex w-full gap-3">
+                            <button
+                                type="button"
+                                onClick={resumeBrew}
+                                className="flex-1 bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-on-surface font-bold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                            >
+                                <Icon name="play_arrow" className="text-2xl text-md-primary" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>Timer</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => tare()}
+                                className="flex-1 bg-md-primary hover:opacity-90 text-md-on-primary font-bold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large shadow-sm cursor-pointer"
+                            >
+                                <Icon name="restart_alt" className="text-2xl" />
+                                <span>Tare</span>
+                            </button>
+                        </div>
                     ) : (
-                        <>
+                        <div className="flex w-full items-center gap-2">
                             <button
                                 onClick={() => openStopConfirm('home')}
-                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                className="size-12 rounded-xl bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center border border-md-outline-variant/30 shrink-0 cursor-pointer transition-all active:scale-95"
+                                aria-label="Stop"
                             >
-                                <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                Stop
+                                <Icon name="stop" className="text-xl" />
                             </button>
                             <button
                                 onClick={handleSkipStep}
-                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                className="size-12 rounded-xl bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center border border-md-outline-variant/30 shrink-0 cursor-pointer transition-all active:scale-95"
+                                aria-label="Skip"
                             >
-                                <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                Skip
+                                <Icon name="skip_next" className="text-xl" />
                             </button>
+                            <button
+                                onClick={engineState.isRunning ? pauseBrew : resumeBrew}
+                                className="flex-1 bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-on-surface font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                            >
+                                <Icon name={engineState.isRunning ? "pause" : "play_arrow"} className="text-xl text-md-primary" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => tare()}
+                                className="flex-1 bg-md-primary hover:opacity-90 text-md-on-primary font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large shadow-sm cursor-pointer"
+                            >
+                                <Icon name="restart_alt" className="text-xl" />
+                                <span>Tare</span>
+                            </button>
+                        </div>
+                    )
+                ) : (
+                    <div className="flex w-full gap-3">
+                        {totalElapsed === 0 && !engineState.isRunning ? (
                             <Button
                                 variant="filled"
                                 size="lg"
-                                onClick={engineState.isRunning ? pauseBrew : resumeBrew}
-                                className="flex-1"
+                                onClick={resumeBrew}
+                                className="w-full"
                             >
-                                <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
+                                <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>Start Brew</span>
                             </Button>
-                        </>
-                    )}
-                </div>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => openStopConfirm('home')}
+                                    className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                >
+                                    <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                    Stop
+                                </button>
+                                <button
+                                    onClick={handleSkipStep}
+                                    className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                >
+                                    <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                    Skip
+                                </button>
+                                <Button
+                                    variant="filled"
+                                    size="lg"
+                                    onClick={engineState.isRunning ? pauseBrew : resumeBrew}
+                                    className="flex-1"
+                                >
+                                    <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
+                                    <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
 
             <Modal

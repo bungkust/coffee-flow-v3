@@ -48,7 +48,7 @@ export const RecipePreparationPage = () => {
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const [brewMode, setBrewMode] = useState<BrewMode>('manual');
     const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
-    const { connectionState, device, batteryPercent, currentWeight, tare, connectMock, isMock, disconnect } = useScaleStore();
+    const { connectionState, device, batteryPercent, currentWeight, tare, connectMock } = useScaleStore();
     const manageClicked = useRef(false);
     const [stockWarning, setStockWarning] = useState<string[] | null>(null);
 
@@ -623,49 +623,33 @@ export const RecipePreparationPage = () => {
                             {connectionState === 'connected' ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2.5">
+                                        <div className="flex items-center gap-2">
                                             <span className="size-2 rounded-full bg-md-primary animate-pulse"></span>
                                             <span className="typescale-title-small font-bold text-md-on-surface">
                                                 {device?.name || 'TIMEMORE_Dot'}
                                             </span>
-                                            {isMock && (
-                                                <span className="typescale-label-small text-[10px] uppercase font-bold bg-md-primary/10 text-md-primary border border-md-primary/20 px-2 py-0.5 rounded-full">
-                                                    Demo UI
-                                                </span>
-                                            )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {isMock ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => disconnect()}
-                                                    className="typescale-label-small text-xs text-md-on-surface-variant hover:text-md-primary underline cursor-pointer"
-                                                >
-                                                    Reset
-                                                </button>
-                                            ) : null}
-                                            <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                                <Icon name="battery_full" className="text-xs text-md-primary" />
-                                                {batteryPercent}%
-                                            </span>
-                                        </div>
+                                        <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                            <Icon name="battery_full" className="text-xs text-md-primary" />
+                                            {batteryPercent}%
+                                        </span>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 rounded-xl bg-md-surface-container-high/60">
-                                        <div>
-                                            <span className="typescale-label-small text-md-on-surface-variant block">Current Scale Reading</span>
-                                            <span className="typescale-headline-small font-extrabold text-md-on-surface tabular-nums">
-                                                {currentWeight.toFixed(1)} <span className="text-sm font-normal text-md-on-surface-variant">g</span>
-                                            </span>
+                                    {/* Real Scale Face Display with Tare at bottom right */}
+                                    <div className="p-4 rounded-2xl bg-md-surface-container-high/60 flex flex-col items-center">
+                                        <div className="typescale-display-large text-5xl font-black text-md-on-surface tabular-nums font-mono py-2">
+                                            {currentWeight.toFixed(1)} <span className="text-xl font-bold text-md-on-surface-variant font-sans">g</span>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => tare()}
-                                            className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
-                                        >
-                                            <Icon name="restart_alt" className="text-base" />
-                                            <span>Tare (0.0g)</span>
-                                        </button>
+                                        <div className="w-full flex justify-end pt-2 border-t border-md-outline-variant/20">
+                                            <button
+                                                type="button"
+                                                onClick={() => tare()}
+                                                className="px-6 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
+                                            >
+                                                <Icon name="restart_alt" className="text-base" />
+                                                <span>Tare</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
@@ -676,7 +660,7 @@ export const RecipePreparationPage = () => {
                                     <div>
                                         <h4 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h4>
                                         <p className="typescale-body-small text-md-on-surface-variant text-xs">
-                                            Turn on Timemore Dot, atau gunakan Mode Demo untuk preview UI di browser.
+                                            Nyalakan Timemore Dot atau gunakan mode demo.
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -694,7 +678,7 @@ export const RecipePreparationPage = () => {
                                             className="px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
                                         >
                                             <Icon name="science" className="text-base" />
-                                            <span>Simulasi / Demo UI</span>
+                                            <span>Demo Mode</span>
                                         </button>
                                     </div>
                                 </div>
