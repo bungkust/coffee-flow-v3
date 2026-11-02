@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
@@ -48,11 +49,11 @@ export const BrewFlowPage = () => {
     const targetReachedInStepRef = useRef<number | null>(null);
 
     const isSmartScale = brewMode === 'smart-scale';
-    const isScaleActive = isSmartScale && (connectionState === 'connected' || isMock);
+    const isScaleActive = isSmartScale && (connectionState === 'connected' || (!Capacitor.isNativePlatform() && isMock));
 
-    // In web or disconnected preview, auto-activate demo scale so user can explore the UI
+    // In web or disconnected preview, auto-activate demo scale only when NOT on native mobile APK
     useEffect(() => {
-        if (isSmartScale && connectionState !== 'connected') {
+        if (!Capacitor.isNativePlatform() && isSmartScale && connectionState !== 'connected') {
             connectMock();
         }
     }, [isSmartScale, connectionState, connectMock]);
@@ -216,8 +217,9 @@ export const BrewFlowPage = () => {
         }
     }, [isSmartScale, engineState, totalElapsed, recordCurvePoint, activeRecipe]);
 
-    // Simulated pouring when running in Demo/Mock mode (e.g. web preview)
+    // Simulated pouring when running in Demo/Mock mode (e.g. web preview only)
     useEffect(() => {
+        if (Capacitor.isNativePlatform()) return;
         if (!activeRecipe || !engineState) return;
         if (!isSmartScale || !isMock || !engineState.isRunning) return;
 

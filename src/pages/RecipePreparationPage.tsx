@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '../components/Icons';
 import { brewService, pantryService, settingsService } from '../core/services';
 import type { Recipe, BrewStep } from '../shared/domain/entities';
@@ -267,8 +268,8 @@ export const RecipePreparationPage = () => {
     }
 
     const proceedToBrew = () => {
-        // If smart scale mode is chosen on web or without physical scale connected, activate demo mode so UI can be fully explored
-        if (brewMode === 'smart-scale' && connectionState !== 'connected') {
+        // If smart scale mode is chosen on web without physical scale connected, activate demo mode only on web
+        if (!Capacitor.isNativePlatform() && brewMode === 'smart-scale' && connectionState !== 'connected') {
             connectMock();
         }
         // Drop any log id from a previous brew so this one isn't saved over it.
@@ -660,7 +661,9 @@ export const RecipePreparationPage = () => {
                                     <div>
                                         <h4 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h4>
                                         <p className="typescale-body-small text-md-on-surface-variant text-xs">
-                                            Nyalakan Timemore Dot atau gunakan mode demo.
+                                            {Capacitor.isNativePlatform()
+                                                ? 'Nyalakan Timemore Dot Anda untuk menyambungkan.'
+                                                : 'Nyalakan Timemore Dot atau gunakan mode demo.'}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -672,14 +675,16 @@ export const RecipePreparationPage = () => {
                                             <Icon name="bluetooth" className="text-base" />
                                             <span>Connect Now</span>
                                         </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => connectMock()}
-                                            className="px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
-                                        >
-                                            <Icon name="science" className="text-base" />
-                                            <span>Demo Mode</span>
-                                        </button>
+                                        {!Capacitor.isNativePlatform() && (
+                                            <button
+                                                type="button"
+                                                onClick={() => connectMock()}
+                                                className="px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
+                                            >
+                                                <Icon name="science" className="text-base" />
+                                                <span>Demo Mode</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from './Icons';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
 
@@ -130,18 +131,20 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({ isOpen, on
                         </div>
                     )}
 
-                    {/* Web Demo / Skip BLE Option */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            connectMock();
-                            onClose();
-                        }}
-                        className="w-full py-2.5 px-4 rounded-xl font-bold bg-md-primary/10 hover:bg-md-primary/20 text-md-primary border border-md-primary/30 typescale-label-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                        <Icon name="science" className="text-base" />
-                        <span>Gunakan Demo Mode (Preview Web)</span>
-                    </button>
+                    {/* Web Demo / Skip BLE Option (Web only, hidden on mobile APK) */}
+                    {!Capacitor.isNativePlatform() && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                connectMock();
+                                onClose();
+                            }}
+                            className="w-full py-2.5 px-4 rounded-xl font-bold bg-md-primary/10 hover:bg-md-primary/20 text-md-primary border border-md-primary/30 typescale-label-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        >
+                            <Icon name="science" className="text-base" />
+                            <span>Gunakan Demo Mode (Preview Web)</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Actions */}

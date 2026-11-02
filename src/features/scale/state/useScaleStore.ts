@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { Capacitor } from '@capacitor/core';
 import { getBleScaleAdapter, type ScaleDevice } from '../infrastructure/bleAdapter';
 import {
     parseTimemorePacket,
@@ -62,6 +63,8 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     curveData: [],
 
     connectMock: () => {
+        // Block mock scale on native mobile APK
+        if (Capacitor.isNativePlatform()) return;
         set({
             connectionState: 'connected',
             device: { id: 'mock-timemore-dot', name: 'TIMEMORE_Dot (Demo)' },
@@ -75,7 +78,7 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     },
 
     setMockWeight: (weight: number, flowRate = 0) => {
-        if (!get().isMock) return;
+        if (Capacitor.isNativePlatform() || !get().isMock) return;
         set({
             currentWeight: Math.round(weight * 10) / 10,
             flowRate: Math.round(flowRate * 10) / 10,
