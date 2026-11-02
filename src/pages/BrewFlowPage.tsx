@@ -34,11 +34,10 @@ const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
     const safeBack = useSafeBack();
-    const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, hydrateBrew, skipStep, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
+    const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, hydrateBrew, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
     const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint, isMock, connectMock, setMockWeight } = useScaleStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
-    const [isSkipModalOpen, setIsSkipModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
     const [showLiveChart, setShowLiveChart] = useState(false);
@@ -64,7 +63,7 @@ export const BrewFlowPage = () => {
     };
 
     // Intercept hardware / web back button to prompt stop confirmation
-    useBackHandler(!isStopModalOpen && !isSkipModalOpen, () => openStopConfirm('back'));
+    useBackHandler(!isStopModalOpen, () => openStopConfirm('back'));
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
@@ -255,20 +254,6 @@ export const BrewFlowPage = () => {
         } else {
             navigate('/brew-methods');
         }
-    };
-
-    const handleSkipStep = () => {
-        if (!activeRecipe || !engineState) return;
-        if (engineState.currentStepIndex >= activeRecipe.steps.length - 1) {
-            skipStep();
-        } else {
-            setIsSkipModalOpen(true);
-        }
-    };
-
-    const confirmSkip = () => {
-        skipStep();
-        setIsSkipModalOpen(false);
     };
 
     if (!activeRecipe || !engineState) return null;
@@ -704,20 +689,15 @@ export const BrewFlowPage = () => {
                         </Button>
                     ) : (
                         <>
-                            <button
+                            <Button
+                                variant="secondary"
+                                size="lg"
                                 onClick={() => openStopConfirm('home')}
-                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                className="flex-1 bg-md-surface-container-high text-md-on-surface hover:bg-md-surface-container-highest border border-md-outline-variant/30"
                             >
                                 <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                Stop
-                            </button>
-                            <button
-                                onClick={handleSkipStep}
-                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
-                            >
-                                <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                Skip
-                            </button>
+                                <span>Stop</span>
+                            </Button>
                             <Button
                                 variant="filled"
                                 size="lg"
@@ -727,16 +707,6 @@ export const BrewFlowPage = () => {
                                 <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
                                 <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
                             </Button>
-                            {isSmartScale && (
-                                <button
-                                    type="button"
-                                    onClick={() => tare()}
-                                    className="px-4 py-3.5 rounded-full bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-primary font-bold border border-md-outline-variant/30 flex items-center justify-center gap-1.5 typescale-label-medium transition-all active:scale-95 shadow-sm cursor-pointer shrink-0"
-                                >
-                                    <Icon name="restart_alt" className="text-base" />
-                                    <span>Tare</span>
-                                </button>
-                            )}
                         </>
                     )}
                 </div>
@@ -751,16 +721,6 @@ export const BrewFlowPage = () => {
                 confirmText="Stop Brew"
                 cancelText="Keep Brewing"
                 type="warning"
-            />
-            <Modal
-                isOpen={isSkipModalOpen}
-                onClose={() => setIsSkipModalOpen(false)}
-                onConfirm={confirmSkip}
-                title="Skip this step?"
-                message={`Skip "${currentStep.label}" and move to the next step? The timer for this step will not be counted.`}
-                confirmText="Skip Step"
-                cancelText="Stay Here"
-                type="info"
             />
         </div>
     );
