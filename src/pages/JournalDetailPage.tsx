@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Icon } from '../components/Icons';
 import { Modal } from '../components/Modal';
 import { PageHeader } from '../components/PageHeader';
-import { SaveBar } from '../components/SaveBar';
 import { brewService, drinkService, pantryService } from '../core/services';
 import { TasteEditor } from '../components/TasteEditor';
 import { TasteRatingSelector, getTasteRatingLabel } from '../components/TasteRatingSelector';
@@ -28,6 +27,63 @@ export const JournalDetailPage = () => {
     const [beanName, setBeanName] = useState<string | null>(null);
     const [profile, setProfile] = useState<TasteProfileValues>({});
     const [tags, setTags] = useState<string[]>([]);
+    const [recipeExists, setRecipeExists] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (!log) return;
+        if (type === 'brews') {
+            const bLog = log as BrewLogWithRecipe;
+            if (bLog.recipe_id) {
+                brewService.getRecipe(bLog.recipe_id)
+                    .then(r => setRecipeExists(!!r))
+                    .catch(() => setRecipeExists(false));
+            }
+        } else {
+            const dLog = log as DrinkLogWithDrink;
+            if (dLog.drink_id) {
+                drinkService.getDrink(dLog.drink_id)
+                    .then(d => setRecipeExists(!!d))
+                    .catch(() => setRecipeExists(false));
+            }
+        }
+    }, [log, type]);
+
+    const handleBrewAgain = async () => {
+        const brewData = log as BrewLogWithRecipe | null;
+        if (!brewData?.recipe_id) return;
+        // Auto-save any notes/rating edits before navigating
+        try {
+            await brewService.updateLog(brewData.id, {
+                rating,
+                notes,
+                sweetness: profile.sweetness,
+                acidity: profile.acidity,
+                body: profile.body,
+                bitterness: profile.bitterness,
+                flavor_tags: serializeFlavorTags(tags)
+            });
+        } catch (err) {
+            console.warn('Auto-save before brew again failed', err);
+        }
+        const url = brewData.bean_id
+            ? `/recipes/${brewData.recipe_id}/prepare?beanId=${brewData.bean_id}`
+            : `/recipes/${brewData.recipe_id}/prepare`;
+        navigate(url);
+    };
+
+    const handleMakeAgain = async () => {
+        const drinkData = log as DrinkLogWithDrink | null;
+        if (!drinkData?.drink_id) return;
+        try {
+            await drinkService.updateLog(drinkData.id, { notes, rating });
+        } catch (err) {
+            console.warn('Auto-save before make again failed', err);
+        }
+        const url = drinkData.bean_id
+            ? `/drinks/${drinkData.drink_id}/prepare?beanId=${drinkData.bean_id}`
+            : `/drinks/${drinkData.drink_id}/prepare`;
+        navigate(url);
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -164,7 +220,19 @@ export const JournalDetailPage = () => {
             <main className="flex-1 px-5 py-5 space-y-6">
                 {detailCells.length > 0 && (
                     <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
-                        <h2 className="typescale-title-medium font-bold text-md-on-surface">{brewLog ? 'Brew Details' : 'Drink Details'}</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="typescale-title-medium font-bold text-md-on-surface">{brewLog ? 'Brew Details' : 'Drink Details'}</h2>
+                            {brewLog && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(`/recipes/${brewLog.recipe_id}`)}
+                                    className="typescale-label-small font-bold text-md-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                                >
+                                    <span>View Recipe</span>
+                                    <Icon name="chevron_right" className="text-base" />
+                                </button>
+                            )}
+                        </div>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                             {detailCells.map(cell => (
                                 <div key={cell.key} className="min-w-0">
@@ -178,6 +246,30 @@ export const JournalDetailPage = () => {
                                 </div>
                             ))}
                         </div>
+
+                        {/* CTA button inside details card */}
+                        {brewLog && (
+                            <button
+                                type="button"
+                                onClick={handleBrewAgain}
+                                disabled={recipeExists === false}
+                                className="w-full mt-2 py-3 px-4 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                                <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>{recipeExists === false ? 'Recipe Not Found' : 'Brew This Recipe Again'}</span>
+                            </button>
+                        )}
+                        {drinkLog && drinkLog.drink_id && (
+                            <button
+                                type="button"
+                                onClick={handleMakeAgain}
+                                disabled={recipeExists === false}
+                                className="w-full mt-2 py-3 px-4 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                            >
+                                <Icon name="local_cafe" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>{recipeExists === false ? 'Drink Not Found' : 'Make This Drink Again'}</span>
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -247,7 +339,46 @@ export const JournalDetailPage = () => {
 
             </main>
 
-            <SaveBar onClick={handleSave} saving={saving} label="Save Changes" />
+            {/* Bottom Actions Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-20 mx-auto max-w-md bg-md-surface/95 backdrop-blur-md p-4 border-t border-md-outline-variant/30">
+                <div className="flex gap-3 w-full">
+                    {brewLog ? (
+                        <button
+                            type="button"
+                            onClick={handleBrewAgain}
+                            disabled={recipeExists === false}
+                            className="flex-1 py-3.5 px-4 rounded-full bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                            <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            <span>Brew Again</span>
+                        </button>
+                    ) : drinkLog?.drink_id ? (
+                        <button
+                            type="button"
+                            onClick={handleMakeAgain}
+                            disabled={recipeExists === false}
+                            className="flex-1 py-3.5 px-4 rounded-full bg-md-primary text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 hover:bg-md-primary/90 active:scale-[0.98] transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                        >
+                            <Icon name="local_cafe" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            <span>Make Again</span>
+                        </button>
+                    ) : null}
+
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={saving}
+                        className={`py-3.5 px-4 rounded-full font-bold typescale-label-large flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 ${
+                            brewLog || drinkLog?.drink_id
+                                ? 'flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface border border-md-outline-variant/30'
+                                : 'w-full bg-md-primary text-md-on-primary hover:bg-md-primary/90'
+                        }`}
+                    >
+                        <Icon name="save" className="text-lg" />
+                        <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                    </button>
+                </div>
+            </div>
 
             {/* Delete Confirmation Modal */}
             <Modal
