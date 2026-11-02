@@ -45,6 +45,8 @@ export const BrewFlowPage = () => {
     const hasHydratedRef = useRef(false);
     const hasAutoTaredRef = useRef(false);
     const stopTarget = useRef<'back' | 'home'>('home');
+    const hasAutoLoggedRef = useRef(false);
+    const targetReachedInStepRef = useRef<number | null>(null);
 
     const isSmartScale = brewMode === 'smart-scale';
     const isScaleActive = isSmartScale && (connectionState === 'connected' || isMock);
@@ -55,6 +57,11 @@ export const BrewFlowPage = () => {
             connectMock();
         }
     }, [isSmartScale, connectionState, connectMock]);
+
+    const openStopConfirm = (target: 'back' | 'home') => {
+        stopTarget.current = target;
+        setIsStopModalOpen(true);
+    };
 
     // Intercept hardware / web back button to prompt stop confirmation
     useBackHandler(!isStopModalOpen && !isSkipModalOpen, () => openStopConfirm('back'));
@@ -138,7 +145,6 @@ export const BrewFlowPage = () => {
     useWakeLock(true);
 
     // Persist the brew as soon as it finishes, so leaving via "Back to Homepage" still journals it.
-    const hasAutoLoggedRef = useRef(false);
     useEffect(() => {
         if (!engineState?.isCompleted || !activeRecipe || hasAutoLoggedRef.current) return;
         hasAutoLoggedRef.current = true;
@@ -177,38 +183,44 @@ export const BrewFlowPage = () => {
         }
     }, [engineState, playFeedback, recipeName]);
 
-    if (!activeRecipe || !engineState) return null;
-
-    const currentStep = activeRecipe.steps[engineState.currentStepIndex];
-    if (!currentStep) return null;
-
     let totalElapsed = 0;
     let currentStepEnd = 0;
-    for (let i = 0; i <= engineState.currentStepIndex; i++) {
-        const step = activeRecipe.steps[i];
-        currentStepEnd += getStepDuration(step);
-        if (i < engineState.currentStepIndex) totalElapsed += step.duration_seconds;
+    if (activeRecipe && engineState) {
+        for (let i = 0; i <= engineState.currentStepIndex; i++) {
+            const step = activeRecipe.steps[i];
+            if (step) {
+                currentStepEnd += getStepDuration(step);
+                if (i < engineState.currentStepIndex) totalElapsed += step.duration_seconds;
+            }
+        }
+        totalElapsed += (engineState.totalTime - engineState.remainingTime);
     }
-    totalElapsed += (engineState.totalTime - engineState.remainingTime);
+
+    const stepTarget = (activeRecipe && engineState)
+        ? getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex)
+        : 0;
 
     // Auto-Tare scale once when smart scale brew starts running
     useEffect(() => {
-        if (isScaleActive && engineState?.isRunning && !hasAutoTaredRef.current) {
+        if (!activeRecipe || !engineState) return;
+        if (isScaleActive && engineState.isRunning && !hasAutoTaredRef.current) {
             hasAutoTaredRef.current = true;
             tare();
         }
-    }, [isScaleActive, engineState?.isRunning, tare]);
+    }, [isScaleActive, engineState, tare, activeRecipe]);
 
     // Record curve points periodically while running in smart scale mode
     useEffect(() => {
-        if (isSmartScale && engineState?.isRunning) {
+        if (!activeRecipe || !engineState) return;
+        if (isSmartScale && engineState.isRunning) {
             recordCurvePoint(totalElapsed);
         }
-    }, [isSmartScale, engineState?.isRunning, totalElapsed, recordCurvePoint]);
+    }, [isSmartScale, engineState, totalElapsed, recordCurvePoint, activeRecipe]);
 
     // Simulated pouring when running in Demo/Mock mode (e.g. web preview)
     useEffect(() => {
-        if (!isSmartScale || !isMock || !engineState?.isRunning) return;
+        if (!activeRecipe || !engineState) return;
+        if (!isSmartScale || !isMock || !engineState.isRunning) return;
 
         const currentTarget = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
         const previousTarget = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
@@ -223,15 +235,18 @@ export const BrewFlowPage = () => {
         } else {
             setMockWeight(currentTarget > 0 ? currentTarget : previousTarget, 0);
         }
-    }, [isSmartScale, isMock, engineState?.isRunning, engineState?.progress, engineState?.currentStepIndex, activeRecipe.steps, setMockWeight]);
+    }, [isSmartScale, isMock, engineState, activeRecipe, setMockWeight]);
 
-    const valveStates = getValveStates(activeRecipe.steps);
-    const currentValve = valveStates[engineState.currentStepIndex] ?? null;
+    // Audio chime when step target weight is reached
+    useEffect(() => {
+        if (!activeRecipe || !engineState || !isScaleActive) return;
+        const currentIdx = engineState.currentStepIndex;
 
-    const openStopConfirm = (target: 'back' | 'home') => {
-        stopTarget.current = target;
-        setIsStopModalOpen(true);
-    };
+        if (stepTarget > 0 && currentWeight >= (stepTarget - 2) && targetReachedInStepRef.current !== currentIdx) {
+            targetReachedInStepRef.current = currentIdx;
+            playTargetReachedChime();
+        }
+    }, [engineState, currentWeight, isScaleActive, stepTarget, playTargetReachedChime, activeRecipe]);
 
     const confirmStop = () => {
         stopBrew();
@@ -243,6 +258,7 @@ export const BrewFlowPage = () => {
     };
 
     const handleSkipStep = () => {
+        if (!activeRecipe || !engineState) return;
         if (engineState.currentStepIndex >= activeRecipe.steps.length - 1) {
             skipStep();
         } else {
@@ -255,11 +271,18 @@ export const BrewFlowPage = () => {
         setIsSkipModalOpen(false);
     };
 
+    if (!activeRecipe || !engineState) return null;
+
+    const currentStep = activeRecipe.steps[engineState.currentStepIndex];
+    if (!currentStep) return null;
+
+    const valveStates = getValveStates(activeRecipe.steps);
+    const currentValve = valveStates[engineState.currentStepIndex] ?? null;
+
     // The scale reads only the water poured (any ice already sits in the server), so the gauge
     // tracks the final pour target rather than the recipe total, which may include the ice.
     const totalWaterRecipe = getTotalTargetWeight(activeRecipe.steps) || activeRecipe.total_water || 0;
     const iceWeight = Math.max(0, Math.round((activeRecipe.total_water || 0) - totalWaterRecipe));
-    const stepTarget = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const pouredBefore = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const currentTargetWeight = Math.round(pouredBefore + (stepTarget - pouredBefore) * engineState.progress);
     const pourAmount = getPourAmount(activeRecipe.steps, engineState.currentStepIndex);
@@ -275,17 +298,6 @@ export const BrewFlowPage = () => {
     const isTargetReached = stepTarget > 0 && currentWeight >= (stepTarget - 2);
     const isTargetNear = stepTarget > 0 && !isTargetReached && currentWeight >= (stepTarget - 6);
     const isRestingPhase = isTargetReached && engineState.remainingTime > 3;
-
-    const targetReachedInStepRef = useRef<number | null>(null);
-    useEffect(() => {
-        if (!engineState || !isScaleActive) return;
-        const currentIdx = engineState.currentStepIndex;
-
-        if (stepTarget > 0 && currentWeight >= (stepTarget - 2) && targetReachedInStepRef.current !== currentIdx) {
-            targetReachedInStepRef.current = currentIdx;
-            playTargetReachedChime();
-        }
-    }, [engineState?.currentStepIndex, currentWeight, isScaleActive, stepTarget, playTargetReachedChime]);
 
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
