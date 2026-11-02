@@ -635,16 +635,16 @@ export const RecipePreparationPage = () => {
                                         </span>
                                     </div>
 
-                                    {/* Real Scale Face Display with Tare at bottom right */}
+                                    {/* Real Scale Face Display with Centered Tare */}
                                     <div className="p-4 rounded-2xl bg-md-surface-container-high/60 flex flex-col items-center">
                                         <div className="typescale-display-large text-5xl font-black text-md-on-surface tabular-nums font-mono py-2">
                                             {currentWeight.toFixed(1)} <span className="text-xl font-bold text-md-on-surface-variant font-sans">g</span>
                                         </div>
-                                        <div className="w-full flex justify-end pt-2 border-t border-md-outline-variant/20">
+                                        <div className="w-full flex justify-center pt-3 border-t border-md-outline-variant/20">
                                             <button
                                                 type="button"
                                                 onClick={() => tare()}
-                                                className="px-6 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
+                                                className="px-8 py-2.5 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
                                             >
                                                 <Icon name="restart_alt" className="text-base" />
                                                 <span>Tare</span>
