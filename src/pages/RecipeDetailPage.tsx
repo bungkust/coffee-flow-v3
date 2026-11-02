@@ -80,7 +80,7 @@ export const RecipeDetailPage = () => {
     const notRecommendedTags = recipe.not_recommended_tags || [];
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans relative">
             {/* Header */}
             <PageHeader
                 title={recipe.name}
@@ -300,13 +300,13 @@ export const RecipeDetailPage = () => {
             </main>
 
             {/* Bottom Action CTA */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 max-w-md mx-auto z-20">
+            <div className="sticky bottom-0 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 p-4 z-20 mt-auto w-full">
                 <button
                     onClick={() => navigate(`/recipes/${recipe.id}/prepare`)}
                     className="w-full bg-md-primary text-md-on-primary font-bold py-3.5 rounded-full shadow-md-2 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer typescale-title-medium hover:bg-md-primary/90"
                 >
                     <Icon name="play_circle" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-                    Start Brewing
+                    <span>Start Brewing</span>
                 </button>
             </div>
 
