@@ -84,6 +84,35 @@ export const BrewFlowPage = () => {
         }
     }, [feedbackEnabled]);
 
+    const playTargetReachedChime = useCallback(() => {
+        if (!feedbackEnabled) return;
+        try {
+            const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
+            const AudioContextCtor = audioWindow.AudioContext || audioWindow.webkitAudioContext;
+            if (!AudioContextCtor) return;
+            const context = new AudioContextCtor();
+
+            const playTone = (freq: number, start: number, dur: number) => {
+                const osc = context.createOscillator();
+                const gain = context.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, context.currentTime + start);
+                gain.gain.setValueAtTime(0.12, context.currentTime + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + start + dur);
+                osc.connect(gain);
+                gain.connect(context.destination);
+                osc.start(context.currentTime + start);
+                osc.stop(context.currentTime + start + dur);
+            };
+
+            playTone(587.33, 0, 0.2); // D5
+            playTone(880, 0.1, 0.35); // A5
+            if ('vibrate' in navigator) navigator.vibrate(150);
+        } catch {
+            // Audio context failed
+        }
+    }, [feedbackEnabled]);
+
     useEffect(() => {
         if (hasHydratedRef.current) return;
         hasHydratedRef.current = true;
@@ -221,6 +250,38 @@ export const BrewFlowPage = () => {
     const targetRatio = parseRatio(activeRecipe.ratio) || 16;
     const currentRatio = dose > 0 ? (effectiveWaterWeight / dose) : 0;
 
+    // Proximity to current step target for color states and audio chime
+    const isTargetReached = stepTarget > 0 && currentWeight >= (stepTarget - 2);
+    const isTargetNear = stepTarget > 0 && !isTargetReached && currentWeight >= (stepTarget - 6);
+    const isRestingPhase = isTargetReached && engineState.remainingTime > 3;
+
+    const targetReachedInStepRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (!engineState || !isScaleActive) return;
+        const currentIdx = engineState.currentStepIndex;
+
+        if (stepTarget > 0 && currentWeight >= (stepTarget - 2) && targetReachedInStepRef.current !== currentIdx) {
+            targetReachedInStepRef.current = currentIdx;
+            playTargetReachedChime();
+        }
+    }, [engineState?.currentStepIndex, currentWeight, isScaleActive, stepTarget, playTargetReachedChime]);
+
+    const weightColorClass = isScaleActive
+        ? isTargetReached
+            ? 'text-emerald-400 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]'
+            : isTargetNear
+            ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]'
+            : 'text-md-on-surface'
+        : 'text-md-on-surface';
+
+    const progressBarColor = isScaleActive
+        ? isTargetReached
+            ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+            : isTargetNear
+            ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+            : 'bg-md-primary'
+        : 'bg-md-primary';
+
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
         : currentStep.label;
@@ -343,10 +404,18 @@ export const BrewFlowPage = () => {
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
-                                <Icon name="schedule" className="text-xs" />
-                                Until {formatDuration(currentStepEnd)}
-                            </span>
+                            {isSmartScale ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-medium font-bold font-mono bg-md-surface-container-highest text-md-on-surface border border-md-outline-variant/30">
+                                    <Icon name="schedule" className="text-xs text-md-primary" />
+                                    <span>{formatDuration(totalElapsed)}</span>
+                                    <span className="text-xs text-md-on-surface-variant/60">/ {formatDuration(currentStepEnd)}</span>
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
+                                    <Icon name="schedule" className="text-xs" />
+                                    Until {formatDuration(currentStepEnd)}
+                                </span>
+                            )}
                             {intervalInfo.pourSeconds > 0 && (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
                                     <Icon name="hourglass_empty" className="text-xs" />
@@ -354,66 +423,119 @@ export const BrewFlowPage = () => {
                                 </span>
                             )}
                         </div>
-                        <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
-                            {formatDuration(totalElapsed)}
-                        </div>
 
-                        {/* Flow Rate & Tare Controls in Smart Scale Mode */}
-                        {isSmartScale && (
-                            <div className="flex items-center justify-center gap-2 mb-3 mt-1">
-                                {isScaleActive ? (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-small font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tabular-nums">
-                                        <Icon name="water_drop" className="text-xs" />
-                                        <span>{flowRate.toFixed(1)} g/s</span>
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                                        <Icon name="warning" className="text-xs" />
-                                        <span>Scale Disconnected</span>
-                                    </span>
-                                )}
-
-                                {isScaleActive && (
-                                    <button
-                                        type="button"
-                                        onClick={() => tare()}
-                                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-primary/10 hover:bg-md-primary/20 text-md-primary border border-md-primary/30 transition-colors cursor-pointer"
-                                    >
-                                        <Icon name="restart_alt" className="text-xs" />
-                                        <span>Tare (0.0g)</span>
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
-                            {stepTitle}
-                        </h2>
-                        <p className="typescale-body-small text-md-on-surface-variant mb-6 max-w-[260px]">
-                            {stepSubtitle}
-                        </p>
-
-                        {/* Water Progress */}
-                        <div className="w-full">
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
-                                <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
-                                    {formatWeight(effectiveWaterWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                        {/* HERO SECTION: Smart Scale vs Manual Timer */}
+                        {isSmartScale ? (
+                            <div className="w-full py-1 flex flex-col items-center">
+                                <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
+                                    Water (g)
                                 </span>
+                                <div className={`typescale-display-large text-7xl font-black leading-none tracking-tight tabular-nums transition-colors duration-300 ${weightColorClass}`}>
+                                    {effectiveWaterWeight.toFixed(1)}
+                                </div>
+
+                                {/* Flow Rate & Tare Controls */}
+                                <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+                                    {isScaleActive ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-small font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tabular-nums shadow-sm">
+                                            <Icon name="water_drop" className="text-xs" />
+                                            <span>{flowRate.toFixed(1)} g/s</span>
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                            <Icon name="warning" className="text-xs" />
+                                            <span>Scale Disconnected</span>
+                                        </span>
+                                    )}
+
+                                    {isScaleActive && (
+                                        <button
+                                            type="button"
+                                            onClick={() => tare()}
+                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 transition-all active:scale-95 cursor-pointer shadow-sm"
+                                        >
+                                            <Icon name="restart_alt" className="text-xs" />
+                                            <span>Tare (0.0g)</span>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Resting or Target Instruction */}
+                                {isRestingPhase ? (
+                                    <div className="w-full my-2.5 py-2 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
+                                        <Icon name="local_cafe" className="text-base animate-pulse" />
+                                        <span className="typescale-label-medium font-bold">
+                                            Target reached! Resting / drawdown... next in {formatStepSeconds(engineState.remainingTime)}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="my-1.5">
+                                        <h2 className="typescale-title-large font-bold text-md-on-surface mb-0.5">
+                                            {stepTitle}
+                                        </h2>
+                                        <p className="typescale-body-small text-md-on-surface-variant max-w-[280px] mx-auto">
+                                            {stepSubtitle}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Water Progress */}
+                                <div className="w-full mt-2">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
+                                        <span className={`typescale-title-medium font-bold tabular-nums transition-colors duration-300 ${isTargetReached ? 'text-emerald-400' : 'text-md-primary'}`}>
+                                            {formatWeight(effectiveWaterWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
+                                        <div
+                                            className={`${progressBarColor} h-3 rounded-full transition-all duration-300 ease-out`}
+                                            style={{ width: `${effectiveProgressPercent}%` }}
+                                        ></div>
+                                    </div>
+                                    {iceWeight > 0 && (
+                                        <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5 justify-center">
+                                            <Icon name="ac_unit" className="text-sm text-md-primary" />
+                                            Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
-                                <div
-                                    className="bg-md-primary h-3 rounded-full transition-[width] duration-300 ease-out"
-                                    style={{ width: `${effectiveProgressPercent}%` }}
-                                ></div>
-                            </div>
-                            {iceWeight > 0 && (
-                                <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5">
-                                    <Icon name="ac_unit" className="text-sm text-md-primary" />
-                                    Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
+                        ) : (
+                            <>
+                                <div className="typescale-display-large text-7xl font-extrabold text-md-on-surface leading-none tracking-tight tabular-nums mb-4 mt-2">
+                                    {formatDuration(totalElapsed)}
+                                </div>
+                                <h2 className="typescale-title-large font-bold text-md-on-surface mb-1">
+                                    {stepTitle}
+                                </h2>
+                                <p className="typescale-body-small text-md-on-surface-variant mb-6 max-w-[260px]">
+                                    {stepSubtitle}
                                 </p>
-                            )}
-                        </div>
+
+                                {/* Water Progress */}
+                                <div className="w-full">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
+                                        <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
+                                            {formatWeight(currentTargetWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
+                                        <div
+                                            className="bg-md-primary h-3 rounded-full transition-[width] duration-1000 ease-linear"
+                                            style={{ width: `${progressPercent}%` }}
+                                        ></div>
+                                    </div>
+                                    {iceWeight > 0 && (
+                                        <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5 justify-center">
+                                            <Icon name="ac_unit" className="text-sm text-md-primary" />
+                                            Ice {formatWeight(iceWeight, unitSystem)} already in the server — pour from 0
+                                        </p>
+                                    )}
+                                </div>
+                            </>
+                        )}
 
                         {/* Dynamic Ratio Tracker in Smart Scale Mode */}
                         {isSmartScale && dose > 0 && (
