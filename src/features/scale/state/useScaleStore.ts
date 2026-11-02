@@ -233,3 +233,4 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
         });
     },
 }));
+

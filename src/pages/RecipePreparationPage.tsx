@@ -620,13 +620,13 @@ export const RecipePreparationPage = () => {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="size-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                            <span className="size-2 rounded-full bg-md-primary animate-pulse"></span>
                                             <span className="typescale-title-small font-bold text-md-on-surface">
                                                 {device?.name || 'TIMEMORE_Dot'}
                                             </span>
                                         </div>
-                                        <span className="typescale-label-small font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                            <Icon name="battery_full" className="text-xs" />
+                                        <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                            <Icon name="battery_full" className="text-xs text-md-primary" />
                                             {batteryPercent}%
                                         </span>
                                     </div>

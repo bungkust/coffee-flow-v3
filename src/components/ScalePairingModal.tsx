@@ -157,3 +157,4 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({ isOpen, on
         </div>
     );
 };
+

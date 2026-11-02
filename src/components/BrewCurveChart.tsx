@@ -101,11 +101,11 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                             onClick={() => setShowWater(!showWater)}
                             className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full typescale-label-small font-bold transition-all ${
                                 showWater
-                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                                    ? 'bg-md-primary text-md-on-primary'
                                     : 'bg-md-surface-container-highest text-md-on-surface-variant/50 border border-transparent'
                             }`}
                         >
-                            <span className="size-2 rounded-full bg-blue-400"></span>
+                            <span className="size-2 rounded-full bg-md-on-primary"></span>
                             <span>Water (g)</span>
                         </button>
                         <button
@@ -113,11 +113,11 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                             onClick={() => setShowFlow(!showFlow)}
                             className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full typescale-label-small font-bold transition-all ${
                                 showFlow
-                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                                    ? 'bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/30'
                                     : 'bg-md-surface-container-highest text-md-on-surface-variant/50 border border-transparent'
                             }`}
                         >
-                            <span className="size-2 rounded-full bg-emerald-400"></span>
+                            <span className="size-2 rounded-full bg-[#A07855]"></span>
                             <span>Flow (g/s)</span>
                         </button>
                     </div>
@@ -163,7 +163,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         x={padding.left - 4}
                         y={padding.top + 4}
                         textAnchor="end"
-                        className="fill-blue-400/80 font-bold text-[9px] tabular-nums"
+                        fill="#6F4E37"
+                        className="font-bold text-[9px] tabular-nums"
                     >
                         {maxWeight}g
                     </text>
@@ -171,7 +172,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         x={padding.left - 4}
                         y={padding.top + chartH}
                         textAnchor="end"
-                        className="fill-blue-400/80 font-bold text-[9px] tabular-nums"
+                        fill="#6F4E37"
+                        className="font-bold text-[9px] tabular-nums"
                     >
                         0
                     </text>
@@ -180,7 +182,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         x={width - padding.right + 4}
                         y={padding.top + 4}
                         textAnchor="start"
-                        className="fill-emerald-400/80 font-bold text-[9px] tabular-nums"
+                        fill="#A07855"
+                        className="font-bold text-[9px] tabular-nums"
                     >
                         {maxFlow}
                     </text>
@@ -188,7 +191,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         x={width - padding.right + 4}
                         y={padding.top + chartH}
                         textAnchor="start"
-                        className="fill-emerald-400/80 font-bold text-[9px] tabular-nums"
+                        fill="#A07855"
+                        className="font-bold text-[9px] tabular-nums"
                     >
                         0
                     </text>
@@ -213,8 +217,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                             y1={getYWater(targetWater)}
                             x2={width - padding.right}
                             y2={getYWater(targetWater)}
-                            stroke="#3b82f6"
-                            strokeOpacity="0.3"
+                            stroke="#6F4E37"
+                            strokeOpacity="0.25"
                             strokeDasharray="4,4"
                             strokeWidth="1"
                         />
@@ -225,8 +229,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         <path
                             d={waterPath}
                             fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth="2"
+                            stroke="#6F4E37"
+                            strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         />
@@ -237,8 +241,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         <path
                             d={flowPath}
                             fill="none"
-                            stroke="#10b981"
-                            strokeWidth="1.5"
+                            stroke="#A07855"
+                            strokeWidth="1.75"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         />
@@ -263,7 +267,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                                     cx={getX(points[points.length - 1].time)}
                                     cy={getYWater(points[points.length - 1].weight)}
                                     r="3"
-                                    className="fill-blue-400 stroke-md-surface stroke-2"
+                                    fill="#6F4E37"
+                                    className="stroke-md-surface stroke-2"
                                 />
                             )}
                         </>
@@ -273,3 +278,4 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
         </div>
     );
 };
+

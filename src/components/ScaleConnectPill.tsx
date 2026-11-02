@@ -35,9 +35,9 @@ export const ScaleConnectPill: React.FC<ScaleConnectPillProps> = ({ className = 
                 onClick={handleClick}
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-small font-bold transition-all cursor-pointer ${
                     connectionState === 'connected'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                        ? 'bg-md-primary-container text-md-on-primary-container border border-md-outline-variant/40 hover:bg-md-primary-container/80'
                         : connectionState === 'connecting' || connectionState === 'scanning'
-                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 animate-pulse'
+                        ? 'bg-md-surface-container-highest text-md-on-surface-variant border border-md-outline-variant/30 animate-pulse'
                         : 'bg-md-surface-container-high text-md-on-surface-variant hover:text-md-on-surface border border-md-outline-variant/30 hover:bg-md-surface-container-highest'
                 } ${className}`}
                 title={connectionState === 'connected' ? 'Scale connected — tap for options' : 'Connect scale'}
@@ -79,15 +79,15 @@ export const ScaleConnectPill: React.FC<ScaleConnectPillProps> = ({ className = 
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className="size-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                                <div className="size-9 rounded-full bg-md-primary/10 text-md-primary flex items-center justify-center">
                                     <Icon name="scale" className="text-xl" />
                                 </div>
                                 <div>
                                     <h4 className="typescale-title-small font-bold text-md-on-surface">
                                         {device?.name || 'Timemore Scale'}
                                     </h4>
-                                    <p className="typescale-body-small text-emerald-400 flex items-center gap-1 font-semibold">
-                                        <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    <p className="typescale-body-small text-md-primary flex items-center gap-1.5 font-semibold">
+                                        <span className="size-1.5 rounded-full bg-md-primary animate-pulse"></span>
                                         Connected • {batteryPercent}%
                                     </p>
                                 </div>
@@ -132,3 +132,4 @@ export const ScaleConnectPill: React.FC<ScaleConnectPillProps> = ({ className = 
         </>
     );
 };
+

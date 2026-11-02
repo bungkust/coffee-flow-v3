@@ -266,22 +266,6 @@ export const BrewFlowPage = () => {
         }
     }, [engineState?.currentStepIndex, currentWeight, isScaleActive, stepTarget, playTargetReachedChime]);
 
-    const weightColorClass = isScaleActive
-        ? isTargetReached
-            ? 'text-emerald-400 drop-shadow-[0_0_14px_rgba(52,211,153,0.4)]'
-            : isTargetNear
-            ? 'text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]'
-            : 'text-md-on-surface'
-        : 'text-md-on-surface';
-
-    const progressBarColor = isScaleActive
-        ? isTargetReached
-            ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-            : isTargetNear
-            ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-            : 'bg-md-primary'
-        : 'bg-md-primary';
-
     const stepTitle = currentStep.target_weight && pourAmount > 0
         ? `Pour +${formatWeight(pourAmount, unitSystem)}`
         : currentStep.label;
@@ -404,18 +388,10 @@ export const BrewFlowPage = () => {
                             <span className="inline-flex items-center px-3.5 py-1 rounded-full typescale-label-medium font-bold bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/20">
                                 Phase {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
                             </span>
-                            {isSmartScale ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-medium font-bold font-mono bg-md-surface-container-highest text-md-on-surface border border-md-outline-variant/30">
-                                    <Icon name="schedule" className="text-xs text-md-primary" />
-                                    <span>{formatDuration(totalElapsed)}</span>
-                                    <span className="text-xs text-md-on-surface-variant/60">/ {formatDuration(currentStepEnd)}</span>
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
-                                    <Icon name="schedule" className="text-xs" />
-                                    Until {formatDuration(currentStepEnd)}
-                                </span>
-                            )}
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
+                                <Icon name="schedule" className="text-xs" />
+                                Until {formatDuration(currentStepEnd)}
+                            </span>
                             {intervalInfo.pourSeconds > 0 && (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-md-surface-container-high text-md-secondary border border-md-outline-variant/30">
                                     <Icon name="hourglass_empty" className="text-xs" />
@@ -427,23 +403,26 @@ export const BrewFlowPage = () => {
                         {/* HERO SECTION: Smart Scale vs Manual Timer */}
                         {isSmartScale ? (
                             <div className="w-full py-1 flex flex-col items-center">
-                                <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
-                                    Water (g)
-                                </span>
-                                <div className={`typescale-display-large text-7xl font-black leading-none tracking-tight tabular-nums transition-colors duration-300 ${weightColorClass}`}>
-                                    {effectiveWaterWeight.toFixed(1)}
+                                {/* 1. BIG TIMER */}
+                                <div className="flex flex-col items-center mb-1">
+                                    <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
+                                        Time
+                                    </span>
+                                    <div className="typescale-display-medium text-6xl font-black text-md-on-surface leading-none tracking-tight tabular-nums font-mono">
+                                        {formatDuration(totalElapsed)}
+                                    </div>
                                 </div>
 
-                                {/* Flow Rate & Tare Controls */}
-                                <div className="flex items-center justify-center gap-2 mt-3 mb-2">
+                                {/* 2. FLOW RATE & TARE CONTROLS (Warm Coffee Palette) */}
+                                <div className="flex items-center justify-center gap-2.5 my-2">
                                     {isScaleActive ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full typescale-label-small font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tabular-nums shadow-sm">
-                                            <Icon name="water_drop" className="text-xs" />
+                                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full typescale-label-medium font-bold bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 tabular-nums shadow-sm font-mono">
+                                            <Icon name="water_drop" className="text-sm text-md-primary" />
                                             <span>{flowRate.toFixed(1)} g/s</span>
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                                            <Icon name="warning" className="text-xs" />
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-md-surface-container-high text-md-on-surface-variant border border-md-outline-variant/30">
+                                            <Icon name="warning" className="text-xs text-md-primary" />
                                             <span>Scale Disconnected</span>
                                         </span>
                                     )}
@@ -452,20 +431,36 @@ export const BrewFlowPage = () => {
                                         <button
                                             type="button"
                                             onClick={() => tare()}
-                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 transition-all active:scale-95 cursor-pointer shadow-sm"
+                                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full typescale-label-medium font-bold bg-md-primary text-md-on-primary hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
                                         >
-                                            <Icon name="restart_alt" className="text-xs" />
+                                            <Icon name="restart_alt" className="text-sm" />
                                             <span>Tare (0.0g)</span>
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Resting or Target Instruction */}
+                                {/* 3. BIG WATER WEIGHT */}
+                                <div className="flex flex-col items-center mt-2 mb-2">
+                                    <span className="typescale-label-small font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-0.5">
+                                        Water (g)
+                                    </span>
+                                    <div className={`typescale-display-large text-7xl font-black leading-none tracking-tight tabular-nums transition-transform duration-200 ${
+                                        isTargetReached
+                                            ? 'text-md-primary scale-[1.03]'
+                                            : isTargetNear
+                                            ? 'text-md-primary animate-pulse'
+                                            : 'text-md-primary'
+                                    }`}>
+                                        {effectiveWaterWeight.toFixed(1)}
+                                    </div>
+                                </div>
+
+                                {/* 4. Resting or Target Instruction */}
                                 {isRestingPhase ? (
-                                    <div className="w-full my-2.5 py-2 px-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
-                                        <Icon name="local_cafe" className="text-base animate-pulse" />
+                                    <div className="w-full my-2.5 py-2.5 px-4 rounded-2xl bg-md-primary-container text-md-on-primary-container border border-md-primary/20 flex items-center justify-center gap-2 animate-fade-in shadow-sm">
+                                        <Icon name="local_cafe" className="text-lg text-md-primary animate-pulse" />
                                         <span className="typescale-label-medium font-bold">
-                                            Target reached! Resting / drawdown... next in {formatStepSeconds(engineState.remainingTime)}
+                                            Target reached! Resting for {formatStepSeconds(engineState.remainingTime)}
                                         </span>
                                     </div>
                                 ) : (
@@ -479,17 +474,17 @@ export const BrewFlowPage = () => {
                                     </div>
                                 )}
 
-                                {/* Water Progress */}
+                                {/* 5. Water Progress */}
                                 <div className="w-full mt-2">
                                     <div className="flex justify-between items-end mb-2">
                                         <span className="typescale-label-medium font-bold text-md-on-surface-variant">Total Water</span>
-                                        <span className={`typescale-title-medium font-bold tabular-nums transition-colors duration-300 ${isTargetReached ? 'text-emerald-400' : 'text-md-primary'}`}>
+                                        <span className="typescale-title-medium font-bold text-md-primary tabular-nums">
                                             {formatWeight(effectiveWaterWeight, unitSystem)} <span className="typescale-body-small text-md-on-surface-variant/70 font-normal">/ {formatVolume(totalWaterRecipe, unitSystem)}</span>
                                         </span>
                                     </div>
                                     <div className="w-full bg-md-surface-container-high rounded-full h-3 overflow-hidden">
                                         <div
-                                            className={`${progressBarColor} h-3 rounded-full transition-all duration-300 ease-out`}
+                                            className="bg-md-primary h-3 rounded-full transition-all duration-300 ease-out"
                                             style={{ width: `${effectiveProgressPercent}%` }}
                                         ></div>
                                     </div>
@@ -500,6 +495,26 @@ export const BrewFlowPage = () => {
                                         </p>
                                     )}
                                 </div>
+
+                                {/* 6. Dynamic Ratio Tracker (Coffee Warm Tone) */}
+                                {dose > 0 && (
+                                    <div className="w-full mt-3 p-3 rounded-2xl bg-md-surface-container-high/50 border border-md-outline-variant/30">
+                                        <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                                            <span className="text-md-primary font-mono font-bold">
+                                                Ratio 1:{currentRatio.toFixed(1)}
+                                            </span>
+                                            <span className="text-md-on-surface-variant/70 font-mono">
+                                                Target 1:{targetRatio.toFixed(1)}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-md-surface-container-highest rounded-full h-2 relative overflow-hidden">
+                                            <div
+                                                className="bg-md-primary h-2 rounded-full transition-all duration-300"
+                                                style={{ width: `${Math.min(100, Math.max(0, (currentRatio / targetRatio) * 100))}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <>
@@ -535,26 +550,6 @@ export const BrewFlowPage = () => {
                                     )}
                                 </div>
                             </>
-                        )}
-
-                        {/* Dynamic Ratio Tracker in Smart Scale Mode */}
-                        {isSmartScale && dose > 0 && (
-                            <div className="w-full mt-3 p-2.5 rounded-2xl bg-md-surface-container-high/40 border border-md-outline-variant/20">
-                                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                                    <span className="text-amber-400 font-mono">
-                                        Ratio 1:{currentRatio.toFixed(1)}
-                                    </span>
-                                    <span className="text-md-on-surface-variant/70 font-mono">
-                                        Target 1:{targetRatio.toFixed(1)}
-                                    </span>
-                                </div>
-                                <div className="w-full bg-md-surface-container-highest rounded-full h-2 relative overflow-hidden">
-                                    <div
-                                        className="bg-gradient-to-r from-amber-500 to-emerald-400 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${Math.min(100, Math.max(0, (currentRatio / targetRatio) * 100))}%` }}
-                                    ></div>
-                                </div>
-                            </div>
                         )}
 
                         {/* Collapsible Live Extraction Curve in Smart Scale Mode */}
