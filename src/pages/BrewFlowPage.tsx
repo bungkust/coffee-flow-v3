@@ -613,100 +613,55 @@ export const BrewFlowPage = () => {
 
             {/* Bottom Controls */}
             <div className="sticky bottom-0 left-0 right-0 p-5 bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20">
-                {isSmartScale ? (
-                    totalElapsed === 0 && !engineState.isRunning ? (
-                        <div className="flex w-full gap-3">
-                            <button
-                                type="button"
-                                onClick={resumeBrew}
-                                className="flex-1 bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-on-surface font-bold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
-                            >
-                                <Icon name="play_arrow" className="text-2xl text-md-primary" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>Timer</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => tare()}
-                                className="flex-1 bg-md-primary hover:opacity-90 text-md-on-primary font-bold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large shadow-sm cursor-pointer"
-                            >
-                                <Icon name="restart_alt" className="text-2xl" />
-                                <span>Tare</span>
-                            </button>
-                        </div>
+                <div className="flex w-full gap-3">
+                    {totalElapsed === 0 && !engineState.isRunning ? (
+                        <Button
+                            variant="filled"
+                            size="lg"
+                            onClick={resumeBrew}
+                            className="w-full"
+                        >
+                            <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            <span>Start Brew</span>
+                        </Button>
                     ) : (
-                        <div className="flex w-full items-center gap-2">
+                        <>
                             <button
                                 onClick={() => openStopConfirm('home')}
-                                className="size-12 rounded-xl bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center border border-md-outline-variant/30 shrink-0 cursor-pointer transition-all active:scale-95"
-                                aria-label="Stop"
+                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
                             >
-                                <Icon name="stop" className="text-xl" />
+                                <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                Stop
                             </button>
                             <button
                                 onClick={handleSkipStep}
-                                className="size-12 rounded-xl bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center border border-md-outline-variant/30 shrink-0 cursor-pointer transition-all active:scale-95"
-                                aria-label="Skip"
+                                className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
                             >
-                                <Icon name="skip_next" className="text-xl" />
+                                <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                Skip
                             </button>
-                            <button
-                                onClick={engineState.isRunning ? pauseBrew : resumeBrew}
-                                className="flex-1 bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-on-surface font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
-                            >
-                                <Icon name={engineState.isRunning ? "pause" : "play_arrow"} className="text-xl text-md-primary" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => tare()}
-                                className="flex-1 bg-md-primary hover:opacity-90 text-md-on-primary font-bold py-3.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large shadow-sm cursor-pointer"
-                            >
-                                <Icon name="restart_alt" className="text-xl" />
-                                <span>Tare</span>
-                            </button>
-                        </div>
-                    )
-                ) : (
-                    <div className="flex w-full gap-3">
-                        {totalElapsed === 0 && !engineState.isRunning ? (
                             <Button
                                 variant="filled"
                                 size="lg"
-                                onClick={resumeBrew}
-                                className="w-full"
+                                onClick={engineState.isRunning ? pauseBrew : resumeBrew}
+                                className="flex-1"
                             >
-                                <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>Start Brew</span>
+                                <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
+                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
                             </Button>
-                        ) : (
-                            <>
+                            {isSmartScale && (
                                 <button
-                                    onClick={() => openStopConfirm('home')}
-                                    className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
+                                    type="button"
+                                    onClick={() => tare()}
+                                    className="px-4 py-3.5 rounded-full bg-md-surface-container-highest hover:bg-md-surface-container-high text-md-primary font-bold border border-md-outline-variant/30 flex items-center justify-center gap-1.5 typescale-label-medium transition-all active:scale-95 shadow-sm cursor-pointer shrink-0"
                                 >
-                                    <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                    Stop
+                                    <Icon name="restart_alt" className="text-base" />
+                                    <span>Tare</span>
                                 </button>
-                                <button
-                                    onClick={handleSkipStep}
-                                    className="flex-1 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface font-bold py-3.5 rounded-full transition-all active:scale-[0.98] flex items-center justify-center gap-2 typescale-label-large border border-md-outline-variant/30 cursor-pointer"
-                                >
-                                    <Icon name="skip_next" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                    Skip
-                                </button>
-                                <Button
-                                    variant="filled"
-                                    size="lg"
-                                    onClick={engineState.isRunning ? pauseBrew : resumeBrew}
-                                    className="flex-1"
-                                >
-                                    <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
-                                    <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
-                                </Button>
-                            </>
-                        )}
-                    </div>
-                )}
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
 
             <Modal
