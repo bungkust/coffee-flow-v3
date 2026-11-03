@@ -293,6 +293,19 @@ export const BrewMethodsPage = () => {
                         <span className="typescale-label-medium text-md-on-surface-variant font-bold uppercase tracking-wider mb-3 block">Other Tools</span>
                         <div className="flex flex-col gap-2.5">
                             <button
+                                onClick={() => navigate('/scale')}
+                                className="flex items-center p-3.5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 hover:bg-md-surface-container-high active:scale-[0.98] transition-all cursor-pointer text-left w-full shadow-md-1"
+                            >
+                                <div className="size-10 rounded-full bg-md-tertiary-container text-md-on-tertiary-container flex items-center justify-center mr-3.5 shrink-0 font-bold">
+                                    <Icon name="scale" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="typescale-title-medium font-semibold text-md-on-surface">Digital Scale</h4>
+                                    <p className="typescale-body-small text-md-on-surface-variant">Weigh beans, water & coffee live</p>
+                                </div>
+                                <Icon name="chevron_right" className="text-md-on-surface-variant text-xl" />
+                            </button>
+                            <button
                                 onClick={() => navigate('/quick-timer')}
                                 className="flex items-center p-3.5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 hover:bg-md-surface-container-high active:scale-[0.98] transition-all cursor-pointer text-left w-full shadow-md-1"
                             >

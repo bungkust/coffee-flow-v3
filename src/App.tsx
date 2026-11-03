@@ -31,6 +31,7 @@ const DrinkEditPage = lazy(() => import('./pages/DrinkEditPage').then(m => ({ de
 const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage').then(m => ({ default: m.PlaygroundPage })));
 const QuickTimerPage = lazy(() => import('./pages/QuickTimerPage').then(m => ({ default: m.QuickTimerPage })));
 const RatioCalculatorPage = lazy(() => import('./pages/RatioCalculatorPage').then(m => ({ default: m.RatioCalculatorPage })));
+const ScalePage = lazy(() => import('./pages/ScalePage').then(m => ({ default: m.ScalePage })));
 
 import { handleBackPress, useSafeBack } from './shared/utils/backNavigation';
 
@@ -119,6 +120,7 @@ function App() {
           <Route path="/playground" element={<PlaygroundPage />} />
           <Route path="/quick-timer" element={<QuickTimerPage />} />
           <Route path="/ratio-calculator" element={<RatioCalculatorPage />} />
+          <Route path="/scale" element={<ScalePage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
