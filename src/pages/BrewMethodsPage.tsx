@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '../components/Icons';
 import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
@@ -8,6 +9,8 @@ import { SearchBar } from '../components/SearchBar';
 import { MethodImage } from '../components/MethodImage';
 import { settingsService, brewService } from '../core/services';
 import type { BrewingMethod } from '../shared/domain/entities';
+import { useScaleStore } from '../features/scale/state/useScaleStore';
+import { ScalePairingModal } from '../components/ScalePairingModal';
 
 type MethodCard = BrewingMethod & { image: string; category: string };
 
@@ -43,6 +46,8 @@ function getCategoryFallback(id: string): string {
 
 export const BrewMethodsPage = () => {
     const navigate = useNavigate();
+    const { connectionState } = useScaleStore();
+    const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
     const [allMethods, setAllMethods] = useState<MethodCard[]>([]);
     const [availableMethods, setAvailableMethods] = useState<MethodCard[]>([]);
     const [userPreferredIds, setUserPreferredIds] = useState<string[]>([]);
@@ -293,7 +298,13 @@ export const BrewMethodsPage = () => {
                         <span className="typescale-label-medium text-md-on-surface-variant font-bold uppercase tracking-wider mb-3 block">Other Tools</span>
                         <div className="flex flex-col gap-2.5">
                             <button
-                                onClick={() => navigate('/scale')}
+                                onClick={() => {
+                                    if (connectionState === 'connected') {
+                                        navigate('/scale');
+                                    } else {
+                                        setIsScaleModalOpen(true);
+                                    }
+                                }}
                                 className="flex items-center p-3.5 bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 hover:bg-md-surface-container-high active:scale-[0.98] transition-all cursor-pointer text-left w-full shadow-md-1"
                             >
                                 <div className="size-10 rounded-full bg-md-tertiary-container text-md-on-tertiary-container flex items-center justify-center mr-3.5 shrink-0 font-bold">
@@ -338,6 +349,14 @@ export const BrewMethodsPage = () => {
 
             {/* Navigation (Hide when editing) */}
             {!isEditing && <BottomNav activeTab="brewing" />}
+
+            {/* Scale Pre-Connection Modal (Mandatory on native APK, skip only allowed on web) */}
+            <ScalePairingModal
+                isOpen={isScaleModalOpen}
+                onClose={() => setIsScaleModalOpen(false)}
+                onConnected={() => navigate('/scale')}
+                onSkip={Capacitor.isNativePlatform() ? undefined : () => navigate('/scale')}
+            />
         </div>
     );
 };
