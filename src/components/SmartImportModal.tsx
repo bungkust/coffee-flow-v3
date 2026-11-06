@@ -522,34 +522,39 @@ export const SmartImportModal = ({
     };
 
     const methodLabel = (id?: string) => METHOD_LABELS[id || ''] || (id || 'Unknown').toUpperCase();
+    const savedCount = parsedRecipes.filter(r => r._saved).length;
+    const unsavedCount = parsedRecipes.length - savedCount;
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="relative w-full max-w-md bg-md-surface-container-high text-md-on-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-md-outline-variant/20 overflow-hidden flex flex-col max-h-[92vh]">
 
                 {/* Header */}
-                <div className="bg-primary text-white px-5 pt-5 pb-4 flex items-start justify-between shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
-                            <SplashLogoIcon className="w-5 h-5" />
+                <div className="bg-primary text-white px-5 pt-3 pb-4 flex flex-col shrink-0">
+                    <div className="w-10 h-1 rounded-full bg-white/40 mx-auto mb-3 sm:hidden" />
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
+                                <SplashLogoIcon className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold leading-tight">Import Recipe</h2>
+                                <p className="text-[11px] text-white/65 font-medium mt-0.5">
+                                    {activePreview
+                                        ? 'Review recipe details'
+                                        : parsedRecipes.length > 1
+                                            ? `Select from ${parsedRecipes.length} recipes found`
+                                            : 'Paste text, caption, or use AI'}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-base font-bold leading-tight">Import Recipe</h2>
-                            <p className="text-[11px] text-white/65 font-medium mt-0.5">
-                                {activePreview
-                                    ? 'Review recipe details'
-                                    : parsedRecipes.length > 1
-                                        ? `Select from ${parsedRecipes.length} recipes found`
-                                        : 'Paste text, caption, or use AI'}
-                            </p>
-                        </div>
+                        <button
+                            onClick={handleClose}
+                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+                        >
+                            <Icon name="close" className="text-[18px]" />
+                        </button>
                     </div>
-                    <button
-                        onClick={handleClose}
-                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
-                    >
-                        <Icon name="close" className="text-[18px]" />
-                    </button>
                 </div>
 
                 {/* Content */}
@@ -587,42 +592,42 @@ export const SmartImportModal = ({
                                 )}
                             </div>
 
-                            <div className="bg-gray-50 border border-gray-100 rounded-2xl divide-y divide-gray-100 overflow-hidden">
+                            <div className="bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl divide-y divide-md-outline-variant/20 overflow-hidden">
                                 <div className="px-4 py-3">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Recipe Name</p>
-                                    <p className="text-sm font-bold text-gray-900">{activePreview.name || '—'}</p>
+                                    <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Recipe Name</p>
+                                    <p className="text-sm font-bold text-md-on-surface">{activePreview.name || '—'}</p>
                                 </div>
                                 <div className="px-4 py-3 grid grid-cols-3 gap-3">
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Method</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Method</p>
                                         <p className="text-sm font-bold text-primary">{methodLabel(activePreview.method_id)}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Ratio</p>
-                                        <p className="text-sm font-bold text-gray-900">{activePreview.ratio || '—'}</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Ratio</p>
+                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.ratio || '—'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Temp</p>
-                                        <p className="text-sm font-bold text-gray-900">{activePreview.temperature ? `${activePreview.temperature}°C` : '—'}</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Temp</p>
+                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.temperature ? `${activePreview.temperature}°C` : '—'}</p>
                                     </div>
                                 </div>
                                 <div className="px-4 py-3 grid grid-cols-3 gap-3">
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Water</p>
-                                        <p className="text-sm font-bold text-gray-900">{activePreview.total_water ? `${activePreview.total_water}g` : '—'}</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Water</p>
+                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.total_water ? `${activePreview.total_water}g` : '—'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Grind</p>
-                                        <p className="text-sm font-bold text-gray-900">{activePreview.grind_size || '—'}</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Grind</p>
+                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.grind_size || '—'}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Level</p>
-                                        <p className="text-sm font-bold text-gray-900">{activePreview.difficulty || 'Intermediate'}</p>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Level</p>
+                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.difficulty || 'Intermediate'}</p>
                                     </div>
                                 </div>
                                 <div className="px-4 py-3 flex items-center gap-2">
-                                    <Icon name="format_list_numbered" className="text-[16px] text-gray-400" />
-                                    <p className="text-xs font-semibold text-gray-700">
+                                    <Icon name="format_list_numbered" className="text-[16px] text-md-on-surface-variant/70" />
+                                    <p className="text-xs font-semibold text-md-on-surface">
                                         {(activePreview.steps || []).length} steps detected
                                     </p>
                                 </div>
@@ -632,19 +637,19 @@ export const SmartImportModal = ({
                     ) : parsedRecipes.length > 1 ? (
                         /* ── Multi-Recipe Picker ── */
                         <div className="p-5 space-y-3">
-                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+                                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center shrink-0 text-amber-700 dark:text-amber-300">
                                         <SplashLogoIcon className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-amber-900">
+                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
                                             {parsedRecipes.length} recipes found
-                                            {parsedRecipes.some(r => r._saved) && (
-                                                <span className="text-green-700 ml-1">({parsedRecipes.filter(r => r._saved).length} saved)</span>
+                                            {savedCount > 0 && (
+                                                <span className="text-emerald-700 dark:text-emerald-300 ml-1">({savedCount} saved)</span>
                                             )}
                                         </p>
-                                        <p className="text-[11px] text-amber-700">Select a recipe to preview, or save directly:</p>
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-300">Select a recipe to preview, or save directly:</p>
                                     </div>
                                 </div>
                             </div>
@@ -655,18 +660,18 @@ export const SmartImportModal = ({
                                         key={idx}
                                         onClick={() => setSelectedIndex(idx)}
                                         className={`w-full text-left rounded-2xl p-4 transition-all cursor-pointer border ${item._saved
-                                            ? 'bg-green-50/60 border-green-200/80 hover:border-green-300'
-                                            : 'bg-gray-50 border-gray-200 hover:bg-primary/5 hover:border-primary/40'
+                                            ? 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/50 hover:border-emerald-300'
+                                            : 'bg-md-surface-container-low border-md-outline-variant/30 hover:bg-primary/5 hover:border-primary/40'
                                             }`}
                                     >
                                         <div className="flex justify-between items-start mb-1.5 gap-2">
-                                            <h4 className={`font-bold text-sm ${item._saved ? 'text-green-900' : 'text-gray-900'}`}>{item.name}</h4>
+                                            <h4 className={`font-bold text-sm ${item._saved ? 'text-emerald-900 dark:text-emerald-200' : 'text-md-on-surface'}`}>{item.name}</h4>
                                             <div className="flex items-center gap-1.5 shrink-0">
-                                                <span className="text-[10px] font-bold uppercase tracking-wide bg-white px-2 py-0.5 rounded-full border border-gray-200 text-gray-600">
+                                                <span className="text-[10px] font-bold uppercase tracking-wide bg-md-surface-container px-2 py-0.5 rounded-full border border-md-outline-variant/40 text-md-on-surface-variant">
                                                     {methodLabel(item.method_id)}
                                                 </span>
                                                 {item._saved ? (
-                                                    <span className="text-[11px] font-bold bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-green-200">
+                                                    <span className="text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
                                                         <Icon name="check" className="text-[14px]" /> Saved
                                                     </span>
                                                 ) : onSaveDirect ? (
@@ -680,8 +685,8 @@ export const SmartImportModal = ({
                                                 ) : null}
                                             </div>
                                         </div>
-                                        <p className="text-xs text-gray-500 line-clamp-1 mb-2">{item.description_short || 'No description'}</p>
-                                        <div className="flex items-center gap-3 text-[11px] text-gray-400 font-medium">
+                                        <p className="text-xs text-md-on-surface-variant line-clamp-1 mb-2">{item.description_short || 'No description'}</p>
+                                        <div className="flex items-center gap-3 text-[11px] text-md-on-surface-variant/70 font-medium">
                                             <span>Ratio: {item.ratio || '1:15'}</span>
                                             <span>•</span>
                                             <span>Water: {item.total_water ? `${item.total_water}g` : '—'}</span>
@@ -710,16 +715,16 @@ export const SmartImportModal = ({
                             )}
 
                             {/* Mode Selector */}
-                            <div className="bg-gray-50 rounded-2xl p-1 flex gap-1">
+                            <div className="bg-md-surface-container rounded-2xl p-1 flex gap-1 border border-md-outline-variant/20">
                                 <button
                                     onClick={() => setMode('offline')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'offline' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'offline' ? 'bg-md-surface text-primary shadow-sm' : 'text-md-on-surface-variant hover:text-md-on-surface'}`}
                                 >
                                     Paste Text
                                 </button>
                                 <button
                                     onClick={() => setMode('ai')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'ai' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'ai' ? 'bg-md-surface text-primary shadow-sm' : 'text-md-on-surface-variant hover:text-md-on-surface'}`}
                                 >
                                     Use AI
                                 </button>
@@ -727,7 +732,7 @@ export const SmartImportModal = ({
 
                             {mode === 'offline' ? (
                                 <div className="space-y-2">
-                                    <p className="text-[11px] text-gray-400 leading-relaxed">
+                                    <p className="text-[11px] text-md-on-surface-variant/70 leading-relaxed">
                                         Paste a recipe caption, YouTube description, or your own brew notes. We'll detect the method, dose, water, temp, and steps automatically.
                                     </p>
                                     <textarea
@@ -735,7 +740,7 @@ export const SmartImportModal = ({
                                         onChange={(e) => { setRawInput(e.target.value); setParseError(''); }}
                                         placeholder={`Example:\nV60 Daily Driver\n15g coffee, 225g water, 93°C\nBloom 45g — 30s\nPour to 180g — 60s\nDrawdown — 30s`}
                                         rows={7}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                        className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                     />
                                 </div>
                             ) : (
@@ -746,18 +751,18 @@ export const SmartImportModal = ({
                                             <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${copiedPrompt ? 'bg-green-500 text-white' : 'bg-primary text-white'}`}>
                                                 {copiedPrompt ? <Icon name="check" className="text-[14px]" /> : '1'}
                                             </div>
-                                            <p className="text-xs font-bold text-gray-800">Paste your recipe link or text</p>
+                                            <p className="text-xs font-bold text-md-on-surface">Paste your recipe link or text</p>
                                         </div>
                                         <textarea
                                             value={rawInput}
                                             onChange={(e) => { setRawInput(e.target.value); setParseError(''); setCopiedPrompt(false); }}
                                             placeholder="YouTube link, TikTok caption, blog URL, or recipe text..."
                                             rows={3}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                            className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                         />
                                         {/youtube\.com|youtu\.be/i.test(rawInput) && (
-                                            <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-[11px] text-red-700">
-                                                <Icon name="smart_display" className="text-base text-red-600 shrink-0" />
+                                            <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl flex items-center gap-2 text-[11px] text-red-700 dark:text-red-300">
+                                                <Icon name="smart_display" className="text-base text-red-600 dark:text-red-400 shrink-0" />
                                                 <span>
                                                     Link YouTube terdeteksi! Prompt AI otomatis meminta Gemini/ChatGPT membedah transkrip video.
                                                 </span>
@@ -774,24 +779,24 @@ export const SmartImportModal = ({
 
                                     {/* Divider */}
                                     <div className="flex items-center gap-3">
-                                        <div className="flex-1 h-[1px] bg-gray-100" />
-                                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">then</span>
-                                        <div className="flex-1 h-[1px] bg-gray-100" />
+                                        <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
+                                        <span className="text-[10px] font-bold text-md-on-surface-variant/40 uppercase tracking-widest">then</span>
+                                        <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
                                     </div>
 
                                     {/* Step 2 */}
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0">2</div>
-                                            <p className="text-xs font-bold text-gray-800">Paste the JSON response here</p>
+                                            <div className="w-5 h-5 rounded-full bg-md-surface-container text-md-on-surface-variant flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                                            <p className="text-xs font-bold text-md-on-surface">Paste the JSON response here</p>
                                         </div>
-                                        <p className="text-[11px] text-gray-400 ml-7">After sending the prompt, copy the AI's JSON reply and paste it below.</p>
+                                        <p className="text-[11px] text-md-on-surface-variant/70 ml-7">After sending the prompt, copy the AI's JSON reply and paste it below.</p>
                                         <textarea
                                             value={aiJsonResponse}
                                             onChange={(e) => { setAiJsonResponse(e.target.value); setParseError(''); }}
                                             placeholder={'[ { "name": "Recipe 1", ... }, { "name": "Recipe 2", ... } ]'}
                                             rows={4}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                            className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                         />
                                     </div>
                                 </div>
@@ -799,9 +804,9 @@ export const SmartImportModal = ({
 
                             {/* Error */}
                             {parseError && (
-                                <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2 flex items-center gap-2">
-                                    <Icon name="error_outline" className="text-[16px] text-red-400 shrink-0" />
-                                    <p className="text-[11px] font-semibold text-red-600">{parseError}</p>
+                                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 flex items-center gap-2">
+                                    <Icon name="error_outline" className="text-[16px] text-red-500 shrink-0" />
+                                    <p className="text-[11px] font-semibold text-red-600 dark:text-red-300">{parseError}</p>
                                 </div>
                             )}
                         </div>
@@ -809,13 +814,13 @@ export const SmartImportModal = ({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50/60 flex gap-3 shrink-0">
+                <div className="p-4 pb-[max(env(safe-area-inset-bottom),1rem)] border-t border-md-outline-variant/20 bg-md-surface-container flex gap-3 shrink-0">
                     {activePreview ? (
                         <>
                             {/* Back button */}
                             <button
                                 onClick={() => setSelectedIndex(null)}
-                                className="w-10 h-10 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                                className="w-10 h-10 border border-md-outline-variant/30 text-md-on-surface rounded-xl hover:bg-md-surface-container-high transition-colors cursor-pointer flex items-center justify-center shrink-0"
                                 title={parsedRecipes.length > 1 ? 'Back to list' : 'Try again'}
                             >
                                 <Icon name="arrow_back" className="text-[18px]" />
@@ -855,11 +860,11 @@ export const SmartImportModal = ({
                         <div className="flex gap-2 w-full">
                             <button
                                 onClick={handleClose}
-                                className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors cursor-pointer"
+                                className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
                             >
-                                {parsedRecipes.every(r => r._saved) ? 'Done' : 'Cancel'}
+                                {savedCount === parsedRecipes.length ? 'Done' : 'Cancel'}
                             </button>
-                            {onSaveDirect && parsedRecipes.some(r => !r._saved) && (
+                            {onSaveDirect && unsavedCount > 0 && (
                                 <button
                                     onClick={handleSaveAll}
                                     disabled={isSavingDirect}
@@ -873,7 +878,7 @@ export const SmartImportModal = ({
                                     ) : (
                                         <>
                                             <Icon name="done_all" className="text-[16px]" />
-                                            Save All ({parsedRecipes.filter(r => !r._saved).length})
+                                            Save All ({unsavedCount})
                                         </>
                                     )}
                                 </button>
@@ -883,7 +888,7 @@ export const SmartImportModal = ({
                         <>
                             <button
                                 onClick={handleClose}
-                                className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors cursor-pointer"
+                                className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
                             >
                                 Cancel
                             </button>

@@ -86,7 +86,18 @@
     color: var(--md-sys-color-on-surface);
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
+
+  input, textarea {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}
+
+/* Safe area padding utilities */
+.pb-safe-nav {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
 }
 
 /* MD3 Typescales */

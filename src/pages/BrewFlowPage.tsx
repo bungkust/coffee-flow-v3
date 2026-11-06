@@ -15,11 +15,11 @@ import { useScaleStore } from '../features/scale/state/useScaleStore';
 import { BrewCurveChart } from '../components/BrewCurveChart';
 
 const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
-    <header className="shrink-0 bg-md-surface/95 backdrop-blur-md pt-10 pb-3 px-5 border-b border-md-outline-variant/20">
+    <header className="shrink-0 bg-md-surface/90 backdrop-blur-xl pt-[max(env(safe-area-inset-top),1.25rem)] pb-3 px-5 border-b border-md-outline-variant/15">
         <div className="flex items-center gap-3">
             <button
                 onClick={onBack}
-                className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer shrink-0"
+                className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer shrink-0"
                 aria-label="Go back"
             >
                 <Icon name="arrow_back" className="text-2xl" />

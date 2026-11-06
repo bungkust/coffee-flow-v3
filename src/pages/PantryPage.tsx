@@ -97,7 +97,7 @@ export const PantryPage = () => {
     }
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
+        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-safe-nav">
             {/* Sticky Header */}
             <PageHeader title="My Pantry" padding="px-5 pb-2" rowClassName="mb-3">
                 <SearchBar
@@ -121,15 +121,15 @@ export const PantryPage = () => {
             </PageHeader>
 
             {/* Inventory List */}
-            <main className="flex-1 px-5 pt-3 flex flex-col gap-4 overflow-y-auto scrollbar-hide">
+            <main className="flex-1 px-5 pt-3 flex flex-col gap-4">
                 {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-6 opacity-60">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center">
-                            <Icon name="inventory_2" className="text-5xl text-gray-400" />
+                    <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4 opacity-75">
+                        <div className="size-20 bg-md-surface-container-high rounded-full flex items-center justify-center text-md-on-surface-variant">
+                            <Icon name="inventory_2" className="text-4xl" />
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-neutral-text">Pantry is Empty</h3>
-                            <p className="text-sm text-gray-500 max-w-[240px] mx-auto leading-relaxed">
+                        <div className="space-y-1">
+                            <h3 className="typescale-title-medium font-bold text-md-on-surface">Pantry is Empty</h3>
+                            <p className="typescale-body-small text-md-on-surface-variant max-w-[240px] mx-auto leading-relaxed">
                                 Get started by adding beans, equipment, or essentials to your inventory.
                             </p>
                         </div>
@@ -140,35 +140,35 @@ export const PantryPage = () => {
                             {/* Beans Category */}
                             {beans.length > 0 && (
                                 <div>
-                                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2 pl-1">
-                                        <Icon name="coffee" className="text-[16px]" /> Coffee Beans
+                                    <h2 className="typescale-label-small font-bold uppercase tracking-wider text-md-on-surface-variant mb-3 flex items-center gap-2 pl-1">
+                                        <Icon name="coffee" className="text-sm text-md-primary" /> Coffee Beans
                                     </h2>
                                     <div className="space-y-3">
                                         {beans.map(item => (
                                             <div
                                                 key={item.id}
                                                 onClick={() => openItemModal(item)}
-                                                className="group bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:border-primary/30 transition-all cursor-pointer relative overflow-hidden"
+                                                className="group bg-md-surface-container-low p-4 rounded-2xl shadow-xs border border-md-outline-variant/20 hover:border-md-primary/40 transition-all active:scale-[0.99] cursor-pointer relative overflow-hidden"
                                             >
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div>
-                                                        <h3 className="font-bold text-neutral-text text-base mb-0.5">{item.name}</h3>
-                                                        <p className="text-xs text-gray-500 font-medium">{item.brand}</p>
+                                                        <h3 className="typescale-title-small font-bold text-md-on-surface mb-0.5">{item.name}</h3>
+                                                        <p className="typescale-body-small text-md-on-surface-variant">{item.brand}</p>
                                                     </div>
                                                     {item.roast_date && (
-                                                        <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-md font-bold uppercase tracking-wide">
+                                                        <span className="text-[11px] bg-md-primary-container text-md-on-primary-container px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
                                                             {new Date(item.roast_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} Roast
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="mt-4">
+                                                <div className="mt-3">
                                                     <div className="flex justify-between items-end mb-1.5">
-                                                        <span className="text-xs font-semibold text-gray-500">Remaining Stock</span>
-                                                        <span className="text-xs font-bold text-primary">{item.quantity != null ? `${item.quantity}${item.unit || ''}` : '0%'}</span>
+                                                        <span className="typescale-body-small text-md-on-surface-variant text-xs font-semibold">Remaining Stock</span>
+                                                        <span className="typescale-label-small font-bold text-md-primary tabular-nums">{item.quantity != null ? `${item.quantity}${item.unit || ''}` : '0%'}</span>
                                                     </div>
                                                     {((item.quantity === undefined || item.quantity === null) || item.unit === '%') && (
-                                                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                            <div className="bg-primary h-full rounded-full" style={{ width: `${getStockPercent(item)}%` }}></div>
+                                                        <div className="w-full h-2 bg-md-surface-container-highest rounded-full overflow-hidden">
+                                                            <div className="bg-md-primary h-full rounded-full" style={{ width: `${getStockPercent(item)}%` }}></div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -181,21 +181,21 @@ export const PantryPage = () => {
                             {/* Supplies & Dairy */}
                             {essentials.length > 0 && (
                                 <div>
-                                    <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2 pl-1">
-                                        <Icon name="category" className="text-[16px]" /> Essentials
+                                    <h2 className="typescale-label-small font-bold uppercase tracking-wider text-md-on-surface-variant mb-3 flex items-center gap-2 pl-1">
+                                        <Icon name="category" className="text-sm text-md-primary" /> Essentials
                                     </h2>
-                                    <div className="rounded-xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-50">
+                                    <div className="rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low shadow-xs divide-y divide-md-outline-variant/15 overflow-hidden">
                                         {essentials.map(item => (
-                                            <div key={item.id} onClick={() => openItemModal(item)} className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50">
+                                            <div key={item.id} onClick={() => openItemModal(item)} className="p-4 flex items-center justify-between cursor-pointer hover:bg-md-surface-container transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                                        <Icon name={item.icon || 'inventory_2'} className="text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }} />
+                                                    <div className="size-10 rounded-xl bg-md-primary-container flex items-center justify-center text-md-on-primary-container">
+                                                        <Icon name={item.icon || 'inventory_2'} className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-sm text-neutral-text">{item.name}</p>
+                                                        <p className="typescale-title-small font-bold text-md-on-surface">{item.name}</p>
                                                         {item.is_low_stock ? (
-                                                            <p className="text-[10px] text-red-500 uppercase font-bold tracking-tight flex items-center gap-0.5 mt-0.5">
-                                                                <Icon name="warning" className="text-[12px] filled" /> Low Stock
+                                                            <p className="text-[11px] text-md-error uppercase font-bold tracking-tight flex items-center gap-0.5 mt-0.5">
+                                                                <Icon name="warning" className="text-xs" /> Low Stock
                                                             </p>
                                                         ) : (
                                                             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight mt-0.5">{item.description}</p>

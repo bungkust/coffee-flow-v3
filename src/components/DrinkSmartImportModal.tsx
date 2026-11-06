@@ -543,33 +543,39 @@ export const DrinkSmartImportModal = ({
         setSelectedIndex((selectedIndex + 1) % parsedDrinks.length);
     };
 
+    const savedCount = parsedDrinks.filter((d) => d._saved).length;
+    const unsavedCount = parsedDrinks.length - savedCount;
+
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-md-surface rounded-t-3xl sm:rounded-3xl shadow-2xl border border-md-outline-variant/30 overflow-hidden flex flex-col max-h-[92vh] text-md-on-surface">
+            <div className="relative w-full max-w-md bg-md-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border border-md-outline-variant/30 overflow-hidden flex flex-col max-h-[92vh] text-md-on-surface">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-amber-900 via-amber-800 to-amber-700 text-white px-5 pt-5 pb-4 flex items-start justify-between shrink-0 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-amber-200">
-                            <SplashLogoIcon className="w-5 h-5" />
+                <div className="bg-gradient-to-r from-amber-900 via-amber-800 to-amber-700 text-white px-5 pt-3 pb-4 flex flex-col shrink-0 shadow-sm">
+                    <div className="w-10 h-1 rounded-full bg-white/40 mx-auto mb-3 sm:hidden" />
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-amber-200">
+                                <SplashLogoIcon className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold leading-tight">Smart Import Drink</h2>
+                                <p className="text-[11px] text-amber-100/75 font-medium mt-0.5">
+                                    {activePreview
+                                        ? 'Review drink recipe details'
+                                        : parsedDrinks.length > 1
+                                          ? `Select from ${parsedDrinks.length} drinks found`
+                                          : 'From AI, blogs, or social media recipes'}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-base font-bold leading-tight">Smart Import Drink</h2>
-                            <p className="text-[11px] text-amber-100/75 font-medium mt-0.5">
-                                {activePreview
-                                    ? 'Review drink recipe details'
-                                    : parsedDrinks.length > 1
-                                      ? `Select from ${parsedDrinks.length} drinks found`
-                                      : 'From AI, blogs, or social media recipes'}
-                            </p>
-                        </div>
+                        <button
+                            onClick={handleClose}
+                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+                            aria-label="Close"
+                        >
+                            <Icon name="close" className="text-[18px]" />
+                        </button>
                     </div>
-                    <button
-                        onClick={handleClose}
-                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
-                        aria-label="Close"
-                    >
-                        <Icon name="close" className="text-[18px]" />
-                    </button>
                 </div>
 
                 {/* Mode Selector Tabs (hidden when viewing a preview or multi-drink list) */}
@@ -818,9 +824,9 @@ export const DrinkSmartImportModal = ({
                                     <div>
                                         <p className="text-xs font-bold text-amber-950 dark:text-amber-100">
                                             {parsedDrinks.length} drinks found
-                                            {parsedDrinks.some((d) => d._saved) && (
+                                            {savedCount > 0 && (
                                                 <span className="text-green-700 dark:text-green-400 ml-1.5">
-                                                    ({parsedDrinks.filter((d) => d._saved).length} saved)
+                                                    ({savedCount} saved)
                                                 </span>
                                             )}
                                         </p>
@@ -1053,7 +1059,7 @@ export const DrinkSmartImportModal = ({
                 </div>
 
                 {/* Footer Controls */}
-                <div className="p-4 border-t border-md-outline-variant/30 bg-md-surface-container-low flex items-center justify-between gap-3 shrink-0">
+                <div className="p-4 pb-[max(env(safe-area-inset-bottom),1rem)] border-t border-md-outline-variant/30 bg-md-surface-container-low flex items-center justify-between gap-3 shrink-0">
                     {activePreview ? (
                         <>
                             {/* Back button */}
@@ -1101,9 +1107,9 @@ export const DrinkSmartImportModal = ({
                                 onClick={handleClose}
                                 className="flex-1 py-2.5 border border-md-outline-variant text-md-on-surface rounded-xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
                             >
-                                {parsedDrinks.every((d) => d._saved) ? 'Done' : 'Cancel'}
+                                {savedCount === parsedDrinks.length ? 'Done' : 'Cancel'}
                             </button>
-                            {onSaveDirect && parsedDrinks.some((d) => !d._saved) && (
+                            {onSaveDirect && unsavedCount > 0 && (
                                 <button
                                     onClick={handleSaveAll}
                                     disabled={isSavingDirect}
@@ -1117,7 +1123,7 @@ export const DrinkSmartImportModal = ({
                                     ) : (
                                         <>
                                             <Icon name="done_all" className="text-[16px]" />
-                                            <span>Save All ({parsedDrinks.filter((d) => !d._saved).length})</span>
+                                            <span>Save All ({unsavedCount})</span>
                                         </>
                                     )}
                                 </button>

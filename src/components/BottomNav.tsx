@@ -7,8 +7,8 @@ interface BottomNavProps {
 
 export const BottomNav = ({ activeTab }: BottomNavProps) => {
     return (
-        <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-50 bg-md-surface-container border-t border-md-outline-variant/30 max-w-md mx-auto h-20 shadow-md-2">
-            <div className="flex justify-around items-center h-full px-2">
+        <nav aria-label="Main navigation" className="fixed bottom-0 left-0 right-0 z-50 bg-md-surface-container/90 backdrop-blur-xl border-t border-md-outline-variant/15 max-w-md mx-auto pt-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-md-2">
+            <div className="flex justify-around items-center px-2">
                 <NavItem
                     to="/home"
                     icon="home"
@@ -48,12 +48,17 @@ interface NavItemProps {
 const NavItem = ({ to, icon, label, active }: NavItemProps) => (
     <Link
         to={to}
-        className="flex flex-1 flex-col items-center justify-center gap-1 group py-2 text-center"
+        onClick={() => {
+            if (!active) {
+                navigator.vibrate?.(10);
+            }
+        }}
+        className="flex flex-1 flex-col items-center justify-center gap-1 group py-1 text-center active:scale-95 transition-transform"
     >
         <div
             className={`flex h-8 w-16 items-center justify-center rounded-full transition-all duration-300 ease-md-standard ${
                 active
-                    ? 'bg-md-secondary-container text-md-on-secondary-container shadow-sm scale-105'
+                    ? 'bg-md-secondary-container text-md-on-secondary-container shadow-xs scale-105'
                     : 'text-md-on-surface-variant group-hover:bg-md-surface-container-highest/50'
             }`}
         >
@@ -64,8 +69,8 @@ const NavItem = ({ to, icon, label, active }: NavItemProps) => (
             />
         </div>
         <span
-            className={`typescale-label-medium transition-colors duration-200 ${
-                active ? 'text-md-on-surface font-semibold' : 'text-md-on-surface-variant'
+            className={`typescale-label-small transition-colors duration-200 ${
+                active ? 'text-md-on-surface font-bold' : 'text-md-on-surface-variant'
             }`}
         >
             {label}

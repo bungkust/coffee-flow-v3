@@ -37,8 +37,8 @@ export const Input = ({
                 )}
                 <input
                     className={twMerge(
-                        "w-full rounded-sm px-4 py-3 text-md-on-surface bg-md-surface-container-lowest transition-all duration-200 ease-md-standard focus:outline-none placeholder:text-md-outline/60 typescale-body-large",
-                        !error && !active && "border border-md-outline focus:border-2 focus:border-md-primary",
+                        "w-full rounded-2xl px-4 py-3 text-md-on-surface bg-md-surface-container-lowest transition-all duration-200 ease-md-standard focus:outline-none placeholder:text-md-outline/60 typescale-body-large shadow-xs",
+                        !error && !active && "border border-md-outline-variant/30 focus:border-md-primary focus:ring-2 focus:ring-md-primary/15",
                         active && "border-2 border-md-primary ring-2 ring-md-primary/15",
                         error && "border-2 border-md-error text-md-error focus:ring-2 focus:ring-md-error/20",
                         icon ? "pl-11" : "",

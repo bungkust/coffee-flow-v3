@@ -47,13 +47,16 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
             onClick={onClose}
         >
             <div
-                className="bg-md-surface-container-high text-md-on-surface border border-md-outline-variant/30 rounded-[28px] p-6 w-full max-w-sm shadow-md-3 space-y-5 animate-in zoom-in-95 duration-150"
+                className="bg-md-surface-container-high text-md-on-surface border-t sm:border border-md-outline-variant/25 rounded-t-[32px] sm:rounded-[32px] p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] w-full max-w-md shadow-md-3 space-y-4 animate-in slide-in-from-bottom duration-250 ease-out sm:zoom-in-95"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Mobile Drag Handle */}
+                <div className="w-12 h-1.5 rounded-full bg-md-outline-variant/40 mx-auto -mt-2 mb-2 sm:hidden" />
+
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -72,7 +75,7 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="size-9 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer shrink-0"
+                        className="size-9 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer shrink-0"
                         aria-label="Tutup"
                     >
                         <Icon name="close" className="text-xl" />

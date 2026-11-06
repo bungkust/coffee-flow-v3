@@ -96,26 +96,35 @@ export const BrewWizardSheet = ({ open, onClose }: BrewWizardSheetProps) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="New Brew">
-            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-            <div className="relative flex w-full max-w-md flex-col max-h-[85vh] rounded-t-2xl bg-md-surface text-md-on-surface font-sans shadow-md-2">
-                <div className="shrink-0 border-b border-md-outline-variant/20 px-5 pt-3 pb-3">
-                    <button
-                        onClick={step === 1 ? onClose : goBack}
-                        className="size-8 -ml-2 mb-2 shrink-0 rounded-full flex items-center justify-center hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                        aria-label={step === 1 ? 'Close wizard' : 'Back'}
-                    >
-                        <Icon name={step === 1 ? 'close' : 'arrow_back'} className="text-xl" />
-                    </button>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200" onClick={onClose} />
+            <div className="relative flex w-full max-w-md flex-col max-h-[88vh] rounded-t-[32px] sm:rounded-[32px] bg-md-surface-container-high text-md-on-surface font-sans shadow-md-3 border-t sm:border border-md-outline-variant/20 animate-in slide-in-from-bottom duration-250 ease-out">
+                {/* Mobile Drag Handle */}
+                <div className="w-12 h-1.5 rounded-full bg-md-outline-variant/40 mx-auto mt-3 mb-1 sm:hidden" />
+
+                <div className="shrink-0 border-b border-md-outline-variant/20 px-5 pt-2 pb-3">
+                    <div className="flex items-center justify-between mb-1">
+                        <button
+                            onClick={step === 1 ? onClose : goBack}
+                            className="size-10 -ml-2 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
+                            aria-label={step === 1 ? 'Close wizard' : 'Back'}
+                        >
+                            <Icon name={step === 1 ? 'close' : 'arrow_back'} className="text-xl" />
+                        </button>
+                        <span className="typescale-label-small uppercase tracking-wider text-md-primary font-bold">
+                            Step {step} of 3
+                        </span>
+                        <div className="size-10 -mr-2" />
+                    </div>
                     <h1 className="typescale-headline-small font-bold text-md-on-surface text-center">{stepTitle}</h1>
-                    {context && <p className="typescale-body-small text-md-on-surface-variant text-center truncate">{context}</p>}
+                    {context && <p className="typescale-body-small text-md-on-surface-variant text-center truncate mt-0.5">{context}</p>}
                     <div className="mt-3 flex gap-1.5" aria-hidden="true">
                         {[1, 2, 3].map(i => (
-                            <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant'}`} />
+                            <span key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? 'bg-md-primary' : 'bg-md-outline-variant/40'}`} />
                         ))}
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                <div className="flex-1 overflow-y-auto px-5 py-4 pb-[max(env(safe-area-inset-bottom),1.5rem)] space-y-4">
                     {loading ? (
                         <div className="flex justify-center py-8">
                             <div className="size-10 border-4 border-md-primary border-t-transparent rounded-full animate-spin"></div>

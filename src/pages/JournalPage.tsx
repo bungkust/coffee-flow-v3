@@ -93,7 +93,7 @@ export const JournalPage = () => {
     }, {});
 
     return (
-        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-32">
+        <div className="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-safe-nav">
             {/* Header */}
             <PageHeader title="Activity Journal" padding="pb-0" className="z-20" rowClassName="px-5 mb-2">
                 {/* Segmented Button / Toggle Switch */}
@@ -111,29 +111,29 @@ export const JournalPage = () => {
             </PageHeader>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
+            <main className="flex-1 pb-4">
                 {/* Monthly Summary Card */}
                 <div className="p-4">
-                    <div className="bg-gradient-to-br from-gray-50 to-[#f0ece9] rounded-xl p-5 border border-[#edebe8]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                    <div className="bg-md-surface-container-low rounded-2xl p-4 border border-md-outline-variant/20 shadow-xs">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="typescale-label-small font-bold uppercase tracking-wider text-md-on-surface-variant">
                                 {new Date().toLocaleString('default', { month: 'long' })} Summary
                             </h2>
-                            <Icon name="analytics" className="text-primary text-[20px]" />
+                            <Icon name="analytics" className="text-md-primary text-xl" />
                         </div>
                         <div className="flex gap-4">
                             <div className="flex-1">
-                                <p className="text-sm text-gray-500 mb-1">
+                                <p className="typescale-body-small text-md-on-surface-variant mb-0.5">
                                     Total {activeTab === 'brews' ? 'Brews' : 'Drinks'}
                                 </p>
-                                <p className="text-3xl font-extrabold text-[#181411]">
+                                <p className="text-3xl font-bold text-md-on-surface tabular-nums">
                                     {activeTab === 'brews' ? stats.monthlyBrews : stats.monthlyDrinks || 0}
                                 </p>
                             </div>
-                            <div className="w-px bg-gray-300/50"></div>
+                            <div className="w-px bg-md-outline-variant/30"></div>
                             <div className="flex-1">
-                                <p className="text-sm text-gray-500 mb-1">Total Recorded</p>
-                                <p className="text-3xl font-extrabold text-[#181411]">
+                                <p className="typescale-body-small text-md-on-surface-variant mb-0.5">Total Recorded</p>
+                                <p className="text-3xl font-bold text-md-on-surface tabular-nums">
                                     {logs.length}
                                 </p>
                             </div>
@@ -145,9 +145,9 @@ export const JournalPage = () => {
                 <div className="px-4">
                     {Object.entries(groupedLogs).map(([group, groupLogs]) => (
                         <div key={group} className="mb-2 mt-2">
-                            <h3 className="text-sm font-bold text-[#181411] mb-3 pl-1 flex items-center gap-2">
+                            <h3 className="typescale-label-medium font-bold text-md-on-surface mb-3 pl-1 flex items-center gap-2">
                                 {group}
-                                <span className="h-px flex-1 bg-[#f4f2f0]"></span>
+                                <span className="h-px flex-1 bg-md-outline-variant/20"></span>
                             </h3>
 
                             <div className="flex flex-col gap-2.5">

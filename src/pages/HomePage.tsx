@@ -55,8 +55,8 @@ export const HomePage = () => {
     };
 
     return (
-        <div className="relative flex h-dvh w-full flex-col overflow-hidden max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
-            <header className="flex items-start justify-between gap-4 px-5 pt-10 pb-4 bg-md-surface border-b border-md-outline-variant/30">
+        <div className="relative flex min-h-screen w-full flex-col max-w-md mx-auto bg-md-surface text-md-on-surface font-sans">
+            <header className="flex items-start justify-between gap-4 px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-4 bg-md-surface/90 backdrop-blur-xl border-b border-md-outline-variant/15 shrink-0">
                 <div className="flex min-w-0 flex-col">
                     <span className="typescale-label-medium text-md-on-surface-variant mb-0.5">
                         {new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }).format(new Date())}
@@ -65,47 +65,73 @@ export const HomePage = () => {
                         {getGreeting()}, {userName}!
                     </h1>
                     {stats.todayBrews > 0 && (
-                        <p className="typescale-body-small text-md-on-surface-variant mt-0.5">
-                            {stats.todayBrews} {stats.todayBrews === 1 ? 'brew' : 'brews'} today
+                        <p className="typescale-body-small text-md-primary font-medium mt-0.5 flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-md-primary" />
+                            {stats.todayBrews} {stats.todayBrews === 1 ? 'cup brewed' : 'cups brewed'} today
                         </p>
                     )}
                 </div>
                 <button
                     onClick={() => navigate('/settings')}
-                    className="size-10 shrink-0 rounded-full flex items-center justify-center bg-md-surface-container-high text-md-on-surface-variant hover:bg-md-primary-container hover:text-md-on-primary-container transition-colors duration-200 active:scale-95 cursor-pointer"
+                    className="size-10 shrink-0 rounded-full flex items-center justify-center bg-md-surface-container-high text-md-on-surface-variant hover:bg-md-primary-container hover:text-md-on-primary-container transition-all active:scale-95 cursor-pointer shadow-xs"
                     aria-label="Open settings"
                 >
                     <Icon name="settings" className="text-xl" />
                 </button>
             </header>
 
-            <main className="flex-1 flex flex-col gap-5 px-5 py-5 pb-28 min-h-0">
-                {/* Quick actions — one primary, one secondary */}
-                <section aria-label="Quick Actions" className="grid grid-cols-2 gap-3">
+            <main className="flex-1 flex flex-col gap-5 px-5 py-4 pb-safe-nav">
+                {/* Hero Primary Action + Secondary Companions */}
+                <section aria-label="Quick Actions" className="flex flex-col gap-2.5">
+                    {/* 1. Dominant Hero CTA: Start Brewing */}
                     <button
                         onClick={() => setWizardOpen(true)}
-                        className="group flex items-center gap-3 rounded-xl bg-md-primary text-md-on-primary p-3.5 shadow-md-1 hover:shadow-md-2 transition-all duration-200 active:scale-[0.98] cursor-pointer"
+                        className="group relative flex items-center justify-between rounded-2xl bg-gradient-to-r from-md-primary to-md-primary/90 text-md-on-primary p-4 shadow-md-2 hover:shadow-md-3 transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden text-left"
                     >
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-md-on-primary/20 backdrop-blur-xs">
-                            <Icon name="coffee_maker" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
+                        <div className="flex items-center gap-3.5 z-10">
+                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-md-on-primary/15 backdrop-blur-md shadow-xs">
+                                <Icon name="coffee_maker" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
+                            </div>
+                            <div>
+                                <span className="typescale-label-small uppercase tracking-wider text-md-on-primary/75 font-bold">Guided Flow</span>
+                                <h3 className="typescale-title-medium font-bold text-md-on-primary leading-tight">
+                                    Start Brewing
+                                </h3>
+                            </div>
                         </div>
-                        <h3 className="flex-1 text-left typescale-title-medium font-bold leading-snug">
-                            Start<br />Brewing
-                        </h3>
-                        <Icon name="arrow_forward" className="text-lg opacity-80 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                    <button
-                        onClick={() => navigate('/drinks')}
-                        className="group flex items-center gap-3 rounded-xl bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/30 p-3.5 hover:bg-md-secondary-container/80 transition-all duration-200 active:scale-[0.98] cursor-pointer"
-                    >
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-md-surface-container-highest text-md-primary">
-                            <Icon name="local_cafe" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
+                        <div className="flex size-9 items-center justify-center rounded-full bg-md-on-primary/20 group-hover:translate-x-0.5 transition-transform z-10">
+                            <Icon name="arrow_forward" className="text-lg" />
                         </div>
-                        <h3 className="flex-1 text-left typescale-title-medium font-bold leading-snug">
-                            Mix a<br />Drink
-                        </h3>
-                        <Icon name="arrow_forward" className="text-lg text-md-on-secondary-container/70 group-hover:translate-x-1 transition-transform" />
                     </button>
+
+                    {/* 2. Secondary Companion Grid: Mix Drink & Precision Scale */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                            onClick={() => navigate('/drinks')}
+                            className="group flex items-center gap-3 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/25 p-3 hover:bg-md-surface-container-high transition-all active:scale-[0.98] cursor-pointer text-left"
+                        >
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-secondary-container text-md-on-secondary-container">
+                                <Icon name="local_cafe" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="typescale-title-small font-bold text-md-on-surface truncate">Drink Menu</h4>
+                                <p className="typescale-body-small text-md-on-surface-variant text-[11px] truncate">Coffee & Latte</p>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/scale')}
+                            className="group flex items-center gap-3 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/25 p-3 hover:bg-md-surface-container-high transition-all active:scale-[0.98] cursor-pointer text-left"
+                        >
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-primary-container text-md-on-primary-container">
+                                <Icon name="scale" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="typescale-title-small font-bold text-md-on-surface truncate">Smart Scale</h4>
+                                <p className="typescale-body-small text-md-on-surface-variant text-[11px] truncate">Live Weight</p>
+                            </div>
+                        </button>
+                    </div>
                 </section>
 
                 {/* Recent brews */}
@@ -119,7 +145,7 @@ export const HomePage = () => {
                             View all
                         </button>
                     </div>
-                    <div className="flex-1 min-h-0 overflow-y-auto">
+                    <div className="flex-1 min-h-0">
                         {loading ? (
                             <div className="animate-pulse flex flex-col gap-2">
                                 {[1, 2].map(i => <div key={i} className="h-[76px] rounded-xl bg-md-surface-container-low" />)}
@@ -171,26 +197,26 @@ export const HomePage = () => {
                         </button>
                     </div>
                     {beans.length > 0 ? (
-                        <div className="flex flex-col gap-3">
-                            {beans.slice(0, 1).map(bean => {
+                        <div className="flex flex-col gap-2.5">
+                            {beans.slice(0, 2).map(bean => {
                                 const days = daysOffRoast(bean.roast_date);
                                 return (
                                     <button
                                         key={bean.id}
                                         onClick={() => navigate('/pantry')}
-                                        className="flex items-center gap-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 p-3.5 shadow-md-1 text-left hover:bg-md-surface-container-high transition-colors cursor-pointer"
+                                        className="flex items-center gap-3 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/20 p-3 shadow-xs text-left hover:bg-md-surface-container-high transition-all active:scale-[0.99] cursor-pointer"
                                     >
-                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-md-primary-container text-md-on-primary-container">
-                                            <Icon name="inventory_2" className="text-[20px]" />
+                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-md-primary-container text-md-on-primary-container">
+                                            <Icon name="inventory_2" className="text-xl" />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <h4 className="truncate typescale-title-small font-bold text-md-on-surface">{bean.name}</h4>
-                                            <p className="truncate typescale-body-small text-md-on-surface-variant">
-                                                {days === null ? 'No roast date' : `${days} days off roast · ${freshnessLabel(days)}`}
+                                            <p className="truncate typescale-body-small text-md-on-surface-variant text-xs">
+                                                {days === null ? 'No roast date' : `${days}d off roast · ${freshnessLabel(days)}`}
                                             </p>
                                         </div>
                                         {bean.quantity != null && (
-                                            <span className="shrink-0 typescale-label-medium font-bold text-md-on-surface-variant tabular-nums">
+                                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-md-surface-container-high text-xs font-bold text-md-on-surface-variant tabular-nums">
                                                 {bean.quantity}{bean.unit}
                                             </span>
                                         )}

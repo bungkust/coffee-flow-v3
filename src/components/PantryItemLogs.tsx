@@ -48,31 +48,31 @@ export const PantryItemLogs = ({ itemId, unit = '', refreshKey = 0 }: PantryItem
                 return {
                     label: 'Brew',
                     icon: 'coffee_maker',
-                    className: 'bg-amber-50 text-amber-700 border-amber-200/60'
+                    className: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/60 dark:border-amber-700/40'
                 };
             case 'drink':
                 return {
                     label: 'Drink',
                     icon: 'local_cafe',
-                    className: 'bg-orange-50 text-orange-700 border-orange-200/60'
+                    className: 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border-orange-200/60 dark:border-orange-700/40'
                 };
             case 'restock':
                 return {
                     label: 'Restock',
                     icon: 'add_circle',
-                    className: 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                    className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-700/40'
                 };
             case 'waste':
                 return {
                     label: 'Waste',
                     icon: 'delete_outline',
-                    className: 'bg-red-50 text-red-700 border-red-200/60'
+                    className: 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200/60 dark:border-red-700/40'
                 };
             default:
                 return {
                     label: 'Adjust',
                     icon: 'tune',
-                    className: 'bg-gray-50 text-gray-700 border-gray-200/60'
+                    className: 'bg-md-surface-container text-md-on-surface-variant border-md-outline-variant/30'
                 };
         }
     };
@@ -128,11 +128,11 @@ export const PantryItemLogs = ({ itemId, unit = '', refreshKey = 0 }: PantryItem
                         </div>
 
                         <span
-                            className={`shrink-0 typescale-body-small font-extrabold ${
-                                isPositive ? 'text-emerald-600' : 'text-red-500'
+                            className={`shrink-0 typescale-body-small font-mono tabular-nums font-bold ${
+                                isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
                             }`}
                         >
-                            {sign}{log.change_amount}{displayUnit}
+                            {sign}{log.change_amount} {displayUnit}
                         </span>
                     </div>
                 );

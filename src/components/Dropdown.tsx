@@ -66,11 +66,11 @@ export const Dropdown = ({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full text-left px-4 py-3 border border-md-outline bg-md-surface-container-lowest text-md-on-surface typescale-body-large rounded-sm focus:outline-none focus:border-2 focus:border-md-primary transition-all duration-200 flex items-center justify-between ${
-                    isOpen ? 'border-2 border-md-primary ring-2 ring-md-primary/15' : 'hover:border-md-outline'
+                className={`w-full text-left px-4 py-3 border border-md-outline-variant/30 bg-md-surface-container-lowest text-md-on-surface typescale-body-large rounded-2xl focus:outline-none focus:border-md-primary focus:ring-2 focus:ring-md-primary/15 transition-all duration-200 flex items-center justify-between shadow-xs ${
+                    isOpen ? 'border-md-primary ring-2 ring-md-primary/15' : 'hover:border-md-outline-variant/60'
                 } ${buttonClassName}`}
             >
-                <span className={`truncate mr-2 flex items-center gap-2 ${selectedOption ? 'text-md-on-surface' : 'text-md-outline/60'}`}>
+                <span className={`truncate mr-2 flex items-center gap-2 ${selectedOption ? 'text-md-on-surface font-medium' : 'text-md-outline/60'}`}>
                     {selectedOption?.icon && (
                         <Icon name={selectedOption.icon} className="text-base shrink-0 text-md-primary" />
                     )}
@@ -83,14 +83,14 @@ export const Dropdown = ({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 w-full mt-1.5 bg-md-surface-container-high rounded-sm shadow-md-2 border border-md-outline-variant/30 max-h-72 overflow-y-auto scrollbar-hide animate-in fade-in duration-150">
-                    <div className="p-1 space-y-0.5">
+                <div className="absolute z-50 w-full mt-2 bg-md-surface-container-high rounded-2xl shadow-md-3 border border-md-outline-variant/30 max-h-72 overflow-y-auto scrollbar-hide animate-in fade-in duration-150">
+                    <div className="p-1.5 space-y-1">
                         {options.map((option, idx) => (
                             <button
                                 key={`${option.value}-${idx}`}
                                 disabled={option.disabled}
                                 onClick={() => !option.disabled && handleSelect(option.value)}
-                                className={`w-full text-left px-4 py-3 rounded-xs typescale-body-medium transition-colors flex items-center justify-between gap-2 ${
+                                className={`w-full text-left px-4 py-3 rounded-xl typescale-body-medium transition-colors flex items-center justify-between gap-2 active:scale-[0.99] ${
                                     option.value === value
                                         ? 'bg-md-secondary-container text-md-on-secondary-container font-semibold'
                                         : 'text-md-on-surface hover:bg-md-surface-container-highest'

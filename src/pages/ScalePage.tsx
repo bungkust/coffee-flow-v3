@@ -127,7 +127,7 @@ export const ScalePage = () => {
     const glowOpacity = hasWeight ? Math.min(0.18 + (clampedAbsWeight / 1000) * 0.25, 0.45) : 0.08;
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-8 select-none">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-[max(env(safe-area-inset-bottom),1.5rem)] select-none">
             {/* Header: Title & Connection Status */}
             <PageHeader
                 title="Smart Scale"
@@ -146,7 +146,7 @@ export const ScalePage = () => {
                                     {device?.name || (isMock ? 'Demo Scale' : 'Connected')}
                                 </span>
                                 {!isMock && batteryPercent !== undefined && (
-                                    <span className="text-[11px] text-md-on-surface-variant font-mono">
+                                    <span className="text-[11px] text-md-on-surface-variant font-mono tabular-nums">
                                         {batteryPercent}%
                                     </span>
                                 )}
@@ -176,7 +176,7 @@ export const ScalePage = () => {
             <main className="flex-1 px-5 py-4 flex flex-col justify-between gap-4">
                 {/* 1. HERO WEIGHT DISPLAY CARD (Takes the Spotlight in the Middle) */}
                 <div className="flex-1 flex items-center justify-center my-auto">
-                    <div className="relative w-full rounded-[36px] bg-md-surface-container-lowest/60 dark:bg-md-surface-container-low/40 border border-md-outline-variant/25 p-8 sm:p-12 shadow-sm flex flex-col items-center justify-center overflow-hidden">
+                    <div className="relative w-full rounded-[36px] bg-md-surface-container-lowest/60 dark:bg-md-surface-container-low/40 border border-md-outline-variant/20 p-8 sm:p-12 shadow-sm flex flex-col items-center justify-center overflow-hidden">
                         {/* Ambient Reactive Glow behind the weight */}
                         <div
                             className="absolute inset-0 rounded-[36px] blur-3xl pointer-events-none transition-opacity duration-300 bg-md-primary"
@@ -184,16 +184,16 @@ export const ScalePage = () => {
                         />
 
                         {/* Weight Label */}
-                        <span className="typescale-label-medium font-bold uppercase tracking-widest text-md-on-surface-variant mb-2 relative z-10">
+                        <span className="typescale-label-medium font-bold uppercase tracking-widest text-md-on-surface-variant/70 mb-2 relative z-10">
                             Weight
                         </span>
 
                         {/* Massive Dominant Weight Number */}
-                        <div className="flex items-baseline justify-center gap-1.5 sm:gap-2.5 my-2 relative z-10">
+                        <div className="flex items-baseline justify-center gap-1.5 my-2 relative z-10">
                             <span className="text-7xl sm:text-8xl md:text-9xl font-light text-md-on-surface tracking-tighter tabular-nums font-sans">
                                 {currentWeight.toFixed(1)}
                             </span>
-                            <span className="text-2xl sm:text-3xl md:text-4xl font-medium text-md-on-surface-variant/80 font-sans">
+                            <span className="text-xl sm:text-2xl font-bold text-md-on-surface-variant/70 font-sans tracking-normal self-end mb-2 sm:mb-3">
                                 g
                             </span>
                         </div>
@@ -277,7 +277,7 @@ export const ScalePage = () => {
                     <button
                         type="button"
                         onClick={handleToggleTimer}
-                        className={`py-4 rounded-2xl font-semibold text-lg transition-all active:scale-[0.98] cursor-pointer shadow-md-1 border flex items-center justify-center gap-2 select-none ${
+                        className={`h-14 rounded-2xl font-semibold text-lg transition-all active:scale-[0.98] cursor-pointer shadow-md-1 border flex items-center justify-center gap-2 select-none ${
                             isTimerRunning
                                 ? 'bg-md-secondary-container text-md-on-secondary-container border-md-secondary/40 ring-2 ring-md-secondary/20'
                                 : 'bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface border-md-outline-variant/40'
@@ -290,7 +290,7 @@ export const ScalePage = () => {
                     <button
                         type="button"
                         onClick={handleTare}
-                        className="py-4 rounded-2xl bg-md-primary hover:bg-md-primary/90 text-md-on-primary active:scale-[0.98] font-semibold text-lg transition-all cursor-pointer shadow-md-2 flex items-center justify-center gap-2 select-none"
+                        className="h-14 rounded-2xl bg-md-primary hover:bg-md-primary/90 text-md-on-primary active:scale-[0.98] font-semibold text-lg transition-all cursor-pointer shadow-md-2 flex items-center justify-center gap-2 select-none"
                     >
                         <span>Tare</span>
                     </button>

@@ -141,7 +141,7 @@ export const BrewMethodsPage = () => {
     }, [filteredMethods]);
 
     return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-24">
+        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-safe-nav">
             {/* Sticky Header */}
             <PageHeader
                 title={isEditing ? 'Select Equipment' : 'Brewing Equipment'}
@@ -220,7 +220,7 @@ export const BrewMethodsPage = () => {
                         })}
                     </div>
 
-                    <div className="fixed bottom-0 w-full bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 p-5 z-30 max-w-md mx-auto left-0 right-0">
+                    <div className="fixed bottom-0 w-full bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 p-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] z-30 max-w-md mx-auto left-0 right-0">
                         <Button
                             variant="filled"
                             size="lg"

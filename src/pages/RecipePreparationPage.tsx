@@ -620,38 +620,49 @@ export const RecipePreparationPage = () => {
 
                     {/* Scale Readiness Card when Smart Scale is active */}
                     {brewMode === 'smart-scale' && (
-                        <div className="p-4 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low space-y-3">
+                        <div className="p-4 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low space-y-4">
                             {connectionState === 'connected' ? (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
+                                    {/* Header: Device Name & Status / Battery */}
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="size-2 rounded-full bg-md-primary animate-pulse"></span>
-                                            <span className="typescale-title-small font-bold text-md-on-surface">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                                            <span className="typescale-title-small font-bold text-md-on-surface truncate">
                                                 {device?.name || 'TIMEMORE_Dot'}
                                             </span>
                                         </div>
-                                        <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container border border-md-outline-variant/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                            <Icon name="battery_full" className="text-xs text-md-primary" />
-                                            {batteryPercent}%
-                                        </span>
+                                        {batteryPercent !== undefined && (
+                                            <span className="typescale-label-small font-bold text-md-on-surface-variant/80 bg-md-surface-container-high px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-md-outline-variant/20 shrink-0">
+                                                <Icon name="battery_full" className="text-xs text-md-primary" />
+                                                <span className="tabular-nums font-mono">{batteryPercent}%</span>
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* Real Scale Face Display with Centered Tare */}
-                                    <div className="p-4 rounded-2xl bg-md-surface-container-high/60 flex flex-col items-center">
-                                        <div className="typescale-display-large text-5xl font-black text-md-on-surface tabular-nums font-mono py-2">
-                                            {currentWeight.toFixed(1)} <span className="text-xl font-bold text-md-on-surface-variant font-sans">g</span>
-                                        </div>
-                                        <div className="w-full flex justify-center pt-3 border-t border-md-outline-variant/20">
-                                            <button
-                                                type="button"
-                                                onClick={() => tare()}
-                                                className="px-8 py-2.5 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm"
-                                            >
-                                                <Icon name="restart_alt" className="text-base" />
-                                                <span>Tare</span>
-                                            </button>
+                                    {/* Scale Face Display: Clean, Balanced Typography */}
+                                    <div className="py-2 flex flex-col items-center justify-center">
+                                        <div className="flex items-baseline justify-center gap-2">
+                                            <span className="text-6xl sm:text-7xl font-light text-md-on-surface tracking-tighter tabular-nums font-sans">
+                                                {currentWeight.toFixed(1)}
+                                            </span>
+                                            <span className="text-xl sm:text-2xl font-bold text-md-on-surface-variant/70 font-sans self-end mb-1 sm:mb-2">
+                                                g
+                                            </span>
                                         </div>
                                     </div>
+
+                                    {/* Actions: Tare Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            navigator.vibrate?.(25);
+                                            tare();
+                                        }}
+                                        className="w-full h-12 rounded-2xl bg-md-primary hover:bg-md-primary/90 text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                                    >
+                                        <Icon name="restart_alt" className="text-lg" />
+                                        <span>Tare Scale</span>
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center text-center py-2 space-y-2.5">
@@ -724,7 +735,6 @@ export const RecipePreparationPage = () => {
             <SaveBar
                 onClick={handleProceedToBrew}
                 disabled={!isReady}
-                p="p-4"
                 icon={isReady ? 'timer' : 'lock'}
                 label={isReady ? "I'm Ready, Start Timer" : 'Complete Checklist to Start'}
             />

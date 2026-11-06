@@ -31,7 +31,7 @@ export const SpeedDialFab = ({ actions, mainIcon = 'add', className = '' }: Spee
             )}
 
             {/* Floating Speed Dial FAB Container */}
-            <div className={`fixed bottom-28 right-6 z-40 flex flex-col items-end gap-3 ${className}`}>
+            <div className={`fixed bottom-[calc(max(env(safe-area-inset-bottom),0.75rem)+4.75rem)] right-5 z-40 flex flex-col items-end gap-3 ${className}`}>
                 {isOpen && (
                     <div className="flex flex-col items-end gap-2.5 mb-1 animate-in slide-in-from-bottom-4 fade-in duration-200">
                         {actions.map((action, index) => (
@@ -41,12 +41,12 @@ export const SpeedDialFab = ({ actions, mainIcon = 'add', className = '' }: Spee
                                     setIsOpen(false);
                                     action.onClick();
                                 }}
-                                className={`flex items-center gap-2.5 px-4 py-2.5 bg-white text-gray-800 rounded-2xl shadow-xl border border-gray-100 text-xs font-bold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer ${action.className || ''}`}
+                                className={`flex items-center gap-2.5 px-4 py-2.5 bg-md-surface-container-high text-md-on-surface rounded-2xl shadow-md-3 border border-md-outline-variant/25 text-xs font-bold hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer ${action.className || ''}`}
                             >
                                 {action.customIcon ? (
                                     action.customIcon
                                 ) : action.icon ? (
-                                    <Icon name={action.icon} className="text-[18px] text-gray-500" />
+                                    <Icon name={action.icon} className="text-[18px] text-md-on-surface-variant" />
                                 ) : null}
                                 <span>{action.label}</span>
                             </button>
@@ -57,8 +57,8 @@ export const SpeedDialFab = ({ actions, mainIcon = 'add', className = '' }: Spee
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     aria-label="Open actions"
-                    className={`size-14 rounded-full text-white shadow-lg shadow-primary/40 flex items-center justify-center transition-all duration-300 active:scale-90 border-[3px] border-white cursor-pointer ${
-                        isOpen ? 'bg-gray-800 rotate-45' : 'bg-primary hover:bg-primary-dark'
+                    className={`size-14 rounded-full text-md-on-primary shadow-md-2 flex items-center justify-center transition-all duration-300 active:scale-90 border-2 border-md-surface cursor-pointer ${
+                        isOpen ? 'bg-md-surface-container-highest text-md-on-surface rotate-45' : 'bg-md-primary hover:bg-md-primary/90 text-md-on-primary'
                     }`}
                 >
                     <Icon name={mainIcon} className="text-2xl" />

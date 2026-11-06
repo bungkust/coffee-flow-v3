@@ -66,8 +66,11 @@ export const Modal = ({
     const isDestructive = type === 'warning' || type === 'error';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-black/60 backdrop-blur-xs transition-opacity duration-200">
-            <div className={`bg-md-surface-container-high text-md-on-surface w-full ${widthClass} rounded-[28px] p-6 shadow-md-3 border border-md-outline-variant/30 animate-in fade-in zoom-in-95 duration-150`}>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-xs transition-opacity duration-200">
+            <div className={`bg-md-surface-container-high text-md-on-surface w-full ${widthClass} rounded-t-[32px] sm:rounded-[28px] p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] shadow-md-3 border-t sm:border border-md-outline-variant/30 animate-in slide-in-from-bottom duration-200 sm:zoom-in-95`}>
+                {/* Mobile drag handle */}
+                <div className="w-12 h-1.5 rounded-full bg-md-outline-variant/40 mx-auto -mt-2 mb-4 sm:hidden" />
+
                 <div className="flex flex-col items-center text-center">
                     {!isForm && (
                         <div className={`size-12 rounded-full ${config.bg} flex items-center justify-center mb-3 shrink-0`}>

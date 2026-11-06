@@ -475,7 +475,6 @@ export const DrinkPreparationPage = () => {
             <SaveBar
                 onClick={proceedToFlow}
                 disabled={!isReady}
-                p="p-4"
                 icon={isReady ? 'play_arrow' : 'lock'}
                 label={isReady ? 'Start Crafting Flow' : 'Complete Checklist to Start'}
             />

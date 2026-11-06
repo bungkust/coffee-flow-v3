@@ -83,7 +83,10 @@ export const RecipeShareModal = ({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-5 bg-black/60 backdrop-blur-xs transition-opacity duration-200">
-            <div className="bg-md-surface-container-high text-md-on-surface w-full max-w-md rounded-t-[28px] sm:rounded-[28px] p-5 sm:p-6 shadow-md-3 border border-md-outline-variant/30 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+            <div className="bg-md-surface-container-high text-md-on-surface w-full max-w-md rounded-t-[32px] sm:rounded-[32px] p-5 sm:p-6 shadow-md-3 border-t sm:border border-md-outline-variant/30 animate-in fade-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+                {/* Mobile Drag Handle */}
+                <div className="w-12 h-1.5 rounded-full bg-md-outline-variant/40 mx-auto -mt-1 mb-3 sm:hidden" />
+
                 {/* Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-md-outline-variant/20">
                     <div className="flex items-center gap-2">
@@ -97,7 +100,7 @@ export const RecipeShareModal = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="size-9 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest transition-colors cursor-pointer"
+                        className="size-9 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer"
                         title="Close"
                     >
                         <Icon name="close" className="text-xl" />
@@ -167,7 +170,7 @@ export const RecipeShareModal = ({
                 </div>
 
                 {/* Actions Footer */}
-                <div className="pt-3 border-t border-md-outline-variant/20 mt-2 shrink-0">
+                <div className="pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] border-t border-md-outline-variant/20 mt-2 shrink-0">
                     <div className="grid grid-cols-2 gap-2.5">
                         {(activeTab === 'card'
                             ? [
