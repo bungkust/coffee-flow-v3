@@ -331,7 +331,7 @@ export const SmartImportModal = ({
     showMethodPicker,
     defaultMethodId
 }: SmartImportModalProps) => {
-    const [mode, setMode] = useState<'offline' | 'ai'>('offline');
+    const [mode, setMode] = useState<'offline' | 'ai'>('ai');
     const [rawInput, setRawInput] = useState('');
     const [aiJsonResponse, setAiJsonResponse] = useState('');
     const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -369,7 +369,7 @@ export const SmartImportModal = ({
         setParsedRecipes([]);
         setSelectedIndex(null);
         setParseError('');
-        setMode('offline');
+        setMode('ai');
     };
 
     const handleClose = () => {
@@ -526,7 +526,7 @@ export const SmartImportModal = ({
     const unsavedCount = parsedRecipes.length - savedCount;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="relative w-full max-w-md bg-md-surface-container-high text-md-on-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-md-outline-variant/20 overflow-hidden flex flex-col max-h-[92vh]">
 
                 {/* Header */}
@@ -538,13 +538,13 @@ export const SmartImportModal = ({
                                 <SplashLogoIcon className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-base font-bold leading-tight">Import Recipe</h2>
-                                <p className="text-[11px] text-white/65 font-medium mt-0.5">
+                                <h2 className="text-base font-bold leading-tight">Import Resep Kopi</h2>
+                                <p className="text-[11px] text-white/75 font-medium mt-0.5">
                                     {activePreview
-                                        ? 'Review recipe details'
+                                        ? 'Tinjau detail resep seduh'
                                         : parsedRecipes.length > 1
-                                            ? `Select from ${parsedRecipes.length} recipes found`
-                                            : 'Paste text, caption, or use AI'}
+                                            ? `Pilih dari ${parsedRecipes.length} resep ditemukan`
+                                            : 'Dari AI, medsos, atau catatan resep'}
                                 </p>
                             </div>
                         </div>
@@ -700,103 +700,134 @@ export const SmartImportModal = ({
                     ) : (
                         /* ── Input Form ── */
                         <div className="p-5 space-y-4">
-                            {showMethodPicker && (
-                                <Dropdown
-                                    label="Brew Tool"
-                                    value={methodId}
-                                    options={methods.map((m) => ({ value: m.id, label: m.name }))}
-                                    onChange={(val) => {
-                                        setMethodId(val);
-                                        setMethodTouched(true);
-                                        setParsedRecipes((prev) => prev.map((r) => ({ ...r, method_id: val })));
-                                    }}
-                                    placeholder="Select brew tool"
-                                />
-                            )}
-
-                            {/* Mode Selector */}
-                            <div className="bg-md-surface-container rounded-2xl p-1 flex gap-1 border border-md-outline-variant/20">
+                            {/* Segmented Control */}
+                            <div className="bg-md-surface-container rounded-2xl p-1 flex gap-1 border border-md-outline-variant/20 shadow-inner">
                                 <button
-                                    onClick={() => setMode('offline')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'offline' ? 'bg-md-surface text-primary shadow-sm' : 'text-md-on-surface-variant hover:text-md-on-surface'}`}
+                                    type="button"
+                                    onClick={() => { setMode('ai'); setParseError(''); }}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                        mode === 'ai'
+                                            ? 'bg-md-surface text-primary shadow-xs'
+                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
+                                    }`}
                                 >
-                                    Paste Text
+                                    <Icon name="auto_awesome" className="text-sm" />
+                                    <span>Smart AI</span>
                                 </button>
                                 <button
-                                    onClick={() => setMode('ai')}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${mode === 'ai' ? 'bg-md-surface text-primary shadow-sm' : 'text-md-on-surface-variant hover:text-md-on-surface'}`}
+                                    type="button"
+                                    onClick={() => { setMode('offline'); setParseError(''); }}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                        mode === 'offline'
+                                            ? 'bg-md-surface text-primary shadow-xs'
+                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
+                                    }`}
                                 >
-                                    Use AI
+                                    <Icon name="edit_note" className="text-base" />
+                                    <span>Teks Manual</span>
                                 </button>
                             </div>
 
                             {mode === 'offline' ? (
-                                <div className="space-y-2">
-                                    <p className="text-[11px] text-md-on-surface-variant/70 leading-relaxed">
-                                        Paste a recipe caption, YouTube description, or your own brew notes. We'll detect the method, dose, water, temp, and steps automatically.
-                                    </p>
-                                    <textarea
-                                        value={rawInput}
-                                        onChange={(e) => { setRawInput(e.target.value); setParseError(''); }}
-                                        placeholder={`Example:\nV60 Daily Driver\n15g coffee, 225g water, 93°C\nBloom 45g — 30s\nPour to 180g — 60s\nDrawdown — 30s`}
-                                        rows={7}
-                                        className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                                    />
+                                <div className="space-y-3">
+                                    {showMethodPicker && (
+                                        <Dropdown
+                                            label="Brew Tool"
+                                            value={methodId}
+                                            options={methods.map((m) => ({ value: m.id, label: m.name }))}
+                                            onChange={(val) => {
+                                                setMethodId(val);
+                                                setMethodTouched(true);
+                                                setParsedRecipes((prev) => prev.map((r) => ({ ...r, method_id: val })));
+                                            }}
+                                            placeholder="Select brew tool"
+                                        />
+                                    )}
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-md-on-surface">Teks Resep</label>
+                                        <textarea
+                                            value={rawInput}
+                                            onChange={(e) => { setRawInput(e.target.value); setParseError(''); }}
+                                            placeholder={`V60 Daily Driver\n15g kopi, 225g air, 93°C\nBloom 45g — 30s\nTuang ke 180g — 60s\nDrawdown — 30s`}
+                                            rows={8}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                        />
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {/* Step 1 */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${copiedPrompt ? 'bg-green-500 text-white' : 'bg-primary text-white'}`}>
-                                                {copiedPrompt ? <Icon name="check" className="text-[14px]" /> : '1'}
+                                <div className="space-y-3">
+                                    {/* Step 1: Sumber */}
+                                    <div className="p-3.5 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="size-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
+                                                <h3 className="text-xs font-bold text-md-on-surface">Sumber Resep</h3>
                                             </div>
-                                            <p className="text-xs font-bold text-md-on-surface">Paste your recipe link or text</p>
+                                            {/youtube\.com|youtu\.be/i.test(rawInput) && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-semibold">
+                                                    <Icon name="smart_display" className="text-sm" /> YouTube
+                                                </span>
+                                            )}
                                         </div>
                                         <textarea
                                             value={rawInput}
                                             onChange={(e) => { setRawInput(e.target.value); setParseError(''); setCopiedPrompt(false); }}
-                                            placeholder="YouTube link, TikTok caption, blog URL, or recipe text..."
-                                            rows={3}
-                                            className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-3 text-xs font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                            placeholder="Tempel link YouTube, TikTok, blog URL, atau catatan..."
+                                            rows={2}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                         />
-                                        {/youtube\.com|youtu\.be/i.test(rawInput) && (
-                                            <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl flex items-center gap-2 text-[11px] text-red-700 dark:text-red-300">
-                                                <Icon name="smart_display" className="text-base text-red-600 dark:text-red-400 shrink-0" />
-                                                <span>
-                                                    Link YouTube terdeteksi! Prompt AI otomatis meminta Gemini/ChatGPT membedah transkrip video.
-                                                </span>
-                                            </div>
-                                        )}
-                                        <button
-                                            onClick={handleCopyPrompt}
-                                            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer ${copiedPrompt ? 'bg-green-500 text-white' : 'bg-primary text-white hover:bg-primary-dark shadow-sm'}`}
-                                        >
-                                            <Icon name={copiedPrompt ? "check_circle" : "content_copy"} className="text-[16px]" />
-                                            {copiedPrompt ? 'Prompt copied — open Gemini or ChatGPT' : 'Copy prompt for Gemini / ChatGPT'}
-                                        </button>
-                                    </div>
-
-                                    {/* Divider */}
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
-                                        <span className="text-[10px] font-bold text-md-on-surface-variant/40 uppercase tracking-widest">then</span>
-                                        <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
-                                    </div>
-
-                                    {/* Step 2 */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-5 h-5 rounded-full bg-md-surface-container text-md-on-surface-variant flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
-                                            <p className="text-xs font-bold text-md-on-surface">Paste the JSON response here</p>
+                                        <div className="flex items-center gap-2 pt-0.5">
+                                            <button
+                                                type="button"
+                                                onClick={handleCopyPrompt}
+                                                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer ${
+                                                    copiedPrompt
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : 'bg-primary text-white hover:bg-primary-dark'
+                                                }`}
+                                            >
+                                                <Icon name={copiedPrompt ? "check" : "content_copy"} className="text-sm" />
+                                                <span>{copiedPrompt ? 'Prompt Disalin!' : 'Salin Prompt AI'}</span>
+                                            </button>
+                                            <a
+                                                href="https://chatgpt.com"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
+                                            >
+                                                <span>ChatGPT</span>
+                                                <Icon name="open_in_new" className="text-[12px]" />
+                                            </a>
+                                            <a
+                                                href="https://gemini.google.com"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
+                                            >
+                                                <span>Gemini</span>
+                                                <Icon name="open_in_new" className="text-[12px]" />
+                                            </a>
                                         </div>
-                                        <p className="text-[11px] text-md-on-surface-variant/70 ml-7">After sending the prompt, copy the AI's JSON reply and paste it below.</p>
+                                    </div>
+
+                                    {/* Step 2: Hasil JSON */}
+                                    <div className={`p-3.5 rounded-2xl bg-md-surface-container-low border transition-all space-y-2 ${
+                                        copiedPrompt
+                                            ? 'border-primary/50 ring-2 ring-primary/15'
+                                            : 'border-md-outline-variant/30'
+                                    }`}>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`size-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                                                aiJsonResponse.trim() ? 'bg-emerald-600 text-white' : 'bg-md-surface-container-highest text-md-on-surface'
+                                            }`}>2</span>
+                                            <h3 className="text-xs font-bold text-md-on-surface">Hasil JSON AI</h3>
+                                        </div>
                                         <textarea
                                             value={aiJsonResponse}
                                             onChange={(e) => { setAiJsonResponse(e.target.value); setParseError(''); }}
-                                            placeholder={'[ { "name": "Recipe 1", ... }, { "name": "Recipe 2", ... } ]'}
-                                            rows={4}
-                                            className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                            placeholder='[ { "name": "V60 Recipe", "method_id": "v60", ... } ]'
+                                            rows={3}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
                                         />
                                     </div>
                                 </div>
@@ -890,14 +921,15 @@ export const SmartImportModal = ({
                                 onClick={handleClose}
                                 className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
                             >
-                                Cancel
+                                Batal
                             </button>
                             <button
                                 onClick={handleExtract}
-                                className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/30 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                disabled={mode === 'ai' ? (!aiJsonResponse.trim() && !rawInput.trim()) : !rawInput.trim()}
+                                className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/25 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <SplashLogoIcon className="w-4 h-4" />
-                                Extract Recipe
+                                <Icon name={mode === 'ai' ? "auto_awesome" : "local_cafe"} className="text-base" />
+                                <span>Ekstrak Resep</span>
                             </button>
                         </>
                     )}

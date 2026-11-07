@@ -158,6 +158,9 @@ export const DrinkMenuPage = () => {
                 ]}
             />
 
+            {/* Bottom Navigation */}
+            <BottomNav activeTab="brewing" />
+
             {/* Smart Import Modal */}
             <DrinkSmartImportModal
                 isOpen={isImportModalOpen}
@@ -170,9 +173,6 @@ export const DrinkMenuPage = () => {
                     fetchDrinks();
                 }}
             />
-
-            {/* Bottom Navigation */}
-            <BottomNav activeTab="brewing" />
         </div>
     );
 };

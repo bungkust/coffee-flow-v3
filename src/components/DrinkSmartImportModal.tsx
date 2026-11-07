@@ -88,78 +88,6 @@ REQUIRED JSON OUTPUT FORMAT:
 \`\`\`
 `;
 
-const SAMPLE_DRINK_JSON = `[
-  {
-    "name": "Iced Caramel Oat Macchiato",
-    "base_type": "coffee",
-    "category": "cold",
-    "ingredients": [
-      { "name": "Espresso", "amount": 2, "unit": "shot", "category": "beans" },
-      { "name": "Oat Milk", "amount": 160, "unit": "ml", "category": "milk" },
-      { "name": "Vanilla Syrup", "amount": 2, "unit": "pump", "category": "syrup" },
-      { "name": "Caramel Drizzle", "amount": 10, "unit": "g", "category": "syrup" },
-      { "name": "Ice Cubes", "amount": 120, "unit": "g" }
-    ],
-    "instructions": [
-      "Brew 2 shots of rich espresso.",
-      "Fill a tall glass with 120g ice cubes.",
-      "Add 2 pumps vanilla syrup and pour 160ml cold oat milk.",
-      "Float the 2 espresso shots gently over the milk.",
-      "Finish with a crosshatch pattern of caramel drizzle."
-    ]
-  },
-  {
-    "name": "Kyoto Dirty Matcha Latte",
-    "base_type": "coffee",
-    "category": "cold",
-    "ingredients": [
-      { "name": "Espresso", "amount": 1, "unit": "shot", "category": "beans" },
-      { "name": "Matcha Powder", "amount": 4, "unit": "g", "category": "other_ingredient" },
-      { "name": "Warm Water", "amount": 30, "unit": "ml" },
-      { "name": "Fresh Milk", "amount": 150, "unit": "ml", "category": "milk" },
-      { "name": "Simple Syrup", "amount": 1, "unit": "pump", "category": "syrup" },
-      { "name": "Ice Cubes", "amount": 100, "unit": "g" }
-    ],
-    "instructions": [
-      "Whisk 4g ceremonial matcha powder with 30ml warm water until frothy.",
-      "Fill glass with ice cubes, simple syrup, and 150ml milk.",
-      "Pour whisked matcha gently over milk.",
-      "Float 1 freshly brewed espresso shot on top for three distinct layers."
-    ]
-  },
-  {
-    "name": "Classic Hot Chocolate",
-    "base_type": "non_coffee",
-    "category": "hot",
-    "ingredients": [
-      { "name": "Dark Cocoa Powder", "amount": 20, "unit": "g", "category": "other_ingredient" },
-      { "name": "Fresh Milk", "amount": 200, "unit": "ml", "category": "milk" },
-      { "name": "Brown Sugar", "amount": 1, "unit": "tbsp", "category": "sugar" },
-      { "name": "Dark Chocolate Chips", "amount": 15, "unit": "g", "category": "other_ingredient" }
-    ],
-    "instructions": [
-      "Whisk cocoa powder and brown sugar with 30ml warm milk in a cup to form a smooth paste.",
-      "Steam remaining milk until velvety and microfoamed (approx. 65°C).",
-      "Stir dark chocolate chips into hot paste until melted.",
-      "Pour steamed milk into chocolate mixture and stir thoroughly."
-    ]
-  }
-]`;
-
-const SAMPLE_RAW_RECIPE = `Iced Spanish Latte
-
-Bahan:
-- 2 shot espresso (40ml)
-- 120ml susu segar dingin
-- 30ml kental manis
-- 120g es batu
-
-Cara Membuat:
-1. Tuang kental manis ke dasar gelas saji
-2. Masukkan es batu hingga penuh
-3. Tuangkan susu segar perlahan
-4. Ekstrak espresso dan tuangkan di lapisan teratas`;
-
 const extractUrl = (text: string): string => (text.match(/https?:\/\/\S+/) || [])[0] || '';
 
 const formatIngredientToString = (ing: string | DrinkIngredient): string => {
@@ -330,7 +258,7 @@ export const DrinkSmartImportModal = ({
     onSaveDirect,
     initialParsedDrinks
 }: DrinkSmartImportModalProps) => {
-    const [mode, setMode] = useState<'offline' | 'ai'>('offline');
+    const [mode, setMode] = useState<'offline' | 'ai'>('ai');
     const [rawInput, setRawInput] = useState('');
     const [aiJsonResponse, setAiJsonResponse] = useState('');
     const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -338,7 +266,6 @@ export const DrinkSmartImportModal = ({
     const [parsedDrinks, setParsedDrinks] = useState<ImportableDrink[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [isSavingDirect, setIsSavingDirect] = useState(false);
-    const [showGuide, setShowGuide] = useState(true);
 
     // Offline overrides
     const [offlineBaseType, setOfflineBaseType] = useState<DrinkBaseType>(defaultBaseType);
@@ -364,7 +291,7 @@ export const DrinkSmartImportModal = ({
         setParseError('');
         setParsedDrinks([]);
         setSelectedIndex(null);
-        setMode('offline');
+        setMode('ai');
     };
 
     const handleClose = () => {
@@ -547,130 +474,36 @@ export const DrinkSmartImportModal = ({
     const unsavedCount = parsedDrinks.length - savedCount;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-md-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border border-md-outline-variant/30 overflow-hidden flex flex-col max-h-[92vh] text-md-on-surface">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md bg-md-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-md-outline-variant/30 overflow-hidden flex flex-col max-h-[92vh] text-md-on-surface">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-amber-900 via-amber-800 to-amber-700 text-white px-5 pt-3 pb-4 flex flex-col shrink-0 shadow-sm">
+                <div className="bg-primary text-white px-5 pt-3 pb-4 flex flex-col shrink-0 shadow-sm">
                     <div className="w-10 h-1 rounded-full bg-white/40 mx-auto mb-3 sm:hidden" />
                     <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-amber-200">
+                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
                                 <SplashLogoIcon className="w-5 h-5" />
                             </div>
                             <div>
-                                <h2 className="text-base font-bold leading-tight">Smart Import Drink</h2>
-                                <p className="text-[11px] text-amber-100/75 font-medium mt-0.5">
+                                <h2 className="text-base font-bold leading-tight">Import Resep Minuman</h2>
+                                <p className="text-[11px] text-white/75 font-medium mt-0.5">
                                     {activePreview
-                                        ? 'Review drink recipe details'
+                                        ? 'Tinjau detail resep minuman'
                                         : parsedDrinks.length > 1
-                                          ? `Select from ${parsedDrinks.length} drinks found`
-                                          : 'From AI, blogs, or social media recipes'}
+                                          ? `Pilih dari ${parsedDrinks.length} resep ditemukan`
+                                          : 'Dari AI, medsos, atau catatan resep'}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={handleClose}
-                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
                             aria-label="Close"
                         >
                             <Icon name="close" className="text-[18px]" />
                         </button>
                     </div>
                 </div>
-
-                {/* Mode Selector Tabs (hidden when viewing a preview or multi-drink list) */}
-                {!activePreview && parsedDrinks.length <= 1 && (
-                    <div className="flex border-b border-md-outline-variant/30 px-5 pt-3 gap-6 shrink-0 bg-md-surface-container-low">
-                        <button
-                            onClick={() => {
-                                setMode('offline');
-                                setParseError('');
-                            }}
-                            className={`pb-3 text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors relative ${
-                                mode === 'offline' ? 'text-md-primary' : 'text-md-on-surface-variant'
-                            }`}
-                        >
-                            <Icon name="bolt" className="text-[16px]" />
-                            <span>Quick Parse (Offline)</span>
-                            {mode === 'offline' && (
-                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-md-primary rounded-full" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => {
-                                setMode('ai');
-                                setParseError('');
-                            }}
-                            className={`pb-3 text-xs font-bold flex items-center gap-2 cursor-pointer transition-colors relative ${
-                                mode === 'ai' ? 'text-md-primary' : 'text-md-on-surface-variant'
-                            }`}
-                        >
-                            <Icon name="smart_toy" className="text-[16px]" />
-                            <span>AI Prompt Assist</span>
-                            {mode === 'ai' && (
-                                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-md-primary rounded-full" />
-                            )}
-                        </button>
-                    </div>
-                )}
-
-                {/* 3-Step Quick Guide Banner (Expandable/Collapsible) */}
-                {!activePreview && parsedDrinks.length <= 1 && (
-                    <div className="px-5 pt-3 pb-1 shrink-0 bg-md-surface">
-                        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="size-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">
-                                        <Icon name="help" className="text-xs" />
-                                    </div>
-                                    <span className="text-xs font-bold text-md-on-surface">
-                                        Cara Kerja Smart Import (3 Langkah)
-                                    </span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowGuide(!showGuide)}
-                                    className="text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer"
-                                >
-                                    <span>{showGuide ? 'Tutup' : 'Lihat'}</span>
-                                    <Icon name={showGuide ? 'expand_less' : 'expand_more'} className="text-sm" />
-                                </button>
-                            </div>
-
-                            {showGuide && (
-                                <div className="mt-2.5 pt-2.5 border-t border-amber-500/20 grid grid-cols-3 gap-2 text-center animate-in fade-in duration-200">
-                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
-                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
-                                            1
-                                        </div>
-                                        <span className="text-[11px] font-bold text-md-on-surface">Copy Teks</span>
-                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
-                                            Dari caption IG / TikTok
-                                        </span>
-                                    </div>
-                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
-                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
-                                            2
-                                        </div>
-                                        <span className="text-[11px] font-bold text-md-on-surface">Paste & Ekstrak</span>
-                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
-                                            Di kotak teks bawah
-                                        </span>
-                                    </div>
-                                    <div className="p-2 rounded-xl bg-md-surface/80 border border-md-outline-variant/20 flex flex-col items-center">
-                                        <div className="size-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 flex items-center justify-center text-[11px] font-bold mb-1">
-                                            3
-                                        </div>
-                                        <span className="text-[11px] font-bold text-md-on-surface">Simpan & Seduh</span>
-                                        <span className="text-[9px] text-md-on-surface-variant leading-tight mt-0.5">
-                                            Timer otomatis jadi
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto">
@@ -899,161 +732,173 @@ export const DrinkSmartImportModal = ({
                                 ))}
                             </div>
                         </div>
-                    ) : mode === 'offline' ? (
-                        /* ── Quick Parse (Offline) Form ── */
-                        <div className="p-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <Dropdown
-                                    label="Default Base"
-                                    labelClassName="!text-[11px] !font-bold text-md-on-surface-variant uppercase tracking-wider !mb-1"
-                                    value={offlineBaseType}
-                                    options={[
-                                        { value: 'coffee', label: 'Coffee Base', icon: 'coffee' },
-                                        { value: 'non_coffee', label: 'Non-Coffee', icon: 'eco' },
-                                    ]}
-                                    onChange={(val) => setOfflineBaseType(val as DrinkBaseType)}
-                                    buttonClassName="!py-2.5 !px-3 !rounded-xl !bg-md-surface-container-high !border-md-outline-variant/40 !text-xs font-semibold"
-                                />
-                                <Dropdown
-                                    label="Default Temp"
-                                    labelClassName="!text-[11px] !font-bold text-md-on-surface-variant uppercase tracking-wider !mb-1"
-                                    value={offlineCategory}
-                                    options={[
-                                        { value: 'cold', label: 'Cold', icon: 'ac_unit' },
-                                        { value: 'hot', label: 'Hot', icon: 'local_fire_department' },
-                                    ]}
-                                    onChange={(val) => setOfflineCategory(val as DrinkCategory)}
-                                    buttonClassName="!py-2.5 !px-3 !rounded-xl !bg-md-surface-container-high !border-md-outline-variant/40 !text-xs font-semibold"
-                                />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label
-                                        htmlFor="offline-text-input"
-                                        className="text-xs font-bold text-md-on-surface block"
-                                    >
-                                        Paste Recipe Text
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setRawInput(SAMPLE_RAW_RECIPE);
-                                            setOfflineBaseType('coffee');
-                                            setOfflineCategory('cold');
-                                            setParseError('');
-                                        }}
-                                        className="text-[11px] font-bold text-md-primary hover:underline flex items-center gap-1 cursor-pointer"
-                                    >
-                                        <Icon name="auto_awesome" className="text-xs" />
-                                        <span>Try Sample (1-Click Demo)</span>
-                                    </button>
-                                </div>
-                                <textarea
-                                    id="offline-text-input"
-                                    rows={8}
-                                    value={rawInput}
-                                    onChange={(e) => {
-                                        setRawInput(e.target.value);
-                                        setParseError('');
-                                    }}
-                                    placeholder={`Iced Caramel Macchiato\n\nBahan:\n- 2 shot espresso\n- 180ml fresh milk\n- 2 pump caramel syrup\n- 100g es batu\n\nCara membuat:\n1. Masukkan es batu dan susu ke dalam gelas\n2. Tambahkan sirup karamel\n3. Tuang espresso di atas susu`}
-                                    className="w-full rounded-2xl border border-md-outline-variant/40 bg-md-surface-container-high p-3.5 text-xs text-md-on-surface placeholder:text-md-on-surface-variant/50 focus:ring-2 focus:ring-md-primary/40 outline-none resize-none font-mono"
-                                />
-                            </div>
-                        </div>
                     ) : (
-                        /* ── AI Prompt Assist Form ── */
+                        /* ── Input Form ── */
                         <div className="p-5 space-y-4">
-                            {/* Step 1 */}
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                            copiedPrompt ? 'bg-green-600 text-white' : 'bg-amber-700 text-white'
-                                        }`}
-                                    >
-                                        {copiedPrompt ? <Icon name="check" className="text-[14px]" /> : '1'}
-                                    </div>
-                                    <p className="text-xs font-bold text-md-on-surface">
-                                        Paste recipe link or text notes
-                                    </p>
-                                </div>
-                                <textarea
-                                    value={rawInput}
-                                    onChange={(e) => {
-                                        setRawInput(e.target.value);
-                                        setParseError('');
-                                        setCopiedPrompt(false);
-                                    }}
-                                    placeholder="Paste YouTube link, TikTok caption, Instagram caption, or raw recipe text here..."
-                                    rows={3}
-                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/40 rounded-xl p-3 text-xs text-md-on-surface focus:ring-2 focus:ring-md-primary/40 outline-none resize-none"
-                                />
-                                {/youtube\.com|youtu\.be/i.test(rawInput) && (
-                                    <div className="p-2.5 bg-red-500/10 border border-red-500/25 rounded-xl flex items-center gap-2 text-[11px] text-red-700 dark:text-red-300">
-                                        <Icon name="smart_display" className="text-base text-red-600 shrink-0" />
-                                        <span>
-                                            Link YouTube terdeteksi! Prompt AI otomatis meminta Gemini/ChatGPT membedah transkrip video.
-                                        </span>
-                                    </div>
-                                )}
+                            {/* Segmented Control */}
+                            <div className="bg-md-surface-container rounded-2xl p-1 flex gap-1 border border-md-outline-variant/20 shadow-inner">
                                 <button
-                                    onClick={handleCopyPrompt}
-                                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer shadow-sm ${
-                                        copiedPrompt
-                                            ? 'bg-green-600 text-white'
-                                            : 'bg-amber-700 text-white hover:bg-amber-800'
+                                    type="button"
+                                    onClick={() => {
+                                        setMode('ai');
+                                        setParseError('');
+                                    }}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                        mode === 'ai'
+                                            ? 'bg-md-surface text-primary shadow-xs'
+                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
                                     }`}
                                 >
-                                    <Icon name={copiedPrompt ? 'check_circle' : 'content_copy'} className="text-[16px]" />
-                                    <span>
-                                        {copiedPrompt
-                                            ? 'Prompt copied! Now paste into Gemini or ChatGPT'
-                                            : 'Copy prompt for Gemini / ChatGPT'}
-                                    </span>
+                                    <Icon name="auto_awesome" className="text-sm" />
+                                    <span>Smart AI</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMode('offline');
+                                        setParseError('');
+                                    }}
+                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                                        mode === 'offline'
+                                            ? 'bg-md-surface text-primary shadow-xs'
+                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
+                                    }`}
+                                >
+                                    <Icon name="edit_note" className="text-base" />
+                                    <span>Teks Manual</span>
                                 </button>
                             </div>
 
-                            {/* Divider */}
-                            <div className="flex items-center gap-3">
-                                <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
-                                <span className="text-[10px] font-bold text-md-on-surface-variant/50 uppercase tracking-widest">
-                                    then
-                                </span>
-                                <div className="flex-1 h-[1px] bg-md-outline-variant/20" />
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-5 h-5 rounded-full bg-md-surface-container-highest flex items-center justify-center text-[10px] font-bold text-md-on-surface-variant shrink-0">
-                                            2
-                                        </div>
-                                        <p className="text-xs font-bold text-md-on-surface">Paste the JSON response</p>
+                            {mode === 'offline' ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Dropdown
+                                            label="Base Minuman"
+                                            value={offlineBaseType}
+                                            options={[
+                                                { value: 'coffee', label: 'Coffee', icon: 'coffee' },
+                                                { value: 'non_coffee', label: 'Non-Coffee', icon: 'eco' },
+                                            ]}
+                                            onChange={(val) => setOfflineBaseType(val as DrinkBaseType)}
+                                        />
+                                        <Dropdown
+                                            label="Suhu"
+                                            value={offlineCategory}
+                                            options={[
+                                                { value: 'cold', label: 'Cold / Dingin', icon: 'ac_unit' },
+                                                { value: 'hot', label: 'Hot / Hangat', icon: 'local_fire_department' },
+                                            ]}
+                                            onChange={(val) => setOfflineCategory(val as DrinkCategory)}
+                                        />
                                     </div>
-                                    <button
-                                        onClick={() => {
-                                            setAiJsonResponse(SAMPLE_DRINK_JSON);
-                                            setParseError('');
-                                        }}
-                                        className="text-[11px] font-bold text-md-primary hover:underline cursor-pointer"
-                                    >
-                                        Try Sample (3 Drinks)
-                                    </button>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-md-on-surface">Teks Resep Minuman</label>
+                                        <textarea
+                                            value={rawInput}
+                                            onChange={(e) => {
+                                                setRawInput(e.target.value);
+                                                setParseError('');
+                                            }}
+                                            rows={8}
+                                            placeholder={`Iced Spanish Latte\n\nBahan:\n- 2 shot espresso\n- 120ml susu segar\n- 30ml kental manis\n- 120g es batu\n\nLangkah:\n1. Tuang kental manis ke dasar gelas\n2. Masukkan es batu & susu\n3. Tuang espresso di atasnya`}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                        />
+                                    </div>
                                 </div>
-                                <textarea
-                                    value={aiJsonResponse}
-                                    onChange={(e) => {
-                                        setAiJsonResponse(e.target.value);
-                                        setParseError('');
-                                    }}
-                                    placeholder='[ { "name": "Drink 1", "base_type": "coffee", ... } ]'
-                                    rows={4}
-                                    className="w-full bg-md-surface-container-high border border-md-outline-variant/40 rounded-2xl p-3 text-xs font-mono text-md-on-surface focus:ring-2 focus:ring-md-primary/40 outline-none resize-none"
-                                />
-                            </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {/* Step 1: Sumber */}
+                                    <div className="p-3.5 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="size-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
+                                                <h3 className="text-xs font-bold text-md-on-surface">Sumber Resep</h3>
+                                            </div>
+                                            {/youtube\.com|youtu\.be/i.test(rawInput) && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-semibold">
+                                                    <Icon name="smart_display" className="text-sm" /> YouTube
+                                                </span>
+                                            )}
+                                        </div>
+                                        <textarea
+                                            value={rawInput}
+                                            onChange={(e) => {
+                                                setRawInput(e.target.value);
+                                                setParseError('');
+                                                setCopiedPrompt(false);
+                                            }}
+                                            placeholder="Tempel link YouTube, TikTok, Instagram caption, atau resep..."
+                                            rows={2}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                        />
+                                        <div className="flex items-center gap-2 pt-0.5">
+                                            <button
+                                                type="button"
+                                                onClick={handleCopyPrompt}
+                                                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer ${
+                                                    copiedPrompt
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : 'bg-primary text-white hover:bg-primary-dark'
+                                                }`}
+                                            >
+                                                <Icon name={copiedPrompt ? 'check' : 'content_copy'} className="text-sm" />
+                                                <span>{copiedPrompt ? 'Prompt Disalin!' : 'Salin Prompt AI'}</span>
+                                            </button>
+                                            <a
+                                                href="https://chatgpt.com"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
+                                            >
+                                                <span>ChatGPT</span>
+                                                <Icon name="open_in_new" className="text-[12px]" />
+                                            </a>
+                                            <a
+                                                href="https://gemini.google.com"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
+                                            >
+                                                <span>Gemini</span>
+                                                <Icon name="open_in_new" className="text-[12px]" />
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Step 2: Hasil JSON */}
+                                    <div className={`p-3.5 rounded-2xl bg-md-surface-container-low border transition-all space-y-2 ${
+                                        copiedPrompt
+                                            ? 'border-primary/50 ring-2 ring-primary/15'
+                                            : 'border-md-outline-variant/30'
+                                    }`}>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`size-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                                                aiJsonResponse.trim() ? 'bg-emerald-600 text-white' : 'bg-md-surface-container-highest text-md-on-surface'
+                                            }`}>2</span>
+                                            <h3 className="text-xs font-bold text-md-on-surface">Hasil JSON AI</h3>
+                                        </div>
+                                        <textarea
+                                            value={aiJsonResponse}
+                                            onChange={(e) => {
+                                                setAiJsonResponse(e.target.value);
+                                                setParseError('');
+                                            }}
+                                            placeholder='[ { "name": "Iced Spanish Latte", ... } ]'
+                                            rows={3}
+                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Error */}
+                            {parseError && (
+                                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 flex items-center gap-2">
+                                    <Icon name="error_outline" className="text-[16px] text-red-500 shrink-0" />
+                                    <p className="text-[11px] font-semibold text-red-600 dark:text-red-300">{parseError}</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -1133,16 +978,17 @@ export const DrinkSmartImportModal = ({
                         <>
                             <button
                                 onClick={handleClose}
-                                className="flex-1 py-2.5 border border-md-outline-variant text-md-on-surface rounded-xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
+                                className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
                             >
-                                Cancel
+                                Batal
                             </button>
                             <button
                                 onClick={handleExtract}
-                                className="flex-1 py-2.5 bg-gradient-to-r from-amber-800 to-amber-700 hover:from-amber-900 hover:to-amber-800 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-900/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                disabled={mode === 'ai' ? (!aiJsonResponse.trim() && !rawInput.trim()) : !rawInput.trim()}
+                                className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/25 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <Icon name="auto_awesome" className="text-[16px]" />
-                                <span>Extract Drink</span>
+                                <Icon name={mode === 'ai' ? "auto_awesome" : "local_cafe"} className="text-base" />
+                                <span>Ekstrak Minuman</span>
                             </button>
                         </>
                     )}
