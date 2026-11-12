@@ -152,6 +152,62 @@
 }
 
 .progress-bar-fill {
-  animation: progress 2.5s ease-out forwards;
+  animation: progress 0.45s ease-out forwards;
+}
+
+/* Palette-synergized gradient cards (Home quick-actions & Brewing Mode selector) */
+.quick-card-scale,
+.mode-card-scale {
+  --card-start: var(--md-sys-color-tertiary-container);
+  --card-end: color-mix(in srgb, var(--md-sys-color-tertiary-container) 45%, var(--md-sys-color-surface-container-low));
+  --card-accent: var(--md-sys-color-tertiary);
+}
+
+.quick-card-drink,
+.mode-card-manual {
+  --card-start: color-mix(in srgb, var(--md-sys-color-primary) 22%, var(--md-sys-color-primary-container));
+  --card-end: var(--md-sys-color-primary-container);
+  --card-accent: var(--md-sys-color-primary);
+}
+
+.quick-card-drink,
+.quick-card-scale,
+.mode-card-active {
+  background: linear-gradient(135deg, var(--card-start) 0%, var(--card-end) 100%);
+}
+
+.quick-card-drink,
+.quick-card-scale {
+  border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+}
+
+.quick-card-drink:hover,
+.quick-card-scale:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-accent) 10%, var(--card-start)) 0%,
+    color-mix(in srgb, var(--card-start) 40%, var(--card-end)) 100%
+  );
+}
+
+.mode-card-active {
+  border: 1.5px solid var(--card-accent);
+}
+
+.mode-card-inactive {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-start) 42%, var(--md-sys-color-surface-container-low)) 0%,
+    var(--md-sys-color-surface-container-low) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--card-accent) 22%, transparent);
+}
+
+.mode-card-inactive:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--card-start) 65%, var(--md-sys-color-surface-container-low)) 0%,
+    color-mix(in srgb, var(--card-end) 35%, var(--md-sys-color-surface-container-low)) 100%
+  );
 }
 

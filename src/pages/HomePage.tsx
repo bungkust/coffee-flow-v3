@@ -108,27 +108,27 @@ export const HomePage = () => {
                     <div className="grid grid-cols-2 gap-2.5">
                         <button
                             onClick={() => navigate('/drinks')}
-                            className="group flex items-center gap-3 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/25 p-3 hover:bg-md-surface-container-high transition-all active:scale-[0.98] cursor-pointer text-left"
+                            className="quick-card-drink group flex items-center gap-3 rounded-2xl p-3 shadow-md-1 hover:shadow-md-2 transition-all active:scale-[0.98] cursor-pointer text-left"
                         >
-                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-secondary-container text-md-on-secondary-container">
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-primary text-md-on-primary shadow-xs">
                                 <Icon name="local_cafe" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h4 className="typescale-title-small font-bold text-md-on-surface truncate">Drink Menu</h4>
-                                <p className="typescale-body-small text-md-on-surface-variant text-[11px] truncate">Coffee & Latte</p>
+                                <h4 className="typescale-title-small font-bold text-md-on-primary-container truncate">Drink Menu</h4>
+                                <p className="typescale-body-small text-md-on-primary-container opacity-80 text-[11px] truncate">Coffee & Latte</p>
                             </div>
                         </button>
 
                         <button
                             onClick={() => navigate('/scale')}
-                            className="group flex items-center gap-3 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/25 p-3 hover:bg-md-surface-container-high transition-all active:scale-[0.98] cursor-pointer text-left"
+                            className="quick-card-scale group flex items-center gap-3 rounded-2xl p-3 shadow-md-1 hover:shadow-md-2 transition-all active:scale-[0.98] cursor-pointer text-left"
                         >
-                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-primary-container text-md-on-primary-container">
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-md-tertiary text-md-on-tertiary shadow-xs">
                                 <Icon name="scale" className="text-xl" style={{ fontVariationSettings: "'FILL' 1" }} />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <h4 className="typescale-title-small font-bold text-md-on-surface truncate">Smart Scale</h4>
-                                <p className="typescale-body-small text-md-on-surface-variant text-[11px] truncate">Live Weight</p>
+                                <h4 className="typescale-title-small font-bold text-md-on-tertiary-container truncate">Smart Scale</h4>
+                                <p className="typescale-body-small text-md-on-tertiary-container opacity-80 text-[11px] truncate">Live Weight</p>
                             </div>
                         </button>
                     </div>

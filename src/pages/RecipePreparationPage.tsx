@@ -8,12 +8,14 @@ import type { PantryItem } from '../features/pantry/domain/entities';
 import { useBrewStore, type BrewMode } from '../state/useBrewStore';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
 import { ScalePairingModal } from '../components/ScalePairingModal';
+import { BrewModeSheet } from '../components/BrewModeSheet';
 import { Dropdown } from '../components/Dropdown';
 import { PageHeader } from '../components/PageHeader';
 import { SaveBar } from '../components/SaveBar';
 import { Modal } from '../components/Modal';
-import { calculateCoffeeDose, formatWeight, formatVolume, formatStepSeconds, parseRatio, scaleRecipe, scaleInstructionText, getPourAmount, getStepIntervalInfo, getTotalTargetWeight, getBrewSteps, withDerivedPourDurations, type UnitSystem } from '../shared/utils/brewMath';
+import { calculateCoffeeDose, formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, parseRatio, scaleRecipe, scaleInstructionText, getBrewDuration, getPourAmount, getStepIntervalInfo, getTotalTargetWeight, getBrewSteps, withDerivedPourDurations, type UnitSystem } from '../shared/utils/brewMath';
 import { useSafeBack } from '../shared/utils/backNavigation';
+import { useWakeLock } from '../shared/hooks/useWakeLock';
 
 // Steps that only set things up (ice, rinse, dosing) belong on this screen, not the brew flow.
 const DEFAULT_ICE_RATIO = 4.375;
@@ -31,7 +33,80 @@ const parseExplicitIce = (recipe: Recipe): number | null => {
     return match ? Math.round(parseFloat(match[1])) : null;
 };
 
+const SectionHeader = ({ step, title, right }: { step: number; title: string; right?: React.ReactNode }) => (
+    <div className="flex items-center justify-between gap-2 px-0.5">
+        <h2 className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant tabular-nums">
+            {step} · {title}
+        </h2>
+        {right}
+    </div>
+);
+
+const StepperRow = ({
+    label,
+    subtitle,
+    value,
+    onDecrement,
+    onIncrement,
+    decrementLabel,
+    incrementLabel,
+    onReset,
+}: {
+    label: string;
+    subtitle?: string;
+    value: string;
+    onDecrement: () => void;
+    onIncrement: () => void;
+    decrementLabel: string;
+    incrementLabel: string;
+    onReset?: () => void;
+}) => (
+    <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+            <span className="block typescale-title-small font-bold text-md-on-surface">{label}</span>
+            {(subtitle || onReset) && (
+                <div className="flex items-center gap-2 mt-0.5">
+                    {subtitle && (
+                        <span className="typescale-body-small text-md-on-surface-variant">{subtitle}</span>
+                    )}
+                    {onReset && (
+                        <button
+                            type="button"
+                            onClick={onReset}
+                            className="typescale-label-small font-bold text-md-primary hover:underline cursor-pointer"
+                        >
+                            Reset
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+            <button
+                type="button"
+                onClick={onDecrement}
+                aria-label={decrementLabel}
+                className="size-11 rounded-full border border-md-outline-variant/35 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+            >
+                -
+            </button>
+            <span className="min-w-[4.25rem] text-center typescale-title-large font-extrabold text-md-on-surface tracking-tight tabular-nums">
+                {value}
+            </span>
+            <button
+                type="button"
+                onClick={onIncrement}
+                aria-label={incrementLabel}
+                className="size-11 rounded-full border border-md-outline-variant/35 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-xl cursor-pointer"
+            >
+                +
+            </button>
+        </div>
+    </div>
+);
+
 export const RecipePreparationPage = () => {
+    useWakeLock(true);
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const safeBack = useSafeBack();
@@ -47,8 +122,15 @@ export const RecipePreparationPage = () => {
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
     const [adjustedCoffeeDose, setAdjustedCoffeeDose] = useState<number>(0);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
-    const [brewMode, setBrewMode] = useState<BrewMode>('manual');
-    const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
+    const initialModeParam = searchParams.get('mode');
+    const skipPairing = searchParams.get('skipPairing') === '1';
+    const hasExplicitMode = initialModeParam === 'smart-scale' || initialModeParam === 'manual';
+    const [brewMode, setBrewMode] = useState<BrewMode>(hasExplicitMode ? initialModeParam : 'manual');
+    const [isModeSheetOpen, setIsModeSheetOpen] = useState(!hasExplicitMode);
+    const [showStepsPreview, setShowStepsPreview] = useState(false);
+    const [isPairingModalOpen, setIsPairingModalOpen] = useState(
+        () => initialModeParam === 'smart-scale' && !skipPairing && useScaleStore.getState().connectionState !== 'connected'
+    );
     const { connectionState, device, batteryPercent, currentWeight, tare, connectMock } = useScaleStore();
     const manageClicked = useRef(false);
     const [stockWarning, setStockWarning] = useState<string[] | null>(null);
@@ -228,7 +310,9 @@ export const RecipePreparationPage = () => {
 
         items.push({
             id: 'scale',
-            label: 'Add coffee grounds to brewer & tare scale'
+            label: brewMode === 'smart-scale'
+                ? 'Add coffee grounds to brewer & tare scale'
+                : 'Add coffee grounds to brewer'
         });
 
         return items;
@@ -296,334 +380,203 @@ export const RecipePreparationPage = () => {
         proceedToBrew();
     };
 
-    return (
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28">
-            {/* Header */}
-            <PageHeader title="Preparation" onBack={() => safeBack(id ? `/recipes/${id}` : '/recipes')} />
+    const isSmartScaleMode = brewMode === 'smart-scale';
+    const scaledWaterTotal = currentScaledRecipe
+        ? formatVolume(getTotalTargetWeight(currentScaledRecipe.steps) || currentScaledRecipe.total_water || 0, unitSystem)
+        : '';
+    const scaledSpecs = isIced
+        ? [
+            { icon: 'water_drop', label: 'Hot Water', value: formatVolume(hotWaterVolume, unitSystem) },
+            { icon: 'ac_unit', label: 'Total Brew', value: `${totalBrewVolume}ml` },
+            { icon: 'grain', label: 'Grind', value: recipe.grind_size || 'Medium' },
+            { icon: 'thermostat', label: 'Temp', value: recipe.temperature ? `${recipe.temperature}°C` : '—' },
+        ]
+        : [
+            { icon: 'water_drop', label: 'Water', value: formatVolume(hotWaterVolume, unitSystem) },
+            { icon: 'thermostat', label: 'Temp', value: recipe.temperature ? `${recipe.temperature}°C` : '—' },
+            { icon: 'grain', label: 'Grind', value: recipe.grind_size || 'Medium' },
+            { icon: 'timer', label: 'Duration', value: formatDuration(getBrewDuration(currentScaledRecipe?.steps ?? recipe.steps)) },
+        ];
 
-            {/* Preparation Banner Title */}
-            <div className="px-5 py-5 border-b border-md-outline-variant/20 bg-md-surface-container-low/60 space-y-1">
-                <span className="typescale-label-medium font-bold text-md-primary uppercase tracking-wider">Ready to Brew?</span>
-                <h1 className="typescale-headline-small font-bold text-md-on-surface leading-tight">{recipe.name}</h1>
-                <p className="typescale-body-small text-md-on-surface-variant">Make sure you have everything ready before we start the timer.</p>
-            </div>
+    return (
+        <div className="flex flex-col min-h-dvh max-w-md mx-auto bg-md-surface text-md-on-surface font-sans pb-28 overflow-x-hidden">
+            {/* Header with active mode switch pill */}
+            <PageHeader
+                title="Preparation"
+                onBack={() => safeBack(id ? `/recipes/${id}` : '/recipes')}
+                action={(
+                    <button
+                        type="button"
+                        onClick={() => setIsModeSheetOpen(true)}
+                        aria-label={`Change brewing mode (current: ${isSmartScaleMode ? 'Smart Scale' : 'Manual Timer'})`}
+                        className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1 rounded-full typescale-label-small font-bold transition-all active:scale-95 cursor-pointer ${
+                            isSmartScaleMode
+                                ? 'bg-md-tertiary-container text-md-on-tertiary-container'
+                                : 'bg-md-primary-container text-md-on-primary-container'
+                        }`}
+                    >
+                        <Icon name={isSmartScaleMode ? 'scale' : 'timer'} className="text-sm" />
+                        <span>{isSmartScaleMode ? 'Smart Scale' : 'Manual'}</span>
+                        <Icon name="swap_horiz" className="text-sm opacity-75" />
+                    </button>
+                )}
+            />
 
             <main className="flex-1 px-5 pt-4 space-y-5">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-4 gap-2">
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
-                        <Icon name="coffee" className="text-md-primary mb-1 text-xl" />
-                        <span className="typescale-title-small font-bold text-md-on-surface">
-                            {formatWeight(adjustedCoffeeDose, unitSystem)}
-                        </span>
-                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Coffee</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
-                        <Icon name="water_drop" className="text-md-primary mb-1 text-xl" />
-                        <span className="typescale-title-small font-bold text-md-on-surface">{formatVolume(hotWaterVolume, unitSystem)}</span>
-                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">{isIced ? 'Hot Water' : 'Water'}</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
-                        <Icon name={isIced ? "ac_unit" : "thermostat"} className="text-md-primary mb-1 text-xl" />
-                        <span className="typescale-title-small font-bold text-md-on-surface">
-                            {isIced ? formatWeight(effectiveIceWeight, unitSystem) : `${recipe.temperature}°C`}
-                        </span>
-                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">{isIced ? 'Ice' : 'Temp'}</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-md-surface-container-low border border-md-outline-variant/30 shadow-md-1">
-                        <Icon name="grain" className="text-md-primary mb-1 text-xl" />
-                        <span className="typescale-title-small font-bold text-md-on-surface line-clamp-1">{recipe.grind_size || 'Coarse'}</span>
-                        <span className="typescale-label-small text-md-on-surface-variant/70 uppercase tracking-wider font-bold mt-0.5">Grind</span>
-                    </div>
+                {/* Recipe Title Context */}
+                <div className="px-0.5">
+                    <span className="typescale-label-small font-bold text-md-primary uppercase tracking-wider">
+                        {formatMethodName(recipe.method_id)}
+                    </span>
+                    <h1 className="typescale-title-large font-bold text-md-on-surface leading-snug">
+                        {recipe.name}
+                    </h1>
                 </div>
 
-                {/* Dose & Ice Adjuster Card */}
-                <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider">
-                            {isIced ? 'Adjust Dose & Ice' : 'Adjust Brew Dose'}
-                        </span>
-                        <span className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1 rounded-full">Ratio {recipe.ratio}</span>
-                    </div>
+                {/* Section 1: Dose & Scaled Specs */}
+                <section className="space-y-2.5">
+                    <SectionHeader
+                        step={1}
+                        title="Dose & Specs"
+                        right={
+                            <span className="typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container px-2.5 py-0.5 rounded-full tabular-nums">
+                                Ratio {recipe.ratio}
+                            </span>
+                        }
+                    />
+                    <div className="bg-md-surface-container-low p-4 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3.5">
+                        <StepperRow
+                            label="Coffee Dose"
+                            subtitle={`Base ${baseDose}g`}
+                            value={`${adjustedCoffeeDose.toFixed(1)}g`}
+                            onDecrement={() => handleAdjustDose(-1)}
+                            onIncrement={() => handleAdjustDose(1)}
+                            decrementLabel="Decrease coffee dose"
+                            incrementLabel="Increase coffee dose"
+                        />
 
-                    {/* Coffee Dose Stepper */}
-                    <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-4 py-1">
-                            <button
-                                onClick={() => handleAdjustDose(-1)}
-                                className="size-11 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
-                            >
-                                -
-                            </button>
-                            <div className="flex flex-col items-center flex-1">
-                                <span className="typescale-headline-medium font-extrabold text-md-on-surface tracking-tight tabular-nums">{adjustedCoffeeDose.toFixed(1)}g</span>
-                                <span className="typescale-label-small text-md-on-surface-variant/70 font-bold uppercase tracking-wider">Coffee Dose</span>
-                            </div>
-                            <button
-                                onClick={() => handleAdjustDose(1)}
-                                className="size-11 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
-                            >
-                                +
-                            </button>
-                        </div>
-                    </div>
+                        {isIced && (
+                            <>
+                                <div className="h-px bg-md-outline-variant/20" />
+                                <StepperRow
+                                    label="Ice Cubes"
+                                    subtitle={customIceWeight !== null ? 'Custom' : 'Default'}
+                                    value={`${effectiveIceWeight}g`}
+                                    onDecrement={() => handleAdjustIce(-1)}
+                                    onIncrement={() => handleAdjustIce(1)}
+                                    decrementLabel="Decrease ice weight"
+                                    incrementLabel="Increase ice weight"
+                                    onReset={customIceWeight !== null ? () => setCustomIceWeight(null) : undefined}
+                                />
+                            </>
+                        )}
 
-                    {/* Ice Stepper (Only for Iced Recipes) */}
-                    {isIced && (
-                        <>
-                            <div className="h-px bg-md-outline-variant/20"></div>
-                            <div className="space-y-1">
-                                <div className="flex justify-between items-center px-1 mb-1">
-                                    <span className="typescale-label-small font-bold uppercase tracking-wider text-md-primary flex items-center gap-1">
-                                        <Icon name="ac_unit" className="text-sm" /> Ice Cubes Target
-                                    </span>
-                                    {customIceWeight !== null && (
-                                        <button
-                                            onClick={() => setCustomIceWeight(null)}
-                                            className="typescale-label-small text-md-outline hover:text-md-primary transition-colors cursor-pointer font-medium"
-                                        >
-                                            Reset Ratio
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex items-center justify-between gap-4 py-1">
-                                    <button
-                                        onClick={() => handleAdjustIce(-1)}
-                                        className="size-11 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
-                                    >
-                                        -
-                                    </button>
-                                    <div className="flex flex-col items-center flex-1">
-                                        <span className="typescale-headline-medium font-extrabold text-md-on-surface tracking-tight tabular-nums">{effectiveIceWeight}g</span>
-                                        <span className="typescale-label-small text-md-on-surface-variant/70 font-bold uppercase tracking-wider">
-                                            {customIceWeight !== null ? 'Custom Ice' : 'Default Ice'}
+                        {/* Live Scaled Specs 2x2 Grid */}
+                        <div className="pt-3.5 border-t border-md-outline-variant/20 grid grid-cols-2 gap-x-4 gap-y-3">
+                            {scaledSpecs.map((spec) => (
+                                <div key={spec.label} className="flex items-center gap-2.5 min-w-0">
+                                    <div className="size-8 rounded-xl bg-md-surface-container-high text-md-primary flex items-center justify-center shrink-0">
+                                        <Icon name={spec.icon} className="text-lg" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block typescale-label-small text-md-on-surface-variant uppercase tracking-wider font-semibold">
+                                            {spec.label}
+                                        </span>
+                                        <span className="block typescale-title-small font-bold text-md-on-surface tabular-nums truncate">
+                                            {spec.value}
                                         </span>
                                     </div>
-                                    <button
-                                        onClick={() => handleAdjustIce(1)}
-                                        className="size-11 rounded-full border border-md-outline-variant/40 bg-md-surface-container-high hover:bg-md-surface-container-highest text-md-on-surface transition-all active:scale-95 flex items-center justify-center font-bold text-2xl cursor-pointer"
-                                    >
-                                        +
-                                    </button>
                                 </div>
-                            </div>
-                        </>
-                    )}
-
-                    <div className="h-px bg-md-outline-variant/20"></div>
-                    <div className={`grid ${isIced ? 'grid-cols-3' : 'grid-cols-2'} gap-2 text-center`}>
-                        <div>
-                            <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">
-                                {isIced ? 'Hot Water' : 'Scaled Water'}
-                            </span>
-                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{Math.round(hotWaterVolume)}ml</span>
-                        </div>
-                        {isIced && (
-                            <div>
-                                <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">Ice Cubes</span>
-                                <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{Math.round(effectiveIceWeight)}g</span>
-                            </div>
-                        )}
-                        <div>
-                            <span className="typescale-label-small font-semibold text-md-on-surface-variant/80 block mb-0.5">Total Brew</span>
-                            <span className="typescale-title-medium font-extrabold text-md-on-surface tabular-nums">{totalBrewVolume}ml</span>
+                            ))}
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Scaled Steps Preview */}
-                {currentScaledRecipe && currentScaledRecipe.steps.length > 0 && (
-                    <div className="bg-md-surface-container-low p-5 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
-                                <Icon name="format_list_numbered" className="text-md-primary text-base" />
-                                Scaled Brew Steps
-                            </span>
-                            <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-high px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
-                                {formatVolume(getTotalTargetWeight(currentScaledRecipe.steps) || currentScaledRecipe.total_water || 0, unitSystem)} Total Water
-                            </span>
-                        </div>
-                        <div className="space-y-3 mt-2">
-                            {currentScaledRecipe.steps.map((step, idx) => {
-                                const pour = getPourAmount(currentScaledRecipe.steps, idx);
-                                const intervalInfo = getStepIntervalInfo(step);
-                                return (
-                                    <div key={step.id || idx} className="p-4 rounded-2xl bg-md-surface-container-high/60 border border-md-outline-variant/20 space-y-2">
-                                        {/* Row 1: Title & Duration Pill */}
-                                        <div className="flex items-start justify-between gap-3">
-                                            <h4 className="typescale-title-small font-bold text-md-on-surface flex-1 min-w-0 leading-snug">
-                                                {idx + 1}. {step.label}
-                                            </h4>
-                                            <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full shrink-0 border border-md-outline-variant/20">
-                                                {formatStepSeconds(step.duration_seconds)}
+                {/* Section 2: Pantry Gear (Beans & Filter) */}
+                <section className="space-y-2.5">
+                    <SectionHeader step={2} title="Pantry Gear" />
+                    <div className="bg-md-surface-container-low p-4 rounded-2xl border border-md-outline-variant/30 shadow-md-1 space-y-3.5">
+                        {[
+                            {
+                                key: 'beans',
+                                label: 'Beans',
+                                icon: 'inventory_2',
+                                items: beans,
+                                value: selectedBeanId,
+                                onChange: setSelectedBeanId,
+                                placeholder: 'Select a coffee bean...',
+                                emptyText: 'No beans in pantry',
+                                addLabel: 'Add Beans',
+                                addPath: '/pantry/add/beans',
+                            },
+                            {
+                                key: 'filter',
+                                label: 'Filter',
+                                icon: 'filter_list',
+                                items: filters,
+                                value: selectedFilterId,
+                                onChange: setSelectedFilterId,
+                                placeholder: 'Select a filter...',
+                                emptyText: 'No filters in pantry',
+                                addLabel: 'Add Filters',
+                                addPath: '/pantry/add/filter',
+                            },
+                        ].map((gear, idx) => (
+                            <div key={gear.key}>
+                                {idx > 0 && <div className="h-px bg-md-outline-variant/20 mb-3.5" />}
+                                {gear.items.length > 0 ? (
+                                    <Dropdown
+                                        label={gear.label}
+                                        icon={gear.icon}
+                                        options={gear.items.map((item) => ({ value: item.id, label: item.name }))}
+                                        value={gear.value}
+                                        onChange={gear.onChange}
+                                        placeholder={gear.placeholder}
+                                        className="w-full"
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <span className="block typescale-label-small font-bold uppercase tracking-wider text-md-on-surface-variant">
+                                                {gear.label}
+                                            </span>
+                                            <span className="block typescale-body-small text-md-on-surface-variant">
+                                                {gear.emptyText}
                                             </span>
                                         </div>
-
-                                        {/* Row 2: Target, Pour Amount & Interval Chips */}
-                                        <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                                            {typeof step.target_weight === 'number' && step.target_weight > 0 && (
-                                                <>
-                                                    <span className="inline-flex items-center gap-1 typescale-label-small font-extrabold text-md-primary bg-md-primary-container/40 px-2.5 py-0.5 rounded-full border border-md-primary/20">
-                                                        <Icon name="water_drop" className="text-xs" />
-                                                        +{formatWeight(pour, unitSystem)}
-                                                    </span>
-                                                    <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2.5 py-0.5 rounded-full border border-md-outline-variant/20">
-                                                        <Icon name="scale" className="text-xs text-md-on-surface-variant/70" />
-                                                        Target: {formatWeight(step.target_weight, unitSystem)}
-                                                    </span>
-                                                </>
-                                            )}
-
-                                            {intervalInfo.restSeconds > 0 && (
-                                                <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-secondary bg-md-secondary-container/40 px-2.5 py-0.5 rounded-full border border-md-secondary/20">
-                                                    <Icon name="hourglass_empty" className="text-xs" />
-                                                    Rest: {intervalInfo.restSeconds}s
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Row 3: Step Instruction */}
-                                        {step.instruction && (
-                                            <p className="typescale-body-small text-md-on-surface-variant leading-relaxed pt-0.5">
-                                                {step.instruction}
-                                            </p>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(gear.addPath)}
+                                            className="typescale-label-medium font-bold text-md-on-primary-container bg-md-primary-container px-3.5 py-2 min-h-[40px] rounded-full hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+                                        >
+                                            {gear.addLabel}
+                                        </button>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Bean Selection */}
-                <div>
-                    {beans.length > 0 ? (
-                        <Dropdown
-                            label="Choose Beans from Pantry"
-                            icon="inventory_2"
-                            options={beans.map(b => ({ value: b.id, label: b.name }))}
-                            value={selectedBeanId}
-                            onChange={setSelectedBeanId}
-                            placeholder="Select a coffee bean..."
-                            className="w-full"
-                        />
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
-                                <Icon name="inventory_2" className="text-base" /> Choose Beans from Pantry
-                            </label>
-                            <div className="p-4 bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl flex items-center justify-between shadow-md-1">
-                                <span className="typescale-body-medium text-md-on-surface-variant font-medium">No beans available</span>
-                                <button
-                                    onClick={() => navigate('/pantry/add/beans')}
-                                    className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
-                                >
-                                    Add Beans
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Filter Selection */}
-                <div>
-                    {filters.length > 0 ? (
-                        <Dropdown
-                            label="Choose Filter from Pantry"
-                            icon="filter_list"
-                            options={filters.map(f => ({ value: f.id, label: f.name }))}
-                            value={selectedFilterId}
-                            onChange={setSelectedFilterId}
-                            placeholder="Select a filter..."
-                            className="w-full"
-                        />
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
-                                <Icon name="filter_list" className="text-base" /> Choose Filter from Pantry
-                            </label>
-                            <div className="p-4 bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl flex items-center justify-between shadow-md-1">
-                                <span className="typescale-body-medium text-md-on-surface-variant font-medium">No filters available</span>
-                                <button
-                                    onClick={() => navigate('/pantry/add/filter')}
-                                    className="typescale-label-medium font-bold text-md-primary bg-md-primary-container/40 px-3 py-1.5 rounded-full hover:bg-md-primary-container transition-colors cursor-pointer"
-                                >
-                                    Add Filters
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Brew Mode Selector */}
-                <div className="pt-1 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <label className="typescale-label-medium font-bold uppercase tracking-wider text-md-on-surface-variant flex items-center gap-2">
-                            <Icon name="tune" className="text-base" /> Brewing Mode
-                        </label>
-                        <span className="typescale-label-small font-bold text-md-primary">
-                            {brewMode === 'smart-scale' ? 'Smart Scale Mode' : 'Manual Mode'}
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                        <button
-                            type="button"
-                            onClick={() => setBrewMode('manual')}
-                            className={`p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer ${
-                                brewMode === 'manual'
-                                    ? 'bg-md-primary/10 border-md-primary shadow-sm text-md-on-surface'
-                                    : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-high'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className={`size-8 rounded-full flex items-center justify-center ${
-                                    brewMode === 'manual' ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container-highest text-md-on-surface-variant'
-                                }`}>
-                                    <Icon name="timer" className="text-lg" />
-                                </div>
-                                {brewMode === 'manual' && (
-                                    <Icon name="check_circle" className="text-md-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }} />
                                 )}
                             </div>
-                            <div>
-                                <h4 className="typescale-title-small font-bold">Manual Timer</h4>
-                                <p className="typescale-body-small text-xs opacity-75">As-is timer pace</p>
-                            </div>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setBrewMode('smart-scale')}
-                            className={`p-3.5 rounded-2xl border transition-all text-left flex flex-col gap-1.5 cursor-pointer ${
-                                brewMode === 'smart-scale'
-                                    ? 'bg-md-primary/10 border-md-primary shadow-sm text-md-on-surface'
-                                    : 'bg-md-surface-container-low border-md-outline-variant/30 text-md-on-surface-variant hover:bg-md-surface-container-high'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <div className={`size-8 rounded-full flex items-center justify-center ${
-                                    brewMode === 'smart-scale' ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container-highest text-md-on-surface-variant'
-                                }`}>
-                                    <Icon name="scale" className="text-lg" />
-                                </div>
-                                {brewMode === 'smart-scale' && (
-                                    <Icon name="check_circle" className="text-md-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                )}
-                            </div>
-                            <div>
-                                <h4 className="typescale-title-small font-bold">Smart Scale</h4>
-                                <p className="typescale-body-small text-xs opacity-75">Timemore Dot BLE</p>
-                            </div>
-                        </button>
+                        ))}
                     </div>
+                </section>
 
-                    {/* Scale Readiness Card when Smart Scale is active */}
-                    {brewMode === 'smart-scale' && (
-                        <div className="p-4 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low space-y-4">
+                {/* Section 3: Smart Scale Connection (only in Smart Scale mode) */}
+                {isSmartScaleMode && (
+                    <section className="space-y-2.5">
+                        <SectionHeader
+                            step={3}
+                            title="Smart Scale"
+                            right={
+                                <span className={`typescale-label-small font-bold px-2.5 py-0.5 rounded-full ${
+                                    connectionState === 'connected'
+                                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                        : 'bg-md-tertiary-container text-md-on-tertiary-container'
+                                }`}>
+                                    {connectionState === 'connected' ? 'Connected' : 'Not Connected'}
+                                </span>
+                            }
+                        />
+                        <div className="p-4 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1 space-y-4">
                             {connectionState === 'connected' ? (
-                                <div className="space-y-4">
-                                    {/* Header: Device Name & Status / Battery */}
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 min-w-0">
                                             <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
@@ -632,33 +585,27 @@ export const RecipePreparationPage = () => {
                                             </span>
                                         </div>
                                         {batteryPercent !== undefined && (
-                                            <span className="typescale-label-small font-bold text-md-on-surface-variant/80 bg-md-surface-container-high px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-md-outline-variant/20 shrink-0">
+                                            <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-high px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-md-outline-variant/20 shrink-0">
                                                 <Icon name="battery_full" className="text-xs text-md-primary" />
                                                 <span className="tabular-nums font-mono">{batteryPercent}%</span>
                                             </span>
                                         )}
                                     </div>
 
-                                    {/* Scale Face Display: Clean, Balanced Typography */}
-                                    <div className="py-2 flex flex-col items-center justify-center">
-                                        <div className="flex items-baseline justify-center gap-2">
-                                            <span className="text-6xl sm:text-7xl font-light text-md-on-surface tracking-tighter tabular-nums font-sans">
-                                                {currentWeight.toFixed(1)}
-                                            </span>
-                                            <span className="text-xl sm:text-2xl font-bold text-md-on-surface-variant/70 font-sans self-end mb-1 sm:mb-2">
-                                                g
-                                            </span>
-                                        </div>
+                                    <div className="py-1 flex items-baseline justify-center gap-1.5">
+                                        <span className="text-5xl font-light text-md-on-surface tracking-tighter tabular-nums font-sans">
+                                            {currentWeight.toFixed(1)}
+                                        </span>
+                                        <span className="text-xl font-bold text-md-on-surface-variant">g</span>
                                     </div>
 
-                                    {/* Actions: Tare Button */}
                                     <button
                                         type="button"
                                         onClick={() => {
                                             navigator.vibrate?.(25);
                                             tare();
                                         }}
-                                        className="w-full h-12 rounded-2xl bg-md-primary hover:bg-md-primary/90 text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
+                                        className="w-full h-12 rounded-2xl bg-md-primary hover:opacity-95 text-md-on-primary font-bold typescale-label-large flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] transition-all cursor-pointer"
                                     >
                                         <Icon name="restart_alt" className="text-lg" />
                                         <span>Tare Scale</span>
@@ -666,22 +613,22 @@ export const RecipePreparationPage = () => {
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center text-center py-2 space-y-2.5">
-                                    <div className="size-12 rounded-full bg-md-surface-container-highest text-md-on-surface-variant flex items-center justify-center">
+                                    <div className="size-11 rounded-full bg-md-tertiary-container text-md-on-tertiary-container flex items-center justify-center">
                                         <Icon name="scale" className="text-2xl" />
                                     </div>
                                     <div>
-                                        <h4 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h4>
-                                        <p className="typescale-body-small text-md-on-surface-variant text-xs">
+                                        <h3 className="typescale-title-small font-bold text-md-on-surface">No scale connected</h3>
+                                        <p className="typescale-body-small text-md-on-surface-variant">
                                             {Capacitor.isNativePlatform()
-                                                ? 'Nyalakan Timemore Dot Anda untuk menyambungkan.'
-                                                : 'Nyalakan Timemore Dot atau gunakan mode demo.'}
+                                                ? 'Turn on your Timemore Dot to connect.'
+                                                : 'Connect a Timemore Dot or preview with Demo Mode.'}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                                         <button
                                             type="button"
                                             onClick={() => setIsPairingModalOpen(true)}
-                                            className="px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
+                                            className="min-h-[44px] px-4 py-2 rounded-xl bg-md-primary text-md-on-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                                         >
                                             <Icon name="bluetooth" className="text-base" />
                                             <span>Connect Now</span>
@@ -690,7 +637,7 @@ export const RecipePreparationPage = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => connectMock()}
-                                                className="px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
+                                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-md-surface-container-high text-md-primary font-bold typescale-label-medium flex items-center gap-1.5 hover:bg-md-surface-container-highest transition-colors cursor-pointer border border-md-outline-variant/30"
                                             >
                                                 <Icon name="science" className="text-base" />
                                                 <span>Demo Mode</span>
@@ -700,25 +647,99 @@ export const RecipePreparationPage = () => {
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </section>
+                )}
 
-                {/* Checklist Section */}
-                <div className="pt-2">
-                    <div className="flex items-center justify-between mb-3.5">
-                        <h2 className="typescale-title-medium font-bold text-md-on-surface flex items-center gap-2">
-                            <Icon name="checklist" className="text-md-primary" />
-                            Preparation Checklist
-                        </h2>
-                        <span className={`typescale-label-small font-bold px-2.5 py-0.5 rounded-full border ${
-                            isReady
-                                ? 'bg-md-primary-container text-md-on-primary-container border-md-primary/20'
-                                : 'bg-md-surface-container-high text-md-on-surface-variant border-md-outline-variant/30'
-                        }`}>
-                            {checkedCount}/{totalChecklistItems} Checked
-                        </span>
-                    </div>
-                    <div className="space-y-2.5">
+                {/* Section 4 (or 3 in Manual): Scaled Steps Preview (collapsible) */}
+                {currentScaledRecipe && currentScaledRecipe.steps.length > 0 && (
+                    <section className="space-y-2.5">
+                        <SectionHeader
+                            step={isSmartScaleMode ? 4 : 3}
+                            title="Scaled Brew Steps"
+                            right={
+                                <span className="typescale-label-small font-semibold text-md-on-surface-variant tabular-nums">
+                                    {currentScaledRecipe.steps.length} steps · {scaledWaterTotal}
+                                </span>
+                            }
+                        />
+                        <div className="bg-md-surface-container-low rounded-2xl border border-md-outline-variant/30 shadow-md-1 overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setShowStepsPreview(prev => !prev)}
+                                aria-expanded={showStepsPreview}
+                                className="w-full min-h-[52px] px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-md-surface-container-high transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+                            >
+                                <span className="typescale-body-medium font-semibold text-md-on-surface">
+                                    {showStepsPreview ? 'Hide scaled pour weights' : 'Preview scaled pour weights'}
+                                </span>
+                                <Icon name={showStepsPreview ? 'expand_less' : 'expand_more'} className="text-xl text-md-on-surface-variant shrink-0" />
+                            </button>
+
+                            {showStepsPreview && (
+                                <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-md-outline-variant/20">
+                                    {currentScaledRecipe.steps.map((step, idx) => {
+                                        const pour = getPourAmount(currentScaledRecipe.steps, idx);
+                                        const intervalInfo = getStepIntervalInfo(step);
+                                        const hasTarget = typeof step.target_weight === 'number' && step.target_weight > 0;
+                                        return (
+                                            <div key={step.id || idx} className="p-3 rounded-xl bg-md-surface-container-high border border-md-outline-variant/20 space-y-1.5">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h4 className="typescale-title-small font-bold text-md-on-surface flex-1 min-w-0 leading-snug tabular-nums">
+                                                        {idx + 1}. {step.label}
+                                                    </h4>
+                                                    <span className="typescale-label-small font-bold text-md-on-surface-variant bg-md-surface-container-highest px-2 py-0.5 rounded-full shrink-0 tabular-nums">
+                                                        {formatStepSeconds(step.duration_seconds)}
+                                                    </span>
+                                                </div>
+                                                {(hasTarget || intervalInfo.restSeconds > 0) && (
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        {hasTarget && (
+                                                            <>
+                                                                <span className="inline-flex items-center gap-1 typescale-label-small font-bold text-md-on-primary-container bg-md-primary-container px-2 py-0.5 rounded-full tabular-nums">
+                                                                    +{formatWeight(pour, unitSystem)}
+                                                                </span>
+                                                                <span className="inline-flex items-center gap-1 typescale-label-small font-semibold text-md-on-surface-variant bg-md-surface-container-highest px-2 py-0.5 rounded-full tabular-nums">
+                                                                    Target {formatWeight(step.target_weight!, unitSystem)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                        {intervalInfo.restSeconds > 0 && (
+                                                            <span className="inline-flex items-center gap-1 typescale-label-small font-semibold text-md-on-secondary-container bg-md-secondary-container px-2 py-0.5 rounded-full tabular-nums">
+                                                                Rest {intervalInfo.restSeconds}s
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {step.instruction && (
+                                                    <p className="typescale-body-small text-md-on-surface-variant leading-relaxed">
+                                                        {step.instruction}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
+                {/* Section 5 (or 4 in Manual): Preparation Checklist */}
+                <section className="space-y-2.5 pb-4">
+                    <SectionHeader
+                        step={isSmartScaleMode ? 5 : 4}
+                        title="Preparation Checklist"
+                        right={
+                            <span className={`typescale-label-small font-bold px-2.5 py-0.5 rounded-full tabular-nums ${
+                                isReady
+                                    ? 'bg-md-primary-container text-md-on-primary-container'
+                                    : 'bg-md-surface-container-high text-md-on-surface-variant'
+                            }`}>
+                                {checkedCount}/{totalChecklistItems} Checked
+                            </span>
+                        }
+                    />
+                    <div className="space-y-2">
                         {dynamicChecklist.map((item) => (
                             <CheckItem
                                 key={item.id}
@@ -728,7 +749,7 @@ export const RecipePreparationPage = () => {
                             />
                         ))}
                     </div>
-                </div>
+                </section>
             </main>
 
             {/* Sticky Action Button */}
@@ -770,6 +791,19 @@ export const RecipePreparationPage = () => {
             <ScalePairingModal
                 isOpen={isPairingModalOpen}
                 onClose={() => setIsPairingModalOpen(false)}
+            />
+            <BrewModeSheet
+                isOpen={isModeSheetOpen}
+                onClose={() => setIsModeSheetOpen(false)}
+                recipeName={recipe.name}
+                currentMode={brewMode}
+                onSelect={(mode) => {
+                    setBrewMode(mode);
+                    setIsModeSheetOpen(false);
+                    if (mode === 'smart-scale' && connectionState !== 'connected') {
+                        setIsPairingModalOpen(true);
+                    }
+                }}
             />
         </div>
     );

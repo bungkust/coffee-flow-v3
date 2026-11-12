@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <title>CoffeeFlow</title>
+  <rect width="512" height="512" rx="115" fill="#F8F5F0"/>
+  <g transform="translate(256, 256) scale(0.76) translate(-524, -382)">
+    <g fill="none" stroke="#6B4430" stroke-linejoin="round" stroke-linecap="round">
+      <polygon points="309,170 691,170 573,406 427,406" stroke-width="24"/>
+      <line x1="454.9" y1="170" x2="482.8" y2="406" stroke-width="18"/>
+      <line x1="500" y1="170" x2="500" y2="406" stroke-width="18"/>
+      <line x1="545.1" y1="170" x2="517.2" y2="406" stroke-width="18"/>
+      <path d="M676 208 H726 A56 56 0 0 1 726 320 H616" stroke-width="24"/>
+    </g>
+    <polygon points="427,424 573,424 545,480 455,480" fill="#6B4430" stroke="#6B4430" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M500 514 C512 532 528 552 528 576 A28 28 0 0 1 472 576 C472 552 488 532 500 514 Z" fill="#6B4430"/>
+  </g>
+</svg>
+

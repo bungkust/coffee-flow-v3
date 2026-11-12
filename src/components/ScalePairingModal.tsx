@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Icon } from './Icons';
+import { BottomSheet } from './BottomSheet';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
 
 interface ScalePairingModalProps {
@@ -43,21 +44,9 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({
         }
     }, [isOpen, isNative]);
 
-    if (!isOpen) return null;
-
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-            onClick={onClose}
-        >
-            <div
-                className="bg-md-surface-container-high text-md-on-surface border-t sm:border border-md-outline-variant/25 rounded-t-[32px] sm:rounded-[32px] p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] w-full max-w-md shadow-md-3 space-y-4 animate-in slide-in-from-bottom duration-250 ease-out sm:zoom-in-95"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Mobile Drag Handle */}
-                <div className="w-12 h-1.5 rounded-full bg-md-outline-variant/40 mx-auto -mt-2 mb-2 sm:hidden" />
-
-                {/* Header */}
+        <BottomSheet isOpen={isOpen} onClose={onClose} label="Connect smart scale">
+            {/* Header */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <div className="size-12 rounded-2xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center shrink-0 shadow-xs">
@@ -169,8 +158,10 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({
                                                 type="button"
                                                 onClick={async () => {
                                                     await connectDevice(dev);
-                                                    onConnected?.();
-                                                    onClose();
+                                                    if (useScaleStore.getState().connectionState === 'connected') {
+                                                        onConnected?.();
+                                                        onClose();
+                                                    }
                                                 }}
                                                 className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-md-surface-container hover:bg-md-surface-container-highest border border-md-outline-variant/30 hover:border-md-primary/50 transition-all text-left group cursor-pointer"
                                             >
@@ -224,7 +215,6 @@ export const ScalePairingModal: React.FC<ScalePairingModalProps> = ({
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+        </BottomSheet>
     );
 };

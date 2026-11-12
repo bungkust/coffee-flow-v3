@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app';
+import { SplashPage } from './pages/SplashPage';
+import { SplashLogoIcon } from './components/Icons';
 
-const SplashPage = lazy(() => import('./pages/SplashPage').then(m => ({ default: m.SplashPage })));
 const WelcomePage = lazy(() => import('./pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -86,43 +87,43 @@ function App() {
     <BrowserRouter>
       <AndroidBackButtonHandler />
       <Suspense fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background-light">
-          <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        </div>
+          <div className="flex min-h-screen items-center justify-center bg-md-surface text-md-primary">
+            <SplashLogoIcon className="size-24 opacity-85 animate-pulse" />
+          </div>
       }>
-        <Routes>
-          <Route path="/" element={<SplashPage />} />
-          <Route path="/welcome" element={<WelcomePage />} />
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/brew-methods" element={<BrewMethodsPage />} />
-          <Route path="/recipes" element={<RecipeListPage />} />
-          <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-          <Route path="/recipes/:id/edit" element={<RecipeEditPage />} />
-          <Route path="/recipes/:id/prepare" element={<RecipePreparationPage />} />
-          <Route path="/brew-flow" element={<BrewFlowPage />} />
-          <Route path="/brew-log" element={<BrewLogPage />} />
-          <Route path="/journal" element={<JournalPage />} />
-          <Route path="/journal/:type/:id" element={<JournalDetailPage />} />
-          <Route path="/pantry" element={<PantryPage />} />
-          <Route path="/pantry/add" element={<PantryAddSelectionPage />} />
-          <Route path="/pantry/add/:category" element={<PantryAddFormPage />} />
-          <Route path="/pantry/:id/edit" element={<PantryEditPage />} />
-          <Route path="/drinks" element={<DrinkMenuPage />} />
-          <Route path="/drinks/list" element={<DrinkListPage />} />
-          <Route path="/drinks/:id/edit" element={<DrinkEditPage />} />
-          <Route path="/drinks/:id" element={<DrinkDetailPage />} />
-          <Route path="/drinks/:id/prepare" element={<DrinkPreparationPage />} />
-          <Route path="/drinks/:id/flow" element={<DrinkFlowPage />} />
-          <Route path="/drink-log/:id" element={<DrinkLogPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/backup" element={<BackupRestorePage />} />
-          <Route path="/playground" element={<PlaygroundPage />} />
-          <Route path="/quick-timer" element={<QuickTimerPage />} />
-          <Route path="/ratio-calculator" element={<RatioCalculatorPage />} />
-          <Route path="/scale" element={<ScalePage />} />
-        </Routes>
-      </Suspense>
+          <Routes>
+            <Route path="/" element={<SplashPage />} />
+            <Route path="/welcome" element={<WelcomePage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/brew-methods" element={<BrewMethodsPage />} />
+            <Route path="/recipes" element={<RecipeListPage />} />
+            <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+            <Route path="/recipes/:id/edit" element={<RecipeEditPage />} />
+            <Route path="/recipes/:id/prepare" element={<RecipePreparationPage />} />
+            <Route path="/brew-flow" element={<BrewFlowPage />} />
+            <Route path="/brew-log" element={<BrewLogPage />} />
+            <Route path="/journal" element={<JournalPage />} />
+            <Route path="/journal/:type/:id" element={<JournalDetailPage />} />
+            <Route path="/pantry" element={<PantryPage />} />
+            <Route path="/pantry/add" element={<PantryAddSelectionPage />} />
+            <Route path="/pantry/add/:category" element={<PantryAddFormPage />} />
+            <Route path="/pantry/:id/edit" element={<PantryEditPage />} />
+            <Route path="/drinks" element={<DrinkMenuPage />} />
+            <Route path="/drinks/list" element={<DrinkListPage />} />
+            <Route path="/drinks/:id/edit" element={<DrinkEditPage />} />
+            <Route path="/drinks/:id" element={<DrinkDetailPage />} />
+            <Route path="/drinks/:id/prepare" element={<DrinkPreparationPage />} />
+            <Route path="/drinks/:id/flow" element={<DrinkFlowPage />} />
+            <Route path="/drink-log/:id" element={<DrinkLogPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/backup" element={<BackupRestorePage />} />
+            <Route path="/playground" element={<PlaygroundPage />} />
+            <Route path="/quick-timer" element={<QuickTimerPage />} />
+            <Route path="/ratio-calculator" element={<RatioCalculatorPage />} />
+            <Route path="/scale" element={<ScalePage />} />
+          </Routes>
+        </Suspense>
     </BrowserRouter>
   );
 }

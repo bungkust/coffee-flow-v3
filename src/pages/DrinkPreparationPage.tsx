@@ -11,8 +11,10 @@ import type { PantryItem } from '../features/pantry/domain/entities';
 import type { ExtraPantryItemUsage } from '../features/brew/application/DrinkService';
 import { parseList, formatScaledIngredient } from '../shared/utils/drinks';
 import { useSafeBack } from '../shared/utils/backNavigation';
+import { useWakeLock } from '../shared/hooks/useWakeLock';
 
 export const DrinkPreparationPage = () => {
+    useWakeLock(true);
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const safeBack = useSafeBack();

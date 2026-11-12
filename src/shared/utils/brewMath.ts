@@ -196,4 +196,45 @@ export const getValveStates = (steps: BrewStep[]): (ValveState | null)[] => {
     });
 };
 
+export type BrewArchetype = 'pour_over' | 'espresso' | 'immersion_press' | 'stovetop_brewer';
+
+const BREW_ARCHETYPE_BY_METHOD: Record<string, BrewArchetype> = {
+    espresso: 'espresso',
+    french_press: 'immersion_press',
+    aeropress: 'immersion_press',
+    cold_brew: 'immersion_press',
+    tubruk: 'immersion_press',
+    portable_all_in_one: 'immersion_press',
+    moka_pot: 'stovetop_brewer',
+    siphon: 'stovetop_brewer',
+    turkish: 'stovetop_brewer',
+    dallah: 'stovetop_brewer',
+    jebena: 'stovetop_brewer',
+    percolator: 'stovetop_brewer',
+    drip_machine: 'stovetop_brewer',
+    keurig: 'stovetop_brewer',
+    clover: 'stovetop_brewer',
+};
+
+/** Maps a brewing method ID to its active-flow UI archetype. */
+export const getBrewArchetype = (methodId?: string): BrewArchetype =>
+    BREW_ARCHETYPE_BY_METHOD[(methodId || '').toLowerCase()] ?? 'pour_over';
+
+/** Formats the primary action heading for a brew step based on equipment archetype. */
+export const formatStepActionTitle = (
+    steps: BrewStep[],
+    index: number,
+    archetype: BrewArchetype,
+    unitSystem: UnitSystem
+): string => {
+    const step = steps[index];
+    if (!step) return '';
+    const hasTarget = typeof step.target_weight === 'number' && step.target_weight > 0;
+    if (!hasTarget || archetype === 'stovetop_brewer') return step.label;
+    if (archetype === 'espresso') return `Pull to ${formatWeight(step.target_weight!, unitSystem)}`;
+    if (/\b(bypass|dilute)\b/i.test(step.label)) return `${step.label} to ${formatWeight(step.target_weight!, unitSystem)}`;
+    const pour = getPourAmount(steps, index);
+    return pour > 0 ? `Pour +${formatWeight(pour, unitSystem)}` : step.label;
+};
+
 

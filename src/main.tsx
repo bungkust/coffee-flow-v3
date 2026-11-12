@@ -1,12 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource/plus-jakarta-sans/400.css'
+import '@fontsource/plus-jakarta-sans/500.css'
+import '@fontsource/plus-jakarta-sans/600.css'
+import '@fontsource/plus-jakarta-sans/700.css'
+import '@fontsource/plus-jakarta-sans/800.css'
 import '@fontsource/material-symbols-outlined/400.css'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { dbService } from './core/database/sqlite';
 import { seedInitialData } from './core/database/seeding';
-import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
 import { Capacitor } from '@capacitor/core';
 
 // 1. Bootstrapping DB and Web Components BEFORE React mounts
@@ -14,13 +18,14 @@ const bootstrapDb = async () => {
   try {
     const platform = Capacitor.getPlatform();
 
-    // Safely setup the Web Component outside of the React Render cycle
+    // Safely setup the Web Component outside of the React Render cycle (Web only)
     if (platform === 'web') {
       let jeepEl = document.querySelector('jeep-sqlite');
       if (!jeepEl) {
         jeepEl = document.createElement('jeep-sqlite');
         document.body.appendChild(jeepEl);
       }
+      const { defineCustomElements: jeepSqlite } = await import('jeep-sqlite/loader');
       jeepSqlite(window);
       await customElements.whenDefined('jeep-sqlite');
     }

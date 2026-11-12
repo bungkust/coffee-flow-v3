@@ -2,8 +2,24 @@ import { brewService } from '../services';
 import { dbService } from './sqlite';
 import { BREWING_METHOD_SEEDS, RECIPE_SEEDS } from './recipeSeeds';
 
+const SEED_VERSION = '2026-11-12-v1';
+
 export const seedInitialData = async () => {
     const db = dbService.getDb();
+
+    try {
+        const [versionRes, countRes] = await Promise.all([
+            db.query("SELECT value FROM app_settings WHERE key = 'seed_version'"),
+            db.query('SELECT COUNT(*) as count FROM recipes WHERE deleted_at IS NULL')
+        ]);
+        const currentSeedVersion = versionRes.values?.[0]?.value;
+        const recipeCount = countRes.values?.[0]?.count || 0;
+        if (currentSeedVersion === SEED_VERSION && recipeCount > 0) {
+            return;
+        }
+    } catch (e) {
+        console.warn('Seed version check failed, running full seed:', e);
+    }
 
     // Ensure category column exists in brewing_methods before seeding
     try {
@@ -34,6 +50,10 @@ export const seedInitialData = async () => {
 
     await seedDrinks();
     await removeDummyPantryItems();
+    await db.run(
+        `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('seed_version', ?)`,
+        [SEED_VERSION]
+    );
     await dbService.saveToLocalStore();
 };
 

@@ -7,12 +7,25 @@ export const SplashPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            settingsService.isOnboardingComplete()
-                .then((done) => navigate(done ? '/home' : '/welcome'))
-                .catch(() => navigate('/welcome'));
-        }, 2800);
-        return () => clearTimeout(timer);
+        let cancelled = false;
+
+        const minDelay = new Promise<void>((resolve) => setTimeout(resolve, 250));
+        const checkDestination = settingsService.isOnboardingComplete()
+            .then(async (done) => {
+                await (done ? import('./HomePage') : import('./WelcomePage'));
+                return done ? '/home' : '/welcome';
+            })
+            .catch(() => '/welcome');
+
+        Promise.all([minDelay, checkDestination]).then(([, target]) => {
+            if (!cancelled) {
+                navigate(target, { replace: true });
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, [navigate]);
 
     return (

@@ -56,7 +56,7 @@ export const BrewLogCard = ({ image, icon, name, subtitle, date, tags = [], note
 
             {/* Row 3: Tasting notes (clean inline quote, no bloated container) */}
             {notes && (
-                <p className="line-clamp-1 typescale-body-small italic text-md-on-surface-variant/80">
+                <p className="line-clamp-2 typescale-body-small italic text-md-on-surface-variant/80 leading-snug">
                     "{notes}"
                 </p>
             )}

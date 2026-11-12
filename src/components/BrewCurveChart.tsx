@@ -9,6 +9,8 @@ interface BrewCurveChartProps {
     targetWater?: number;
     className?: string;
     showLegend?: boolean;
+    embedded?: boolean;
+    waterLabel?: string;
     height?: number;
 }
 
@@ -19,6 +21,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
     targetWater,
     className = '',
     showLegend = true,
+    embedded = false,
+    waterLabel = 'Water (g)',
     height = 140,
 }) => {
     const [showWater, setShowWater] = useState(true);
@@ -88,36 +92,45 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
         return Array.from({ length: count + 1 }, (_, i) => Math.round(i * step));
     }, [maxTime]);
 
+    const showCursor = cursorX !== null && typeof currentTime === 'number' && currentTime > 0;
+    const containerClass = embedded
+        ? `w-full flex flex-col ${className}`
+        : `w-full bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl p-3 flex flex-col ${className}`;
+
     return (
-        <div className={`w-full bg-md-surface-container-low/70 border border-md-outline-variant/20 rounded-2xl p-3 flex flex-col ${className}`}>
+        <div className={containerClass}>
             {showLegend && (
-                <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="typescale-label-small font-bold text-md-on-surface-variant/80 uppercase tracking-wider">
-                        Brew Curve
-                    </span>
+                <div className={`flex items-center gap-2 mb-2.5 ${embedded ? 'justify-center' : 'justify-between px-1'}`}>
+                    {!embedded && (
+                        <span className="typescale-label-small font-bold text-md-on-surface-variant uppercase tracking-wider">
+                            Brew Curve
+                        </span>
+                    )}
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setShowWater(!showWater)}
-                            className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full typescale-label-small font-bold transition-all ${
+                            aria-pressed={showWater}
+                            className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1 rounded-full typescale-label-small font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary ${
                                 showWater
-                                    ? 'bg-md-primary text-md-on-primary'
-                                    : 'bg-md-surface-container-highest text-md-on-surface-variant/50 border border-transparent'
+                                    ? 'bg-md-primary text-md-on-primary shadow-xs'
+                                    : 'bg-md-surface-container-highest text-md-on-surface-variant'
                             }`}
                         >
-                            <span className="size-2 rounded-full bg-md-on-primary"></span>
-                            <span>Water (g)</span>
+                            <span className={`size-2 rounded-full ${showWater ? 'bg-md-on-primary' : 'bg-md-primary'}`} />
+                            <span>{waterLabel}</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowFlow(!showFlow)}
-                            className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full typescale-label-small font-bold transition-all ${
+                            aria-pressed={showFlow}
+                            className={`inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1 rounded-full typescale-label-small font-bold transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-md-tertiary ${
                                 showFlow
-                                    ? 'bg-md-secondary-container text-md-on-secondary-container border border-md-outline-variant/30'
-                                    : 'bg-md-surface-container-highest text-md-on-surface-variant/50 border border-transparent'
+                                    ? 'bg-md-tertiary-container text-md-on-tertiary-container shadow-xs'
+                                    : 'bg-md-surface-container-highest text-md-on-surface-variant'
                             }`}
                         >
-                            <span className="size-2 rounded-full bg-[#A07855]"></span>
+                            <span className="size-2 rounded-full bg-md-tertiary" />
                             <span>Flow (g/s)</span>
                         </button>
                     </div>
@@ -136,62 +149,76 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         y1={padding.top}
                         x2={width - padding.right}
                         y2={padding.top}
-                        stroke="currentColor"
-                        className="text-md-outline-variant/15"
-                        strokeDasharray="2,2"
+                        stroke="var(--md-sys-color-outline-variant)"
+                        strokeOpacity={0.45}
+                        strokeDasharray="2,3"
                     />
                     <line
                         x1={padding.left}
                         y1={padding.top + chartH / 2}
                         x2={width - padding.right}
                         y2={padding.top + chartH / 2}
-                        stroke="currentColor"
-                        className="text-md-outline-variant/15"
-                        strokeDasharray="2,2"
+                        stroke="var(--md-sys-color-outline-variant)"
+                        strokeOpacity={0.45}
+                        strokeDasharray="2,3"
                     />
                     <line
                         x1={padding.left}
                         y1={padding.top + chartH}
                         x2={width - padding.right}
                         y2={padding.top + chartH}
-                        stroke="currentColor"
-                        className="text-md-outline-variant/20"
+                        stroke="var(--md-sys-color-outline-variant)"
+                        strokeOpacity={0.8}
                     />
+
+                    {/* Empty state hint before brew starts */}
+                    {points.length === 0 && (
+                        <text
+                            x={padding.left + chartW / 2}
+                            y={padding.top + chartH / 2 + 3}
+                            textAnchor="middle"
+                            fill="var(--md-sys-color-on-surface-variant)"
+                            opacity={0.7}
+                            className="text-[10px] font-medium"
+                        >
+                            Start brew to record curve
+                        </text>
+                    )}
 
                     {/* Y-axis Labels (Water on left, Flow on right) */}
                     <text
-                        x={padding.left - 4}
+                        x={padding.left - 5}
                         y={padding.top + 4}
                         textAnchor="end"
-                        fill="#6F4E37"
+                        fill="var(--md-sys-color-primary)"
                         className="font-bold text-[9px] tabular-nums"
                     >
                         {maxWeight}g
                     </text>
                     <text
-                        x={padding.left - 4}
+                        x={padding.left - 5}
                         y={padding.top + chartH}
                         textAnchor="end"
-                        fill="#6F4E37"
+                        fill="var(--md-sys-color-primary)"
                         className="font-bold text-[9px] tabular-nums"
                     >
                         0
                     </text>
 
                     <text
-                        x={width - padding.right + 4}
+                        x={width - padding.right + 5}
                         y={padding.top + 4}
                         textAnchor="start"
-                        fill="#A07855"
+                        fill="var(--md-sys-color-tertiary)"
                         className="font-bold text-[9px] tabular-nums"
                     >
                         {maxFlow}
                     </text>
                     <text
-                        x={width - padding.right + 4}
+                        x={width - padding.right + 5}
                         y={padding.top + chartH}
                         textAnchor="start"
-                        fill="#A07855"
+                        fill="var(--md-sys-color-tertiary)"
                         className="font-bold text-[9px] tabular-nums"
                     >
                         0
@@ -204,7 +231,9 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                             x={getX(tick)}
                             y={height - 4}
                             textAnchor="middle"
-                            className="fill-md-on-surface-variant/60 text-[9px] tabular-nums font-mono"
+                            fill="var(--md-sys-color-on-surface-variant)"
+                            opacity={0.75}
+                            className="text-[9px] tabular-nums font-mono"
                         >
                             {formatDuration(tick)}
                         </text>
@@ -217,8 +246,8 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                             y1={getYWater(targetWater)}
                             x2={width - padding.right}
                             y2={getYWater(targetWater)}
-                            stroke="#6F4E37"
-                            strokeOpacity="0.25"
+                            stroke="var(--md-sys-color-primary)"
+                            strokeOpacity={0.3}
                             strokeDasharray="4,4"
                             strokeWidth="1"
                         />
@@ -229,7 +258,7 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         <path
                             d={waterPath}
                             fill="none"
-                            stroke="#6F4E37"
+                            stroke="var(--md-sys-color-primary)"
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -241,34 +270,34 @@ export const BrewCurveChart: React.FC<BrewCurveChartProps> = ({
                         <path
                             d={flowPath}
                             fill="none"
-                            stroke="#A07855"
+                            stroke="var(--md-sys-color-tertiary)"
                             strokeWidth="1.75"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                         />
                     )}
 
-                    {/* Live Time Cursor */}
-                    {cursorX !== null && (
+                    {/* Live Time Cursor (hidden at t = 0 so it never overlaps left axis) */}
+                    {showCursor && (
                         <>
                             <line
-                                x1={cursorX}
+                                x1={cursorX!}
                                 y1={padding.top}
-                                x2={cursorX}
+                                x2={cursorX!}
                                 y2={padding.top + chartH}
-                                stroke="currentColor"
-                                className="text-md-on-surface/50"
+                                stroke="var(--md-sys-color-on-surface)"
+                                strokeOpacity={0.35}
                                 strokeDasharray="3,3"
                                 strokeWidth="1"
                             />
-                            {/* Current dot for water */}
                             {showWater && points.length > 0 && (
                                 <circle
                                     cx={getX(points[points.length - 1].time)}
                                     cy={getYWater(points[points.length - 1].weight)}
                                     r="3"
-                                    fill="#6F4E37"
-                                    className="stroke-md-surface stroke-2"
+                                    fill="var(--md-sys-color-primary)"
+                                    stroke="var(--md-sys-color-surface)"
+                                    strokeWidth="2"
                                 />
                             )}
                         </>

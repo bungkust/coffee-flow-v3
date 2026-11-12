@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from '../components/Icons';
+import { Icon, SplashLogoIcon } from '../components/Icons';
 import { Button } from '../components/Button';
 import welcomeHero from '../assets/welcome-hero.jpg';
 import { settingsService } from '../core/services';
@@ -38,7 +38,7 @@ export const WelcomePage = () => {
                 {/* Logo */}
                 <div className="relative flex items-center justify-center mb-5">
                     <div className="relative flex size-20 items-center justify-center rounded-3xl bg-md-primary-container text-md-on-primary-container shadow-md-2 border border-md-outline-variant/30">
-                        <Icon name="coffee_maker" className="text-4xl text-md-primary" />
+                        <SplashLogoIcon className="size-12 text-md-primary" />
                     </div>
                 </div>
 
