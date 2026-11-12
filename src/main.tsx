@@ -11,6 +11,7 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { dbService } from './core/database/sqlite';
 import { seedInitialData } from './core/database/seeding';
+import { settingsService } from './core/services';
 import { Capacitor } from '@capacitor/core';
 
 // 1. Bootstrapping DB and Web Components BEFORE React mounts
@@ -33,6 +34,13 @@ const bootstrapDb = async () => {
     // Initialize Database
     await dbService.initialize();
     await seedInitialData();
+
+    // Resolve initial destination before React mounts so index.html pre-splash
+    // transitions directly to Home/Welcome with zero intermediate splash blip.
+    if (window.location.pathname === '/') {
+      const done = await settingsService.isOnboardingComplete().catch(() => false);
+      window.history.replaceState(null, '', done ? '/home' : '/welcome');
+    }
 
     // 2. Safely mount React now that the DB is fully ready and Stencil component is attached
     createRoot(document.getElementById('root')!).render(
