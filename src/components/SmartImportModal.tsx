@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Icon, SplashLogoIcon } from './Icons';
-import { Dropdown } from './Dropdown';
 import { useBackHandler } from '../shared/utils/backNavigation';
-import { brewService } from '../core/services';
-import type { Recipe, BrewStep, BrewingMethod } from '../shared/domain/entities';
+import type { Recipe, BrewStep } from '../shared/domain/entities';
 
 export interface ImportableRecipe extends Partial<Recipe> {
     _saved?: boolean;
@@ -67,44 +65,14 @@ ${METHOD_ID_LINES}
 4. "temperature": Water temperature in Celsius as an integer (e.g., 93, 95, 90). Default to 93 if unspecified.
 5. "grind_size": Must be ONE of: "Fine", "Medium-Fine", "Medium", "Medium-Coarse", "Coarse".
 6. "difficulty": Must be ONE of: "Beginner", "Intermediate", "Advanced". Default to "Intermediate" if unspecified.
-7. "style": Short descriptor of the cup or technique as two parts separated by " / " (e.g. "Balanced / Clean", "Iced / Flash Chilled", "Sweet / Full-bodied"). Never leave empty — it is shown on the recipe card.
-8. "total_water": Total water volume in grams/ml as an integer (e.g., 225, 500).
-9. "description_short": Concise 1-sentence summary of flavor profile or brewing style in English.
-10. "description_detailed": Detailed explanation of brewing approach from article/source. Leave empty "" if not provided.
-11. "philosophy": Philosophy or creator rationale behind this recipe. Leave empty "" if not provided.
-12. "best_for_tags": String array of recommended bean origin/roast/process tags (e.g., ["Arabica", "Light Roast", "Washed"]). Leave empty [] if not provided.
-13. "not_recommended_tags": String array of non-recommended bean tags (e.g., ["Dark Roast", "Robusta"]). Leave empty [] if not provided.
-14. "steps": Sequential array of brewing steps. PRESERVE THE EXACT STEP BREAKDOWN FROM SOURCE TEXT:
-   - Do NOT aggressively merge distinct instructions into one step unless they occur simultaneously.
-   - If timestamps are given (e.g. 0:45 to 1:15), calculate exact step duration (1:15 - 0:45 = 30 seconds).
-   - "label": Short step title matching source (e.g., "Bloom", "First Main Pour", "Second Main Pour", "Stir & Swirl", "Drawdown").
-   - "duration_seconds": REQUIRED positive integer for EVERY step — never null and never 0. Use the source's timing when it states one; otherwise give a realistic estimate so the brew timer runs end to end (e.g. bloom 30-45, pour 30-60, drawdown 30).
-   - "target_weight": Cumulative scale weight at the end of this pour in grams as an integer (e.g., 60, 300, 500). Omit/null for non-pour steps (stir, drawdown) or when the source does not state one.
-   - "instruction": Complete, detailed step instruction preserved from the source text, keeping every number and unit (g, ml, °C) verbatim. Lead with tool-specific values — iced steps start with the ice amount ("Add 100g ice ..."), valve brewers (Hario Switch, Clever, siphon) start with the valve position ("Close the switch ..." or "Open the switch ...") and repeat it on every step where the position changes.
-15. "source": Copy the URL/reference from the SOURCE section below verbatim (use "" if none). This lets the user revisit the original recipe later.
-
-ACCURACY (CRITICAL — NO HALLUCINATION):
-- Extract ONLY what the source actually states. Never invent, estimate or round numbers the source does not give — the only exceptions are "duration_seconds" (rule 14) and the documented defaults (temperature 93, difficulty "Intermediate").
-- If the source omits a value, use null (for numbers) or "" (for text) — do not guess ratio, dose, water or pour weights.
-- When the source times its steps cumulatively (e.g. "wait for the timer to reach 2:00"), keep the instruction wording and set each step's duration to the gap between its start and end time.
-
-MULTI-RECIPE RULE:
-If the source text or link contains MULTIPLE distinct recipes (e.g., Scott Rao V60, James Hoffmann V60, Tetsu Kasuya 4:6 Method), extract ALL recipes into a JSON array:
-\`\`\`json
-[
-  {
-    "name": "Recipe 1 Name",
-    "method_id": "v60",
-    ...
-  },
-  {
-    "name": "Recipe 2 Name",
-    "method_id": "v60",
-    ...
-  }
-]
-\`\`\`
-If there is only 1 recipe, return a JSON array with 1 item \`[ { ... } ]\` or a single JSON object.
+7. "style": Short descriptor of the cup or technique as two parts separated by " / " (e.g. "Balanced / Clean", "Iced / Flash Chilled", "Sweet / Full-bodied").
+8. "total_water": Total water volume in grams/ml as an integer (e.g., 225, 250, 500).
+9. "description_short": Concise 1-sentence summary of flavor profile or brewing style.
+10. "steps": Sequential array of brewing steps:
+   - "label": Short step title (e.g., "Bloom", "First Main Pour", "Drawdown").
+   - "duration_seconds": REQUIRED positive integer for EVERY step (e.g. 30, 45, 60).
+   - "target_weight": Cumulative scale weight in grams (e.g. 50, 150, 250).
+   - "instruction": Detailed step instruction preserved from the source text.
 
 REQUIRED JSON OUTPUT FORMAT:
 \`\`\`json
@@ -113,22 +81,35 @@ REQUIRED JSON OUTPUT FORMAT:
     "name": "James Hoffmann Ultimate",
     "method_id": "v60",
     "ratio": "1:16.7",
-    "temperature": 93,
+    "temperature": 95,
     "grind_size": "Medium-Fine",
     "difficulty": "Intermediate",
-    "style": "Balanced / Clean",
-    "total_water": 500,
+    "style": "Balanced / Sweet",
+    "total_water": 250,
     "description_short": "Two-phase pour technique for high sweetness & clarity.",
-    "description_detailed": "James Hoffmann's technique...",
-    "philosophy": "Higher water temperatures and strict heat retention...",
-    "best_for_tags": ["Arabica", "Light Roast"],
-    "not_recommended_tags": ["Dark Roast"],
     "steps": [
       {
-        "label": "Bloom",
+        "label": "Bloom & Swirl",
         "duration_seconds": 45,
-        "target_weight": 60,
-        "instruction": "Pour 60g water into central well and swirl. Wait until 0:45."
+        "target_weight": 50,
+        "instruction": "Pour 50g water in 10s and swirl gently. Wait until 0:45."
+      },
+      {
+        "label": "First Pour (to 60%)",
+        "duration_seconds": 30,
+        "target_weight": 150,
+        "instruction": "Pour up to 150g by 1:15 in gentle spirals."
+      },
+      {
+        "label": "Second Pour (to 100%)",
+        "duration_seconds": 30,
+        "target_weight": 250,
+        "instruction": "Pour up to 250g by 1:45. Stir once clockwise and once anticlockwise."
+      },
+      {
+        "label": "Drawdown",
+        "duration_seconds": 45,
+        "instruction": "Give one gentle swirl and allow coffee to drain completely."
       }
     ]
   }
@@ -136,190 +117,78 @@ REQUIRED JSON OUTPUT FORMAT:
 \`\`\`
 `;
 
+const SAMPLE_BREW_JSON = JSON.stringify([
+    {
+        name: "James Hoffmann Ultimate",
+        method_id: "v60",
+        ratio: "1:16.7",
+        temperature: 95,
+        grind_size: "Medium-Fine",
+        difficulty: "Intermediate",
+        style: "Balanced / Sweet",
+        total_water: 250,
+        description_short: "Teknik tuang dua fase untuk rasa manis dan ekstraksi merata.",
+        steps: [
+            {
+                label: "Bloom & Swirl",
+                duration_seconds: 45,
+                target_weight: 50,
+                instruction: "Tuang 50g air dalam 10 detik lalu swirl lembut. Tunggu hingga detik 45."
+            },
+            {
+                label: "First Pour (to 60%)",
+                duration_seconds: 30,
+                target_weight: 150,
+                instruction: "Tuang melingkar hingga timbangan menunjukkan 150g di menit 1:15."
+            },
+            {
+                label: "Second Pour (to 100%)",
+                duration_seconds: 30,
+                target_weight: 250,
+                instruction: "Tuang perlahan hingga total 250g. Aduk 1 putaran searah jarum jam dan berlawanan."
+            },
+            {
+                label: "Drawdown",
+                duration_seconds: 45,
+                instruction: "Beri sedikit swirl terakhir dan biarkan air turun tuntas."
+            }
+        ]
+    }
+], null, 2);
+
 const extractUrl = (text: string): string => (text.match(/https?:\/\/\S+/) || [])[0] || '';
 
-const parseRawItemToRecipe = (parsed: Record<string, unknown>): Partial<Recipe> => {
+const parseRawItemToRecipe = (parsed: Record<string, unknown>, fallbackMethodId: string): Partial<Recipe> => {
     let jsonDiff: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate';
     if (/beginner|easy/i.test(String(parsed.difficulty))) jsonDiff = 'Beginner';
     else if (/advanced|expert|hard/i.test(String(parsed.difficulty))) jsonDiff = 'Advanced';
     else if (/intermediate|medium/i.test(String(parsed.difficulty))) jsonDiff = 'Intermediate';
 
-    const methodId = METHOD_LABELS[String(parsed.method_id)] ? String(parsed.method_id) : 'v60';
+    const methodId = METHOD_LABELS[String(parsed.method_id)] ? String(parsed.method_id) : fallbackMethodId;
     const stepsRaw = Array.isArray(parsed.steps) ? parsed.steps : [];
 
     return {
-        name: cleanRecipeName(String(parsed.name || 'Imported Recipe'), methodId),
+        name: cleanRecipeName(String(parsed.name || 'Imported Coffee Recipe'), methodId),
         method_id: methodId,
         ratio: String(parsed.ratio || '1:15'),
-        temperature: parsed.temperature ? Number(parsed.temperature) : 93,
+        temperature: typeof parsed.temperature === 'number' ? parsed.temperature : 93,
         grind_size: String(parsed.grind_size || 'Medium'),
         difficulty: jsonDiff,
-        style: parsed.style ? String(parsed.style) : undefined,
-        total_water: parsed.total_water ? Number(parsed.total_water) : 225,
-        description_short: String(parsed.description_short || 'Imported via Smart Importer'),
-        description_detailed: String(parsed.description_detailed || ''),
-        philosophy: String(parsed.philosophy || ''),
-        source: parsed.source ? String(parsed.source) : undefined,
-        best_for_tags: Array.isArray(parsed.best_for_tags) ? parsed.best_for_tags.map(String) : [],
-        not_recommended_tags: Array.isArray(parsed.not_recommended_tags) ? parsed.not_recommended_tags.map(String) : [],
+        style: String(parsed.style || 'Balanced / Sweet'),
+        total_water: typeof parsed.total_water === 'number' ? parsed.total_water : 250,
+        description_short: String(parsed.description_short || 'Resep diimpor dari AI'),
         steps: stepsRaw.map((s: Record<string, unknown>, idx: number) => ({
             id: crypto.randomUUID(),
             recipe_id: '',
             step_order: idx + 1,
-            label: String(s.label || `Step ${idx + 1}`),
-            duration_seconds: Number(s.duration_seconds ?? s.duration) || 0,
-            target_weight: s.target_weight ? Number(s.target_weight) : undefined,
-            instruction: String(s.instruction || ''),
+            label: String(s.label || `Langkah ${idx + 1}`),
+            duration_seconds: typeof s.duration_seconds === 'number' ? Math.max(1, s.duration_seconds) : 30,
+            target_weight: typeof s.target_weight === 'number' ? s.target_weight : undefined,
+            instruction: String(s.instruction || s.value || s.text || ''),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         }))
     };
-};
-
-const parseRawTextToRecipes = (rawText: string): Partial<Recipe>[] => {
-    // 1. Try JSON parsing first
-    try {
-        const jsonMatch = rawText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-        if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-
-            // Handle Array of recipes
-            if (Array.isArray(parsed)) {
-                const validList = parsed
-                    .filter(item => item && typeof item === 'object' && item.name)
-                    .map(item => parseRawItemToRecipe(item));
-                if (validList.length > 0) return validList;
-            }
-
-            // Handle { recipes: [ ... ] }
-            if (parsed && typeof parsed === 'object' && Array.isArray(parsed.recipes)) {
-                const validList = parsed.recipes
-                    .filter((item: Record<string, unknown>) => item && typeof item === 'object' && item.name)
-                    .map((item: Record<string, unknown>) => parseRawItemToRecipe(item));
-                if (validList.length > 0) return validList;
-            }
-
-            // Handle Single Object
-            if (parsed && typeof parsed === 'object' && parsed.name && Array.isArray(parsed.steps)) {
-                return [parseRawItemToRecipe(parsed)];
-            }
-        }
-    } catch {
-        // Fallback to Regex text parsing
-    }
-
-    // 2. Local Regex Text Parsing (Offline Rule-Based)
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-    const title = lines[0] ? lines[0].replace(/^#+\s*/, '').slice(0, 40) : 'Imported Recipe';
-
-    let method_id = 'v60';
-    const lowerRaw = rawText.toLowerCase();
-    if (lowerRaw.includes('switch')) method_id = 'hario_switch';
-    else if (lowerRaw.includes('aeropress')) method_id = 'aeropress';
-    else if (lowerRaw.includes('french press') || lowerRaw.includes('french_press')) method_id = 'french_press';
-    else if (lowerRaw.includes('chemex')) method_id = 'chemex';
-    else if (lowerRaw.includes('espresso')) method_id = 'espresso';
-    else if (lowerRaw.includes('moka pot') || lowerRaw.includes('moka_pot') || lowerRaw.includes('mokapot')) method_id = 'moka_pot';
-    else if (lowerRaw.includes('cold brew') || lowerRaw.includes('cold_brew')) method_id = 'cold_brew';
-    else if (lowerRaw.includes('cold drip') || lowerRaw.includes('kyoto')) method_id = 'cold_drip';
-    else if (lowerRaw.includes('kalita')) method_id = 'kalita';
-    else if (lowerRaw.includes('clever')) method_id = 'clever';
-    else if (lowerRaw.includes('siphon')) method_id = 'siphon';
-    else if (lowerRaw.includes('turkish') || lowerRaw.includes('cezve')) method_id = 'turkish';
-    else if (lowerRaw.includes('phin')) method_id = 'phin';
-    else if (lowerRaw.includes('percolator')) method_id = 'percolator';
-    else if (lowerRaw.includes('tubruk') || lowerRaw.includes('cowboy')) method_id = 'tubruk';
-    else if (lowerRaw.includes('drip machine') || lowerRaw.includes('drip coffee')) method_id = 'drip_machine';
-    else if (lowerRaw.includes('south indian')) method_id = 'south_indian_filter';
-
-    let difficulty: 'Beginner' | 'Intermediate' | 'Advanced' = 'Intermediate';
-    if (/beginner|easy|simple|pemula|mudah/i.test(rawText)) difficulty = 'Beginner';
-    else if (/advanced|expert|hard|mahir|sulit|rumit/i.test(rawText)) difficulty = 'Advanced';
-
-    const doseMatch = rawText.match(/(\d+(?:\.\d+)?)\s*(?:g|gram|grams)\s*(?:kopi|coffee|biji|grounds)?/i);
-    const dose = doseMatch ? parseFloat(doseMatch[1]) : 15;
-
-    const waterMatch = rawText.match(/(\d{3,4})\s*(?:ml|g|gram|grams)\s*(?:air|water|total)?/i);
-    const total_water = waterMatch ? parseInt(waterMatch[1], 10) : 225;
-
-    const tempMatch = rawText.match(/(\d{2})\s*(?:°C|℃|C|deg|degree|suhu)/i);
-    const temperature = tempMatch ? parseInt(tempMatch[1], 10) : 93;
-
-    const ratioMatch = rawText.match(/1\s*:\s*(\d+(?:\.\d+)?)/i);
-    const ratio = ratioMatch ? `1:${ratioMatch[1]}` : `1:${Math.round(total_water / dose)}`;
-
-    let grind_size = 'Medium';
-    if (/coarse|kasar/i.test(rawText)) grind_size = 'Coarse';
-    else if (/fine|halus/i.test(rawText)) grind_size = 'Fine';
-    else if (/medium[- ]fine/i.test(rawText)) grind_size = 'Medium-Fine';
-    else if (/medium[- ]coarse/i.test(rawText)) grind_size = 'Medium-Coarse';
-
-    const parsedSteps: BrewStep[] = [];
-    const stepRegex = /(?:rinse|filter|pre-heat|grounds|well|bloom|tuang|pour|step|langkah|drawdown|tunggu|pause|stir|swirl|aim|\d+[.)]|\b\d+s\b|\b\d+\s*detik\b)/i;
-    const isMetaHeader = /^(?:grind size|ratio|brew time|recipe|method|temp|temperature):/i;
-
-    let cumulativeWeight = 0;
-    lines.forEach((line) => {
-        if (!isMetaHeader.test(line) && stepRegex.test(line) && line.length < 200) {
-            let duration = 30;
-            const durMatch = line.match(/(\d+)\s*(?:s|sec|detik)/i);
-            const minSecMatch = line.match(/(\d+):(\d+)/);
-            if (durMatch) {
-                duration = parseInt(durMatch[1], 10);
-            } else if (minSecMatch) {
-                duration = parseInt(minSecMatch[1], 10) * 60 + parseInt(minSecMatch[2], 10);
-            }
-
-            const weightMatch = line.match(/(?:\+|target|to|till|\b)(\d+(?:\.\d+)?)\s*(?:g|ml|gram)/i);
-            let targetWeight: number | undefined = undefined;
-            if (weightMatch) {
-                const val = parseFloat(weightMatch[1]);
-                if (line.includes('+')) {
-                    cumulativeWeight += val;
-                    targetWeight = cumulativeWeight;
-                } else if (val <= total_water) {
-                    targetWeight = val;
-                    cumulativeWeight = Math.max(cumulativeWeight, val);
-                }
-            }
-
-            let label = line.split(/[:\---.]/)[0].trim();
-            if (label.length > 30) label = label.slice(0, 30) + '...';
-
-            parsedSteps.push({
-                id: crypto.randomUUID(),
-                recipe_id: '',
-                step_order: parsedSteps.length + 1,
-                label: label || `Step ${parsedSteps.length + 1}`,
-                duration_seconds: duration,
-                target_weight: targetWeight,
-                instruction: line,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-        }
-    });
-
-    if (parsedSteps.length === 0) {
-        parsedSteps.push(
-            { id: crypto.randomUUID(), recipe_id: '', step_order: 1, label: 'Bloom', duration_seconds: 30, target_weight: Math.round(dose * 3), instruction: `Pour ${Math.round(dose * 3)}g water and bloom for 30s.`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-            { id: crypto.randomUUID(), recipe_id: '', step_order: 2, label: 'Main Pour', duration_seconds: 60, target_weight: total_water, instruction: `Pour remaining water up to ${total_water}g.`, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-            { id: crypto.randomUUID(), recipe_id: '', step_order: 3, label: 'Drawdown', duration_seconds: 30, instruction: 'Allow coffee to drain completely.', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-        );
-    }
-
-    return [{
-        name: cleanRecipeName(title.length > 3 ? title : 'Imported Coffee Recipe', method_id),
-        method_id,
-        ratio,
-        temperature,
-        grind_size,
-        difficulty,
-        total_water,
-        description_short: 'Imported via Smart Offline Parser',
-        source: extractUrl(rawText) || undefined,
-        steps: parsedSteps
-    }];
 };
 
 export const SmartImportModal = ({
@@ -328,48 +197,37 @@ export const SmartImportModal = ({
     onImport,
     onSaveDirect,
     initialParsedRecipes,
-    showMethodPicker,
-    defaultMethodId
+    defaultMethodId = 'v60'
 }: SmartImportModalProps) => {
-    const [mode, setMode] = useState<'offline' | 'ai'>('ai');
-    const [rawInput, setRawInput] = useState('');
-    const [aiJsonResponse, setAiJsonResponse] = useState('');
+    // Steps: 1: Link -> 2: Prompt -> 3: Jawaban -> 4: Cek Resep
+    const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+    const [videoUrl, setVideoUrl] = useState('');
     const [copiedPrompt, setCopiedPrompt] = useState(false);
+    const [aiResponse, setAiResponse] = useState('');
     const [parsedRecipes, setParsedRecipes] = useState<ImportableRecipe[]>([]);
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [parseError, setParseError] = useState('');
     const [isSavingDirect, setIsSavingDirect] = useState(false);
-    const [methodId, setMethodId] = useState(defaultMethodId || 'v60');
-    const [methodTouched, setMethodTouched] = useState(false);
-    const [methods, setMethods] = useState<BrewingMethod[]>([]);
-
-    useEffect(() => {
-        if (!showMethodPicker) return;
-        brewService.getAllMethods().then(setMethods).catch((err) => console.error('Error loading methods:', err));
-    }, [showMethodPicker]);
-
-    useEffect(() => {
-        if (isOpen) {
-            setMethodId(defaultMethodId || 'v60');
-            setMethodTouched(false);
-        }
-    }, [isOpen, defaultMethodId]);
+    const [justSaved, setJustSaved] = useState(false);
 
     useEffect(() => {
         if (isOpen && initialParsedRecipes && initialParsedRecipes.length > 0) {
             setParsedRecipes(initialParsedRecipes);
-            setSelectedIndex(null);
+            setSelectedIndex(0);
+            setStep(4);
         }
     }, [isOpen, initialParsedRecipes]);
 
     const reset = () => {
-        setRawInput('');
-        setAiJsonResponse('');
+        setStep(1);
+        setVideoUrl('');
         setCopiedPrompt(false);
+        setAiResponse('');
         setParsedRecipes([]);
-        setSelectedIndex(null);
+        setSelectedIndex(0);
         setParseError('');
-        setMode('ai');
+        setIsSavingDirect(false);
+        setJustSaved(false);
     };
 
     const handleClose = () => {
@@ -381,561 +239,611 @@ export const SmartImportModal = ({
 
     if (!isOpen) return null;
 
-    const handleCopyPrompt = async () => {
-        if (!rawInput.trim()) {
-            setParseError('Please paste a recipe link or text first.');
+    const getPromptText = () => {
+        const source = videoUrl.trim() || extractUrl(videoUrl) || '(Tempel link video YouTube)';
+        return `${SYSTEM_PROMPT_TEMPLATE}\n\nSOURCE TO EXTRACT FROM:\n${source}`;
+    };
+
+    const handleGoToPrompt = () => {
+        if (!videoUrl.trim()) {
+            setParseError('Tempel link video YouTube terlebih dahulu.');
             return;
         }
         setParseError('');
-        const fullPrompt = `${SYSTEM_PROMPT_TEMPLATE}\n\nSOURCE (cite this back in each recipe's "source" field):\n${rawInput.trim()}`;
+        setStep(2);
+    };
+
+    const handleCopyPrompt = async () => {
+        setParseError('');
+        const fullPrompt = getPromptText();
         try {
             await navigator.clipboard.writeText(fullPrompt);
             setCopiedPrompt(true);
-            setTimeout(() => setCopiedPrompt(false), 3000);
+            setTimeout(() => setCopiedPrompt(false), 4000);
         } catch {
-            setParseError('Could not copy automatically. Please copy the text manually.');
+            setParseError('Gagal menyalin otomatis. Silakan salin teks secara manual.');
         }
     };
 
-    const handleExtract = () => {
-        const source = mode === 'ai' ? (aiJsonResponse || rawInput) : rawInput;
-        if (!source.trim()) {
-            setParseError(mode === 'ai'
-                ? 'Paste the JSON response from Gemini or ChatGPT to continue.'
-                : 'Paste a recipe or caption to get started.');
+    const handlePasteFromClipboard = async () => {
+        setParseError('');
+        try {
+            const clipText = await navigator.clipboard.readText();
+            if (clipText) {
+                setAiResponse(clipText);
+            } else {
+                setParseError('Clipboard kosong. Silakan salin jawaban AI terlebih dahulu.');
+            }
+        } catch {
+            setParseError('Tidak bisa membaca clipboard otomatis. Silakan tempel manual.');
+        }
+    };
+
+    const handleFillExample = () => {
+        setAiResponse(SAMPLE_BREW_JSON);
+        setParseError('');
+    };
+
+    const handleParseResponse = () => {
+        setParseError('');
+        const source = aiResponse.trim();
+        if (!source) {
+            setParseError('Tempel jawaban AI terlebih dahulu.');
             return;
         }
+
+        try {
+            const jsonMatch = source.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+            if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    const valid = parsed
+                        .filter((item) => item && typeof item === 'object')
+                        .map((item) => parseRawItemToRecipe(item as Record<string, unknown>, defaultMethodId));
+                    if (valid.length > 0) {
+                        setParsedRecipes(valid);
+                        setSelectedIndex(0);
+                        setStep(4);
+                        return;
+                    }
+                } else if (parsed && typeof parsed === 'object') {
+                    const single = parseRawItemToRecipe(parsed as Record<string, unknown>, defaultMethodId);
+                    setParsedRecipes([single]);
+                    setSelectedIndex(0);
+                    setStep(4);
+                    return;
+                }
+            }
+        } catch {
+            // Error handling below
+        }
+
+        setParseError('Format belum sesuai. Pastikan menyalin jawaban lengkap dari AI.');
+    };
+
+    const activeRecipe = parsedRecipes[selectedIndex] || parsedRecipes[0];
+    const methodLabel = (id?: string) => METHOD_LABELS[id || ''] || (id || 'Unknown').toUpperCase();
+
+    const handleSaveDirect = async () => {
+        if (!activeRecipe || !onSaveDirect) return;
+        setIsSavingDirect(true);
         setParseError('');
-        const sourceUrl = extractUrl(rawInput);
-        const results: ImportableRecipe[] = parseRawTextToRecipes(source).map((r) => ({
-            ...r,
-            source: r.source || sourceUrl || undefined,
-            ...(methodTouched ? { method_id: methodId } : {})
-        }));
-        if (!methodTouched && results.length === 1 && results[0].method_id) setMethodId(results[0].method_id);
-        setParsedRecipes(results);
-        if (results.length === 1) {
-            setSelectedIndex(0);
-        } else {
-            setSelectedIndex(null);
+        try {
+            await onSaveDirect(activeRecipe);
+            const updated = [...parsedRecipes];
+            updated[selectedIndex] = { ...activeRecipe, _saved: true };
+            setParsedRecipes(updated);
+            setJustSaved(true);
+            setTimeout(() => {
+                if (parsedRecipes.length <= 1) {
+                    handleClose();
+                }
+            }, 1200);
+        } catch {
+            setParseError('Gagal menyimpan resep. Silakan coba lagi.');
+        } finally {
+            setIsSavingDirect(false);
         }
     };
 
-    const activePreview = selectedIndex !== null ? parsedRecipes[selectedIndex] : null;
-
     const handleEditAndSave = () => {
-        if (!activePreview || selectedIndex === null) return;
-
-        // If multi-recipe import, save remaining queue state in sessionStorage
-        if (parsedRecipes.length > 1) {
-            const updated = [...parsedRecipes];
-            updated[selectedIndex] = { ...activePreview, _saved: true };
-            sessionStorage.setItem('coffee_flow_import_queue', JSON.stringify(updated));
-        }
-
-        onImport(activePreview, parsedRecipes);
+        if (!activeRecipe) return;
+        onImport(activeRecipe, parsedRecipes);
         reset();
     };
 
-    const handleSaveDirect = async () => {
-        if (!activePreview || !onSaveDirect || selectedIndex === null) return;
-        setIsSavingDirect(true);
-        try {
-            await onSaveDirect(activePreview);
-            const updated = [...parsedRecipes];
-            updated[selectedIndex] = { ...activePreview, _saved: true };
-            setParsedRecipes(updated);
-
-            if (parsedRecipes.length === 1) {
-                reset();
-                onClose();
-            } else {
-                // Multi recipe: update session storage queue
-                sessionStorage.setItem('coffee_flow_import_queue', JSON.stringify(updated));
-                // Move to next unsaved recipe if available, otherwise return to list
-                const nextUnsaved = updated.findIndex((r, idx) => !r._saved && idx !== selectedIndex);
-                if (nextUnsaved !== -1) {
-                    setSelectedIndex(nextUnsaved);
-                } else {
-                    setSelectedIndex(null);
-                }
-            }
-        } catch {
-            setParseError('Failed to save recipe. Please try again.');
-        } finally {
-            setIsSavingDirect(false);
-        }
-    };
-
-    const handleSaveSingleCard = async (e: React.MouseEvent, idx: number) => {
-        e.stopPropagation();
-        const item = parsedRecipes[idx];
-        if (!item || item._saved || !onSaveDirect) return;
-        setIsSavingDirect(true);
-        try {
-            await onSaveDirect(item);
-            const updated = [...parsedRecipes];
-            updated[idx] = { ...item, _saved: true };
-            setParsedRecipes(updated);
-            sessionStorage.setItem('coffee_flow_import_queue', JSON.stringify(updated));
-        } catch {
-            setParseError(`Failed to save "${item.name}". Please try again.`);
-        } finally {
-            setIsSavingDirect(false);
-        }
-    };
-
-    const handleSaveAll = async () => {
-        if (!onSaveDirect) return;
-        setIsSavingDirect(true);
-        setParseError('');
-        const updated = [...parsedRecipes];
-        let hasError = false;
-
-        for (let i = 0; i < updated.length; i++) {
-            if (!updated[i]._saved) {
-                try {
-                    await onSaveDirect(updated[i]);
-                    updated[i] = { ...updated[i], _saved: true };
-                } catch {
-                    hasError = true;
-                }
-            }
-        }
-
-        setParsedRecipes([...updated]);
-        sessionStorage.setItem('coffee_flow_import_queue', JSON.stringify(updated));
-        setIsSavingDirect(false);
-        if (hasError) {
-            setParseError('Some recipes failed to save. Please try individual recipes.');
-        }
-    };
-
-    const handlePrevRecipe = () => {
-        if (selectedIndex === null || parsedRecipes.length <= 1) return;
-        setSelectedIndex((selectedIndex - 1 + parsedRecipes.length) % parsedRecipes.length);
-    };
-
-    const handleNextRecipe = () => {
-        if (selectedIndex === null || parsedRecipes.length <= 1) return;
-        setSelectedIndex((selectedIndex + 1) % parsedRecipes.length);
-    };
-
-    const methodLabel = (id?: string) => METHOD_LABELS[id || ''] || (id || 'Unknown').toUpperCase();
-    const savedCount = parsedRecipes.filter(r => r._saved).length;
-    const unsavedCount = parsedRecipes.length - savedCount;
+    const isYouTube = /youtube\.com|youtu\.be/i.test(videoUrl);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-md-surface-container-high text-md-on-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-md-outline-variant/20 overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md bg-md-surface-container-high text-md-on-surface rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-md-outline-variant/30 overflow-hidden flex flex-col max-h-[92vh]">
 
                 {/* Header */}
-                <div className="bg-primary text-white px-5 pt-3 pb-4 flex flex-col shrink-0">
+                <div className="bg-primary text-white px-5 pt-3.5 pb-4 flex flex-col shrink-0">
                     <div className="w-10 h-1 rounded-full bg-white/40 mx-auto mb-3 sm:hidden" />
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
-                                <SplashLogoIcon className="w-5 h-5" />
-                            </div>
+                            {step > 1 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+                                    className="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center shrink-0 text-white transition-colors cursor-pointer"
+                                    title="Kembali ke langkah sebelumnya"
+                                >
+                                    <Icon name="arrow_back" className="text-[18px]" />
+                                </button>
+                            ) : (
+                                <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white">
+                                    <SplashLogoIcon className="w-5 h-5" />
+                                </div>
+                            )}
                             <div>
-                                <h2 className="text-base font-bold leading-tight">Import Resep Kopi</h2>
-                                <p className="text-[11px] text-white/75 font-medium mt-0.5">
-                                    {activePreview
-                                        ? 'Tinjau detail resep seduh'
-                                        : parsedRecipes.length > 1
-                                            ? `Pilih dari ${parsedRecipes.length} resep ditemukan`
-                                            : 'Dari AI, medsos, atau catatan resep'}
-                                </p>
+                                <h1 className="text-base font-bold leading-tight">Import Resep Seduh</h1>
+                                <p className="text-[11px] text-white/80 font-medium">Dari video YouTube</p>
                             </div>
                         </div>
                         <button
                             onClick={handleClose}
-                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+                            className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+                            title="Tutup"
                         >
                             <Icon name="close" className="text-[18px]" />
                         </button>
                     </div>
-                </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto">
-                    {activePreview ? (
-                        /* ── Preview Card ── */
-                        <div className="p-5 space-y-4">
-                            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                    <Icon name="check" className="text-[18px] text-green-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-green-800">Recipe extracted successfully</p>
-                                    <p className="text-[11px] text-green-600 mt-0.5">Looks good? Save directly, or open the editor to fine-tune.</p>
-                                </div>
-                                {/* Prev / Next navigator for multi-recipe */}
-                                {parsedRecipes.length > 1 && selectedIndex !== null && (
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        <button
-                                            onClick={handlePrevRecipe}
-                                            className="w-7 h-7 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center transition-colors cursor-pointer"
-                                            title="Previous recipe"
-                                        >
-                                            <Icon name="chevron_left" className="text-[18px] text-green-700" />
-                                        </button>
-                                        <span className="text-[10px] font-bold text-green-700 tabular-nums">{selectedIndex + 1}/{parsedRecipes.length}</span>
-                                        <button
-                                            onClick={handleNextRecipe}
-                                            className="w-7 h-7 rounded-full bg-green-100 hover:bg-green-200 flex items-center justify-center transition-colors cursor-pointer"
-                                            title="Next recipe"
-                                        >
-                                            <Icon name="chevron_right" className="text-[18px] text-green-700" />
-                                        </button>
+                    {/* Stepper Progress */}
+                    <div className="flex items-center justify-between mt-4 px-1">
+                        {[
+                            { num: 1, label: 'Link' },
+                            { num: 2, label: 'Prompt' },
+                            { num: 3, label: 'Jawaban' },
+                            { num: 4, label: 'Cek Resep' }
+                        ].map((s, idx) => (
+                            <div key={s.num} className="flex items-center flex-1 last:flex-none">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (s.num < step || (s.num === 4 && parsedRecipes.length > 0)) {
+                                            setStep(s.num as 1 | 2 | 3 | 4);
+                                        }
+                                    }}
+                                    className="flex flex-col items-center cursor-pointer focus:outline-none"
+                                >
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+                                        step === s.num
+                                            ? 'bg-white text-primary ring-2 ring-white/40 shadow-xs scale-105'
+                                            : step > s.num
+                                                ? 'bg-white/90 text-primary'
+                                                : 'bg-white/20 text-white/70'
+                                    }`}>
+                                        {step > s.num ? <Icon name="check" className="text-[14px]" /> : s.num}
                                     </div>
+                                    <span className={`text-[10px] mt-1 font-medium ${
+                                        step === s.num ? 'text-white font-bold' : 'text-white/70'
+                                    }`}>
+                                        {s.label}
+                                    </span>
+                                </button>
+                                {idx < 3 && (
+                                    <div className={`flex-1 h-0.5 mx-2 mb-3.5 transition-colors ${
+                                        step > s.num ? 'bg-white/80' : 'bg-white/20'
+                                    }`} />
                                 )}
                             </div>
+                        ))}
+                    </div>
+                </div>
 
-                            <div className="bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl divide-y divide-md-outline-variant/20 overflow-hidden">
-                                <div className="px-4 py-3">
-                                    <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Recipe Name</p>
-                                    <p className="text-sm font-bold text-md-on-surface">{activePreview.name || '—'}</p>
-                                </div>
-                                <div className="px-4 py-3 grid grid-cols-3 gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Method</p>
-                                        <p className="text-sm font-bold text-primary">{methodLabel(activePreview.method_id)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Ratio</p>
-                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.ratio || '—'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Temp</p>
-                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.temperature ? `${activePreview.temperature}°C` : '—'}</p>
-                                    </div>
-                                </div>
-                                <div className="px-4 py-3 grid grid-cols-3 gap-3">
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Water</p>
-                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.total_water ? `${activePreview.total_water}g` : '—'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Grind</p>
-                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.grind_size || '—'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-md-on-surface-variant/70 uppercase tracking-wider mb-0.5">Level</p>
-                                        <p className="text-sm font-bold text-md-on-surface">{activePreview.difficulty || 'Intermediate'}</p>
-                                    </div>
-                                </div>
-                                <div className="px-4 py-3 flex items-center gap-2">
-                                    <Icon name="format_list_numbered" className="text-[16px] text-md-on-surface-variant/70" />
-                                    <p className="text-xs font-semibold text-md-on-surface">
-                                        {(activePreview.steps || []).length} steps detected
-                                    </p>
-                                </div>
+                {/* Body Content */}
+                <div className="flex-1 overflow-y-auto p-5">
+
+                    {/* ═════════ STEP 1: TEMPEL LINK VIDEO ═════════ */}
+                    {step === 1 && (
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-base font-bold text-md-on-surface">Tempel link video</h2>
+                                <p className="text-xs text-md-on-surface-variant mt-0.5">Resep kopinya kita ambil dari video ini.</p>
                             </div>
 
-                        </div>
-                    ) : parsedRecipes.length > 1 ? (
-                        /* ── Multi-Recipe Picker ── */
-                        <div className="p-5 space-y-3">
-                            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-3.5 flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center shrink-0 text-amber-700 dark:text-amber-300">
-                                        <SplashLogoIcon className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
-                                            {parsedRecipes.length} recipes found
-                                            {savedCount > 0 && (
-                                                <span className="text-emerald-700 dark:text-emerald-300 ml-1">({savedCount} saved)</span>
-                                            )}
-                                        </p>
-                                        <p className="text-[11px] text-amber-700 dark:text-amber-300">Select a recipe to preview, or save directly:</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2 max-h-[48vh] overflow-y-auto pr-0.5">
-                                {parsedRecipes.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        onClick={() => setSelectedIndex(idx)}
-                                        className={`w-full text-left rounded-2xl p-4 transition-all cursor-pointer border ${item._saved
-                                            ? 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/50 hover:border-emerald-300'
-                                            : 'bg-md-surface-container-low border-md-outline-variant/30 hover:bg-primary/5 hover:border-primary/40'
-                                            }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-1.5 gap-2">
-                                            <h4 className={`font-bold text-sm ${item._saved ? 'text-emerald-900 dark:text-emerald-200' : 'text-md-on-surface'}`}>{item.name}</h4>
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                                <span className="text-[10px] font-bold uppercase tracking-wide bg-md-surface-container px-2 py-0.5 rounded-full border border-md-outline-variant/40 text-md-on-surface-variant">
-                                                    {methodLabel(item.method_id)}
-                                                </span>
-                                                {item._saved ? (
-                                                    <span className="text-[11px] font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
-                                                        <Icon name="check" className="text-[14px]" /> Saved
-                                                    </span>
-                                                ) : onSaveDirect ? (
-                                                    <button
-                                                        onClick={(e) => handleSaveSingleCard(e, idx)}
-                                                        disabled={isSavingDirect}
-                                                        className="text-[11px] font-bold bg-primary text-white hover:bg-primary-dark px-3 py-0.5 rounded-full shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1"
-                                                    >
-                                                        <Icon name="add" className="text-[14px]" /> Save
-                                                    </button>
-                                                ) : null}
-                                            </div>
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <textarea
+                                        value={videoUrl}
+                                        onChange={(e) => {
+                                            setVideoUrl(e.target.value);
+                                            setParseError('');
+                                        }}
+                                        placeholder="https://youtube.com/watch?v=... atau https://youtu.be/..."
+                                        rows={3}
+                                        className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none font-mono"
+                                    />
+                                    {isYouTube && (
+                                        <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-[10px] font-bold">
+                                            <Icon name="smart_display" className="text-[14px]" />
+                                            <span>YouTube</span>
                                         </div>
-                                        <p className="text-xs text-md-on-surface-variant line-clamp-1 mb-2">{item.description_short || 'No description'}</p>
-                                        <div className="flex items-center gap-3 text-[11px] text-md-on-surface-variant/70 font-medium">
-                                            <span>Ratio: {item.ratio || '1:15'}</span>
-                                            <span>•</span>
-                                            <span>Water: {item.total_water ? `${item.total_water}g` : '—'}</span>
-                                            <span>•</span>
-                                            <span>{(item.steps || []).length} steps</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        /* ── Input Form ── */
-                        <div className="p-5 space-y-4">
-                            {/* Segmented Control */}
-                            <div className="bg-md-surface-container rounded-2xl p-1 flex gap-1 border border-md-outline-variant/20 shadow-inner">
-                                <button
-                                    type="button"
-                                    onClick={() => { setMode('ai'); setParseError(''); }}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                                        mode === 'ai'
-                                            ? 'bg-md-surface text-primary shadow-xs'
-                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
-                                    }`}
-                                >
-                                    <Icon name="auto_awesome" className="text-sm" />
-                                    <span>Smart AI</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => { setMode('offline'); setParseError(''); }}
-                                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                                        mode === 'offline'
-                                            ? 'bg-md-surface text-primary shadow-xs'
-                                            : 'text-md-on-surface-variant hover:text-md-on-surface'
-                                    }`}
-                                >
-                                    <Icon name="edit_note" className="text-base" />
-                                    <span>Teks Manual</span>
-                                </button>
-                            </div>
-
-                            {mode === 'offline' ? (
-                                <div className="space-y-3">
-                                    {showMethodPicker && (
-                                        <Dropdown
-                                            label="Brew Tool"
-                                            value={methodId}
-                                            options={methods.map((m) => ({ value: m.id, label: m.name }))}
-                                            onChange={(val) => {
-                                                setMethodId(val);
-                                                setMethodTouched(true);
-                                                setParsedRecipes((prev) => prev.map((r) => ({ ...r, method_id: val })));
-                                            }}
-                                            placeholder="Select brew tool"
-                                        />
                                     )}
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold text-md-on-surface">Teks Resep</label>
-                                        <textarea
-                                            value={rawInput}
-                                            onChange={(e) => { setRawInput(e.target.value); setParseError(''); }}
-                                            placeholder={`V60 Daily Driver\n15g kopi, 225g air, 93°C\nBloom 45g — 30s\nTuang ke 180g — 60s\nDrawdown — 30s`}
-                                            rows={8}
-                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                                        />
+                                </div>
+
+                                {/* Symmetrical 2-column Helper Buttons */}
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                const text = await navigator.clipboard.readText();
+                                                if (text) {
+                                                    setVideoUrl(text);
+                                                    setParseError('');
+                                                }
+                                            } catch {
+                                                // ignore
+                                            }
+                                        }}
+                                        className="py-2.5 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                    >
+                                        <Icon name="content_paste" className="text-[15px] text-primary" />
+                                        <span>Tempel link</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setVideoUrl('https://youtu.be/1oB1oDrDkQo');
+                                            setParseError('');
+                                        }}
+                                        className="py-2.5 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                    >
+                                        <Icon name="lightbulb" className="text-[15px] text-primary" />
+                                        <span>Contoh link</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═════════ STEP 2: PROMPT SUDAH SIAP ═════════ */}
+                    {step === 2 && (
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-base font-bold text-md-on-surface">Prompt sudah siap</h2>
+                                <p className="text-xs text-md-on-surface-variant mt-0.5 leading-relaxed">
+                                    Salin prompt, tempel di Gemini, lalu kembali ke sini untuk menempel jawabannya.
+                                </p>
+                            </div>
+
+                            {/* Copy Prompt Button */}
+                            <button
+                                type="button"
+                                onClick={handleCopyPrompt}
+                                className={`w-full py-3.5 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
+                                    copiedPrompt
+                                        ? 'bg-primary/15 text-primary border border-primary/40'
+                                        : 'bg-primary text-white hover:bg-primary-dark active:scale-[0.99]'
+                                }`}
+                            >
+                                <Icon name={copiedPrompt ? 'check_circle' : 'content_copy'} className="text-base" />
+                                <span>{copiedPrompt ? 'Prompt Berhasil Disalin!' : 'Salin Prompt AI'}</span>
+                            </button>
+
+                            {/* Symmetrical External AI Buttons */}
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <a
+                                    href="https://gemini.google.com/app"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="py-3 px-3.5 rounded-2xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                >
+                                    <Icon name="auto_awesome" className="text-base text-primary" />
+                                    <span>Buka Gemini</span>
+                                    <Icon name="open_in_new" className="text-[13px] text-md-on-surface-variant" />
+                                </a>
+
+                                <a
+                                    href="https://chatgpt.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="py-3 px-3.5 rounded-2xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                >
+                                    <Icon name="chat" className="text-base text-primary" />
+                                    <span>Buka ChatGPT</span>
+                                    <Icon name="open_in_new" className="text-[13px] text-md-on-surface-variant" />
+                                </a>
+                            </div>
+
+                            {/* Informative Hint */}
+                            <div className="bg-md-surface-container-low border border-md-outline-variant/25 rounded-2xl p-3 flex items-start gap-2.5">
+                                <Icon name="info" className="text-primary text-[17px] shrink-0 mt-0.5" />
+                                <p className="text-[11px] font-medium text-md-on-surface-variant leading-relaxed">
+                                    Buka Gemini atau ChatGPT, tempel prompt yang sudah disalin, lalu salin kembali seluruh hasil jawabannya.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═════════ STEP 3: TEMPEL JAWABAN AI ═════════ */}
+                    {step === 3 && (
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-base font-bold text-md-on-surface">Tempel jawaban AI</h2>
+                                <p className="text-xs text-md-on-surface-variant mt-0.5 leading-relaxed">
+                                    Salin seluruh jawaban dari ChatGPT atau Gemini, lalu tekan tombol di bawah.
+                                </p>
+                            </div>
+
+                            {/* Symmetrical 2-column Action Buttons */}
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={handlePasteFromClipboard}
+                                    className="py-2.5 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                >
+                                    <Icon name="content_paste" className="text-base text-primary" />
+                                    <span>Tempel Clipboard</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleFillExample}
+                                    className="py-2.5 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-semibold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center"
+                                >
+                                    <Icon name="science" className="text-base text-primary" />
+                                    <span>Isi contoh</span>
+                                </button>
+                            </div>
+
+                            {/* Response Textarea */}
+                            <textarea
+                                value={aiResponse}
+                                onChange={(e) => {
+                                    setAiResponse(e.target.value);
+                                    setParseError('');
+                                }}
+                                placeholder='Tempel teks jawaban lengkap dari Gemini atau ChatGPT di sini...'
+                                rows={7}
+                                className="w-full bg-md-surface-container-low border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-2xl p-3.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
+                            />
+                        </div>
+                    )}
+
+                    {/* ═════════ STEP 4: CEK RESEPNYA ═════════ */}
+                    {step === 4 && activeRecipe && (
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-base font-bold text-md-on-surface">Cek resepnya</h2>
+                                <p className="text-xs text-md-on-surface-variant mt-0.5">
+                                    Hasil dari AI bisa keliru. Periksa dulu sebelum disimpan.
+                                </p>
+                            </div>
+
+                            {/* Success Alert */}
+                            {justSaved && (
+                                <div className="bg-primary/10 border border-primary/30 rounded-2xl p-3.5 flex items-center gap-2.5 animate-in fade-in">
+                                    <Icon name="check_circle" className="text-primary text-lg shrink-0" />
+                                    <p className="text-xs font-bold text-primary">Resep tersimpan.</p>
+                                </div>
+                            )}
+
+                            {/* Multiple recipes switcher */}
+                            {parsedRecipes.length > 1 && (
+                                <div className="flex items-center justify-between bg-md-surface-container-low p-2 rounded-2xl border border-md-outline-variant/20">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedIndex((prev) => (prev - 1 + parsedRecipes.length) % parsedRecipes.length)}
+                                        className="w-7 h-7 rounded-full bg-md-surface flex items-center justify-center text-md-on-surface cursor-pointer"
+                                    >
+                                        <Icon name="chevron_left" className="text-base" />
+                                    </button>
+                                    <span className="text-xs font-bold text-md-on-surface">
+                                        Resep {selectedIndex + 1} dari {parsedRecipes.length}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedIndex((prev) => (prev + 1) % parsedRecipes.length)}
+                                        className="w-7 h-7 rounded-full bg-md-surface flex items-center justify-center text-md-on-surface cursor-pointer"
+                                    >
+                                        <Icon name="chevron_right" className="text-base" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Recipe Preview Card */}
+                            <div className="bg-md-surface-container-low border border-md-outline-variant/30 rounded-2xl overflow-hidden divide-y divide-md-outline-variant/20">
+                                <div className="p-4">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-md-on-surface-variant">Nama Resep</span>
+                                            <h3 className="text-base font-bold text-md-on-surface mt-0.5">{activeRecipe.name}</h3>
+                                        </div>
+                                        <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-bold text-xs uppercase tracking-wide shrink-0">
+                                            {methodLabel(activeRecipe.method_id)}
+                                        </span>
+                                    </div>
+                                    {activeRecipe.description_short && (
+                                        <p className="text-xs text-md-on-surface-variant mt-2 leading-relaxed">
+                                            {activeRecipe.description_short}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Parameters Grid */}
+                                <div className="p-4 grid grid-cols-3 gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Rasio</p>
+                                        <p className="text-xs font-bold text-md-on-surface">{activeRecipe.ratio || '1:15'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Total Air</p>
+                                        <p className="text-xs font-bold text-md-on-surface">{activeRecipe.total_water ? `${activeRecipe.total_water}g` : '—'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Suhu</p>
+                                        <p className="text-xs font-bold text-md-on-surface">{activeRecipe.temperature ? `${activeRecipe.temperature}°C` : '93°C'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Gilingan</p>
+                                        <p className="text-xs font-bold text-md-on-surface">{activeRecipe.grind_size || 'Medium'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Kesulitan</p>
+                                        <p className="text-xs font-bold text-md-on-surface">{activeRecipe.difficulty || 'Intermediate'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-md-on-surface-variant uppercase tracking-wider mb-0.5">Langkah</p>
+                                        <p className="text-xs font-bold text-primary">{(activeRecipe.steps || []).length} Step</p>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {/* Step 1: Sumber */}
-                                    <div className="p-3.5 rounded-2xl bg-md-surface-container-low border border-md-outline-variant/30 space-y-2.5">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="size-5 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center shrink-0">1</span>
-                                                <h3 className="text-xs font-bold text-md-on-surface">Sumber Resep</h3>
-                                            </div>
-                                            {/youtube\.com|youtu\.be/i.test(rawInput) && (
-                                                <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-semibold">
-                                                    <Icon name="smart_display" className="text-sm" /> YouTube
+
+                                {/* Steps */}
+                                <div className="p-4 space-y-2.5">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-md-on-surface-variant">
+                                        Langkah Seduh ({(activeRecipe.steps || []).length})
+                                    </p>
+                                    <div className="space-y-2">
+                                        {(activeRecipe.steps || []).map((stepItem: BrewStep, idx: number) => (
+                                            <div key={idx} className="flex items-start gap-2.5 text-xs text-md-on-surface bg-md-surface-container/40 p-2.5 rounded-xl border border-md-outline-variant/15">
+                                                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-[11px] mt-0.5">
+                                                    {idx + 1}
                                                 </span>
-                                            )}
-                                        </div>
-                                        <textarea
-                                            value={rawInput}
-                                            onChange={(e) => { setRawInput(e.target.value); setParseError(''); setCopiedPrompt(false); }}
-                                            placeholder="Tempel link YouTube, TikTok, blog URL, atau catatan..."
-                                            rows={2}
-                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                                        />
-                                        <div className="flex items-center gap-2 pt-0.5">
-                                            <button
-                                                type="button"
-                                                onClick={handleCopyPrompt}
-                                                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer ${
-                                                    copiedPrompt
-                                                        ? 'bg-emerald-600 text-white'
-                                                        : 'bg-primary text-white hover:bg-primary-dark'
-                                                }`}
-                                            >
-                                                <Icon name={copiedPrompt ? "check" : "content_copy"} className="text-sm" />
-                                                <span>{copiedPrompt ? 'Prompt Disalin!' : 'Salin Prompt AI'}</span>
-                                            </button>
-                                            <a
-                                                href="https://chatgpt.com"
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
-                                            >
-                                                <span>ChatGPT</span>
-                                                <Icon name="open_in_new" className="text-[12px]" />
-                                            </a>
-                                            <a
-                                                href="https://gemini.google.com"
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="py-2 px-3 rounded-xl bg-md-surface-container border border-md-outline-variant/30 text-xs font-bold text-md-on-surface hover:bg-md-surface-container-high transition-colors flex items-center gap-1"
-                                            >
-                                                <span>Gemini</span>
-                                                <Icon name="open_in_new" className="text-[12px]" />
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    {/* Step 2: Hasil JSON */}
-                                    <div className={`p-3.5 rounded-2xl bg-md-surface-container-low border transition-all space-y-2 ${
-                                        copiedPrompt
-                                            ? 'border-primary/50 ring-2 ring-primary/15'
-                                            : 'border-md-outline-variant/30'
-                                    }`}>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`size-5 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${
-                                                aiJsonResponse.trim() ? 'bg-emerald-600 text-white' : 'bg-md-surface-container-highest text-md-on-surface'
-                                            }`}>2</span>
-                                            <h3 className="text-xs font-bold text-md-on-surface">Hasil JSON AI</h3>
-                                        </div>
-                                        <textarea
-                                            value={aiJsonResponse}
-                                            onChange={(e) => { setAiJsonResponse(e.target.value); setParseError(''); }}
-                                            placeholder='[ { "name": "V60 Recipe", "method_id": "v60", ... } ]'
-                                            rows={3}
-                                            className="w-full bg-md-surface-container-high/50 border border-md-outline-variant/30 text-md-on-surface placeholder:text-md-on-surface-variant/40 rounded-xl p-2.5 text-xs font-mono focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none"
-                                        />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                        <span className="font-bold text-md-on-surface truncate">{stepItem.label}</span>
+                                                        <div className="flex items-center gap-1.5 text-[11px] text-md-on-surface-variant shrink-0 font-medium">
+                                                            {stepItem.target_weight && <span>{stepItem.target_weight}g</span>}
+                                                            {stepItem.target_weight && <span>•</span>}
+                                                            <span>{stepItem.duration_seconds}s</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-[11px] text-md-on-surface-variant leading-relaxed">
+                                                        {stepItem.instruction}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        </div>
+                    )}
 
-                            {/* Error */}
-                            {parseError && (
-                                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 flex items-center gap-2">
-                                    <Icon name="error_outline" className="text-[16px] text-red-500 shrink-0" />
-                                    <p className="text-[11px] font-semibold text-red-600 dark:text-red-300">{parseError}</p>
-                                </div>
-                            )}
+                    {/* Error Notice */}
+                    {parseError && (
+                        <div className="mt-3 bg-md-error-container/40 border border-md-error/30 rounded-xl px-3 py-2 flex items-center gap-2">
+                            <Icon name="error_outline" className="text-[16px] text-md-error shrink-0" />
+                            <p className="text-[11px] font-semibold text-md-on-error-container">{parseError}</p>
                         </div>
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 pb-[max(env(safe-area-inset-bottom),1rem)] border-t border-md-outline-variant/20 bg-md-surface-container flex gap-3 shrink-0">
-                    {activePreview ? (
-                        <>
-                            {/* Back button */}
-                            <button
-                                onClick={() => setSelectedIndex(null)}
-                                className="w-10 h-10 border border-md-outline-variant/30 text-md-on-surface rounded-xl hover:bg-md-surface-container-high transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                                title={parsedRecipes.length > 1 ? 'Back to list' : 'Try again'}
-                            >
-                                <Icon name="arrow_back" className="text-[18px]" />
-                            </button>
-
-                            {/* Edit & Save */}
-                            <button
-                                onClick={handleEditAndSave}
-                                className="flex-1 py-3 border-2 border-primary text-primary rounded-2xl text-xs font-bold hover:bg-primary/5 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                                <Icon name="edit" className="text-[15px]" />
-                                Edit & Save
-                            </button>
-
-                            {/* Save Now — only shown when onSaveDirect is provided */}
-                            {onSaveDirect && (
+                {/* Footer Controls — Completely Symmetrical 2-Column Grid */}
+                <div className="p-4 pb-[max(env(safe-area-inset-bottom),1rem)] border-t border-md-outline-variant/20 bg-md-surface-container flex flex-col gap-2 shrink-0">
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                        {step === 1 && (
+                            <>
                                 <button
-                                    onClick={handleSaveDirect}
-                                    disabled={isSavingDirect}
-                                    className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/30 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="w-full py-3 rounded-2xl bg-md-surface-container-highest hover:bg-md-surface-container-highest/80 text-md-on-surface border border-md-outline-variant/30 text-xs font-bold transition-all active:scale-95 cursor-pointer text-center"
                                 >
-                                    {isSavingDirect ? (
-                                        <>
-                                            <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon name="check_circle" className="text-[15px]" />
-                                            Save Now
-                                        </>
-                                    )}
+                                    Batal
                                 </button>
-                            )}
-                        </>
-                    ) : parsedRecipes.length > 1 ? (
-                        <div className="flex gap-2 w-full">
-                            <button
-                                onClick={handleClose}
-                                className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                            >
-                                {savedCount === parsedRecipes.length ? 'Done' : 'Cancel'}
-                            </button>
-                            {onSaveDirect && unsavedCount > 0 && (
                                 <button
-                                    onClick={handleSaveAll}
-                                    disabled={isSavingDirect}
-                                    className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/30 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                                    type="button"
+                                    onClick={handleGoToPrompt}
+                                    disabled={!videoUrl.trim()}
+                                    className="w-full py-3 rounded-2xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer text-center active:scale-95"
                                 >
-                                    {isSavingDirect ? (
-                                        <>
-                                            <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            Saving All...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icon name="done_all" className="text-[16px]" />
-                                            Save All ({unsavedCount})
-                                        </>
-                                    )}
+                                    <span>Lanjut</span>
+                                    <Icon name="arrow_forward" className="text-base" />
                                 </button>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            <button
-                                onClick={handleClose}
-                                className="flex-1 py-3 border border-md-outline-variant/30 text-md-on-surface rounded-2xl text-xs font-bold hover:bg-md-surface-container-high transition-colors cursor-pointer"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                onClick={handleExtract}
-                                disabled={mode === 'ai' ? (!aiJsonResponse.trim() && !rawInput.trim()) : !rawInput.trim()}
-                                className="flex-1 py-3 bg-primary text-white rounded-2xl text-xs font-bold shadow-md shadow-primary/25 hover:bg-primary-dark active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <Icon name={mode === 'ai' ? "auto_awesome" : "local_cafe"} className="text-base" />
-                                <span>Ekstrak Resep</span>
-                            </button>
-                        </>
-                    )}
+                            </>
+                        )}
+
+                        {step === 2 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="w-full py-3 rounded-2xl bg-md-surface-container-highest hover:bg-md-surface-container-highest/80 text-md-on-surface border border-md-outline-variant/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                    <Icon name="arrow_back" className="text-base" />
+                                    <span>Kembali</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(3)}
+                                    className="w-full py-3 rounded-2xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <span>Tempel Jawaban</span>
+                                    <Icon name="arrow_forward" className="text-base" />
+                                </button>
+                            </>
+                        )}
+
+                        {step === 3 && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(2)}
+                                    className="w-full py-3 rounded-2xl bg-md-surface-container-highest hover:bg-md-surface-container-highest/80 text-md-on-surface border border-md-outline-variant/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+                                >
+                                    <Icon name="arrow_back" className="text-base" />
+                                    <span>Kembali</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleParseResponse}
+                                    disabled={!aiResponse.trim()}
+                                    className="w-full py-3 rounded-2xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                >
+                                    <span>Cek Resep</span>
+                                    <Icon name="arrow_forward" className="text-base" />
+                                </button>
+                            </>
+                        )}
+
+                        {step === 4 && (
+                            <>
+                                {justSaved ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleClose}
+                                        className="col-span-2 w-full py-3 rounded-2xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                                    >
+                                        <Icon name="check" className="text-base" />
+                                        <span>Resep tersimpan. Selesai</span>
+                                    </button>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={handleEditAndSave}
+                                            className="w-full py-3 rounded-2xl bg-md-surface-container-highest hover:bg-md-surface-container-highest/80 text-md-on-surface border border-md-outline-variant/30 text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                            <Icon name="edit" className="text-base text-primary" />
+                                            <span>Edit Resep</span>
+                                        </button>
+                                        {onSaveDirect && (
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveDirect}
+                                                disabled={isSavingDirect}
+                                                className="w-full py-3 rounded-2xl bg-primary text-white text-xs font-bold shadow-md shadow-primary/20 hover:bg-primary-dark transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                                            >
+                                                {isSavingDirect ? (
+                                                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Icon name="bookmark_added" className="text-base" />
+                                                )}
+                                                <span>Simpan</span>
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
-
