@@ -1,79 +1,62 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
-import { Icon } from '../components/Icons';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
-import { Button } from '../components/Button';
 import { brewService, settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
-import type { Recipe } from '../shared/domain/entities';
 import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
-import { formatDuration, formatWeight, formatVolume, formatStepSeconds, formatMethodName, getStepDuration, getCurrentTargetWeight, getPreviousTargetWeight, getTotalTargetWeight, getWaterProgressPercent, getStepIntervalInfo, getValveStates, getBrewArchetype, formatStepActionTitle, type UnitSystem } from '../shared/utils/brewMath';
+import {
+    formatDuration,
+    formatMethodName,
+    getStepDuration,
+    getCurrentTargetWeight,
+    getPreviousTargetWeight,
+    getTotalTargetWeight,
+    calculateCoffeeDose,
+    getValveStates,
+    getBrewArchetype,
+    formatStepActionTitle,
+    type UnitSystem,
+} from '../shared/utils/brewMath';
 import { useScaleStore } from '../features/scale/state/useScaleStore';
-import { BrewCurveChart } from '../components/BrewCurveChart';
 
-const BrewHeader = ({ recipe, onBack }: { recipe: Recipe; onBack: () => void }) => (
-    <header className="shrink-0 bg-md-surface/90 backdrop-blur-xl pt-[max(env(safe-area-inset-top),1.25rem)] pb-3 px-5 border-b border-md-outline-variant/15">
-        <div className="flex items-center gap-3">
-            <button
-                onClick={onBack}
-                className="size-10 rounded-full flex items-center justify-center text-md-on-surface-variant hover:bg-md-surface-container-highest active:scale-95 transition-all cursor-pointer shrink-0"
-                aria-label="Go back"
-            >
-                <Icon name="arrow_back" className="text-2xl" />
-            </button>
-            <div className="flex flex-col min-w-0 flex-1">
-                <span className="typescale-label-small font-bold text-md-on-surface-variant/70 uppercase tracking-wider">{formatMethodName(recipe.method_id)}</span>
-                <h1 className="typescale-headline-small font-bold text-md-on-surface line-clamp-1">{recipe.name}</h1>
-            </div>
-        </div>
-    </header>
-);
-
-const WaterProgressBar = ({
-    title,
-    currentLabel,
-    totalLabel,
-    percent,
-    barHeightClass = 'h-2.5',
-    transitionClass = '',
-}: {
-    title: string;
-    currentLabel: string;
-    totalLabel: string;
-    percent: number;
-    barHeightClass?: string;
-    transitionClass?: string;
-}) => (
-    <div className="w-full">
-        <div className="flex justify-between items-end mb-1.5">
-            <span className="typescale-label-medium font-bold text-md-on-surface-variant">{title}</span>
-            <span className="typescale-title-small font-bold text-md-primary tabular-nums">
-                {currentLabel}{' '}
-                <span className="typescale-body-small text-md-on-surface-variant font-normal">/ {totalLabel}</span>
-            </span>
-        </div>
-        <div className={`w-full bg-md-surface-container-high rounded-full ${barHeightClass} overflow-hidden`}>
-            <div
-                className={`bg-md-primary ${barHeightClass} rounded-full ${transitionClass}`}
-                style={{ width: `${percent}%` }}
-            />
-        </div>
-    </div>
-);
+const CIRCLE_CIRCUMFERENCE = 653.5;
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
     const safeBack = useSafeBack();
-    const { activeRecipe, engineState, brewMode, stopBrew, pauseBrew, resumeBrew, skipStep, hydrateBrew, selectedBeanId, selectedFilterId, coffeeConsumed } = useBrewStore();
-    const { connectionState, currentWeight, flowRate, curveData, tare, recordCurvePoint, isMock, connectMock, setMockWeight } = useScaleStore();
+    const {
+        activeRecipe,
+        engineState,
+        brewMode,
+        stopBrew,
+        pauseBrew,
+        resumeBrew,
+        skipStep,
+        hydrateBrew,
+        selectedBeanId,
+        selectedFilterId,
+        coffeeConsumed,
+    } = useBrewStore();
+
+    const {
+        connectionState,
+        currentWeight,
+        flowRate,
+        curveData,
+        tare,
+        recordCurvePoint,
+        isMock,
+        connectMock,
+        setMockWeight,
+    } = useScaleStore();
 
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [feedbackEnabled, setFeedbackEnabled] = useState(true);
     const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
-    const [showLiveChart, setShowLiveChart] = useState(false);
+
     const hasHydratedRef = useRef(false);
     const hasAutoTaredRef = useRef(false);
     const stopTarget = useRef<'back' | 'home'>('home');
@@ -85,7 +68,7 @@ export const BrewFlowPage = () => {
     const isSmartScale = brewMode === 'smart-scale';
     const isScaleActive = isSmartScale && (connectionState === 'connected' || (!Capacitor.isNativePlatform() && isMock));
 
-    // In web or disconnected preview, auto-activate demo scale only when NOT on native mobile APK
+    // In web preview or non-native, auto-activate mock scale for smart scale mode
     useEffect(() => {
         if (!Capacitor.isNativePlatform() && isSmartScale && connectionState !== 'connected') {
             connectMock();
@@ -97,14 +80,16 @@ export const BrewFlowPage = () => {
         setIsStopModalOpen(true);
     };
 
-    // Intercept hardware / web back button to prompt stop confirmation
     useBackHandler(!isStopModalOpen, () => openStopConfirm('back'));
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
+        settingsService.getTimerFeedbackEnabled()
+            .then(setFeedbackEnabled)
+            .catch(() => setFeedbackEnabled(true));
     }, []);
 
-    // Helper to get or resume audio context
+    // Audio context helper
     const getAudioContext = useCallback(() => {
         try {
             const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
@@ -122,7 +107,6 @@ export const BrewFlowPage = () => {
         }
     }, []);
 
-    // Helper to play shaped audio tone
     const playAudioTone = useCallback((ctx: AudioContext, freq: number, start: number, dur: number, gainVal: number) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -136,65 +120,19 @@ export const BrewFlowPage = () => {
         osc.stop(ctx.currentTime + start + dur);
     }, []);
 
-    // 1. Loud crisp preparatory pip for 5s countdown (5, 4, 3, 2 seconds)
-    const playCountdownPip = useCallback((second: number) => {
+    const playFeedback = useCallback((tones: { freq: number; start: number; dur: number; gain: number }[], vibrate?: number | number[]) => {
         if (!feedbackEnabled) return;
         const ctx = getAudioContext();
         if (!ctx) return;
         try {
-            const freq = 659.25 + (5 - second) * 45; // E5 ascending toward ~800Hz
-            playAudioTone(ctx, freq, 0, 0.1, 0.35);
-            if ('vibrate' in navigator) navigator.vibrate(60);
-        } catch (error) {
-            console.warn('Countdown pip failed', error);
-        }
-    }, [feedbackEnabled, getAudioContext, playAudioTone]);
-
-    // 2. High double chime for step transition (1s / 0s moving to next step)
-    const playStepTransitionChime = useCallback(() => {
-        if (!feedbackEnabled) return;
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        try {
-            playAudioTone(ctx, 880, 0, 0.12, 0.45);      // A5
-            playAudioTone(ctx, 1174.66, 0.1, 0.3, 0.5); // D6
-            if ('vibrate' in navigator) navigator.vibrate([80, 50, 140]);
-        } catch (error) {
-            console.warn('Transition chime failed', error);
-        }
-    }, [feedbackEnabled, getAudioContext, playAudioTone]);
-
-    // 3. Ascending chord chime when scale target weight is reached
-    const playTargetReachedChime = useCallback(() => {
-        if (!feedbackEnabled) return;
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        try {
-            playAudioTone(ctx, 523.25, 0, 0.12, 0.35);   // C5
-            playAudioTone(ctx, 659.25, 0.09, 0.14, 0.4);  // E5
-            playAudioTone(ctx, 783.99, 0.18, 0.35, 0.45); // G5
-            if ('vibrate' in navigator) navigator.vibrate([100, 50, 150]);
+            tones.forEach(t => playAudioTone(ctx, t.freq, t.start, t.dur, t.gain));
+            if (vibrate && 'vibrate' in navigator) navigator.vibrate(vibrate);
         } catch {
             // Audio context failed
         }
     }, [feedbackEnabled, getAudioContext, playAudioTone]);
 
-    // 4. Brew completed celebratory fanfare
-    const playBrewCompleteChime = useCallback(() => {
-        if (!feedbackEnabled) return;
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        try {
-            playAudioTone(ctx, 587.33, 0, 0.14, 0.4);     // D5
-            playAudioTone(ctx, 739.99, 0.11, 0.14, 0.42); // F#5
-            playAudioTone(ctx, 880, 0.22, 0.16, 0.45);    // A5
-            playAudioTone(ctx, 1174.66, 0.35, 0.45, 0.5); // D6
-            if ('vibrate' in navigator) navigator.vibrate([150, 100, 250]);
-        } catch {
-            // Audio context failed
-        }
-    }, [feedbackEnabled, getAudioContext, playAudioTone]);
-
+    // Hydration check
     useEffect(() => {
         if (hasHydratedRef.current) return;
         hasHydratedRef.current = true;
@@ -205,16 +143,10 @@ export const BrewFlowPage = () => {
         }
     }, [activeRecipe, hydrateBrew, navigate]);
 
-    useEffect(() => {
-        settingsService.getTimerFeedbackEnabled()
-            .then(setFeedbackEnabled)
-            .catch(() => setFeedbackEnabled(true));
-    }, []);
-
-    // Keep the screen awake for the whole brew flow (running, paused or done)
+    // WakeLock keeps display on
     useWakeLock(true);
 
-    // Persist the brew as soon as it finishes, so leaving via "Back to Homepage" still journals it.
+    // Auto-log completed brew to database
     useEffect(() => {
         if (!engineState?.isCompleted || !activeRecipe || hasAutoLoggedRef.current) return;
         hasAutoLoggedRef.current = true;
@@ -230,58 +162,57 @@ export const BrewFlowPage = () => {
         ).then((id) => sessionStorage.setItem('coffee_flow_last_logged_id', id)).catch(console.error);
     }, [engineState?.isCompleted, activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed]);
 
-    const recipeName = activeRecipe?.name;
-
-    // 5-second countdown beeps before next step, and transition chime
+    // Countdown sounds
     useEffect(() => {
         if (!engineState || !engineState.isRunning || engineState.isCompleted) return;
 
         const rem = engineState.remainingTime;
         const stepIdx = engineState.currentStepIndex;
 
-        // Prevent duplicate pips on sub-second re-renders
         if (lastBeepRef.current?.stepIndex === stepIdx && lastBeepRef.current?.second === rem) {
             return;
         }
 
         if (rem >= 2 && rem <= 5) {
             lastBeepRef.current = { stepIndex: stepIdx, second: rem };
-            playCountdownPip(rem);
-        } else if (rem === 1) {
+            playFeedback([{ freq: 659.25 + (5 - rem) * 45, start: 0, dur: 0.1, gain: 0.35 }], 60);
+        } else if (rem === 1 || rem === 0) {
             lastBeepRef.current = { stepIndex: stepIdx, second: rem };
-            playStepTransitionChime();
-        } else if (rem === 0) {
-            lastBeepRef.current = { stepIndex: stepIdx, second: rem };
-            playStepTransitionChime();
+            playFeedback([{ freq: 880, start: 0, dur: 0.12, gain: 0.45 }, { freq: 1174.66, start: 0.1, dur: 0.3, gain: 0.5 }], [80, 50, 140]);
         }
-    }, [engineState?.remainingTime, engineState?.currentStepIndex, engineState?.isRunning, engineState?.isCompleted, playCountdownPip, playStepTransitionChime]);
+    }, [engineState?.remainingTime, engineState?.currentStepIndex, engineState?.isRunning, engineState?.isCompleted, playFeedback]);
 
-    // Brew completed sound and notification
+    // Completed fanfare & notification
+    const recipeName = activeRecipe?.name;
     useEffect(() => {
         if (engineState?.isCompleted) {
-            playBrewCompleteChime();
+            playFeedback([
+                { freq: 587.33, start: 0, dur: 0.14, gain: 0.4 },
+                { freq: 739.99, start: 0.11, dur: 0.14, gain: 0.42 },
+                { freq: 880, start: 0.22, dur: 0.16, gain: 0.45 },
+                { freq: 1174.66, start: 0.35, dur: 0.45, gain: 0.5 },
+            ], [150, 100, 250]);
             void sendNotification('Brew Complete', `${recipeName ?? 'Brew'} is ready to serve`);
         }
-    }, [engineState?.isCompleted, playBrewCompleteChime, recipeName]);
+    }, [engineState?.isCompleted, playFeedback, recipeName]);
 
+    // Calculate total elapsed time
     let totalElapsed = 0;
-    let currentStepEnd = 0;
     if (activeRecipe && engineState) {
-        for (let i = 0; i <= engineState.currentStepIndex; i++) {
+        for (let i = 0; i < engineState.currentStepIndex; i++) {
             const step = activeRecipe.steps[i];
-            if (step) {
-                currentStepEnd += getStepDuration(step);
-                if (i < engineState.currentStepIndex) totalElapsed += step.duration_seconds;
-            }
+            if (step) totalElapsed += getStepDuration(step);
         }
-        totalElapsed += (engineState.totalTime - engineState.remainingTime);
+        const currentStep = activeRecipe.steps[engineState.currentStepIndex];
+        const curDur = currentStep ? getStepDuration(currentStep) : 0;
+        totalElapsed += Math.max(0, curDur - engineState.remainingTime);
     }
 
     const stepTarget = (activeRecipe && engineState)
         ? getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex)
         : 0;
 
-    // Auto-Tare scale once when smart scale brew starts running
+    // Auto-Tare on smart scale start
     useEffect(() => {
         if (!activeRecipe || !engineState) return;
         if (isScaleActive && engineState.isRunning && !hasAutoTaredRef.current) {
@@ -290,15 +221,15 @@ export const BrewFlowPage = () => {
         }
     }, [isScaleActive, engineState, tare, activeRecipe]);
 
-    // Record curve points periodically while running in smart scale mode
+    // Record curve data point
     useEffect(() => {
         if (!activeRecipe || !engineState) return;
-        if (isSmartScale && engineState.isRunning) {
+        if (engineState.isRunning) {
             recordCurvePoint(totalElapsed);
         }
-    }, [isSmartScale, engineState, totalElapsed, recordCurvePoint, activeRecipe]);
+    }, [engineState, totalElapsed, recordCurvePoint, activeRecipe]);
 
-    // Simulated pouring when running in Demo/Mock mode (e.g. web preview only)
+    // Simulated pouring when running in Demo/Mock mode (e.g. web preview)
     useEffect(() => {
         if (Capacitor.isNativePlatform()) return;
         if (!activeRecipe || !engineState) return;
@@ -309,7 +240,7 @@ export const BrewFlowPage = () => {
         const pourAmount = currentTarget - previousTarget;
 
         if (pourAmount > 0 && currentTarget > 0) {
-            const pourProgress = Math.min(1, engineState.progress * 1.5);
+            const pourProgress = Math.min(1, engineState.progress * 1.4);
             const simulatedWeight = previousTarget + (pourAmount * pourProgress);
             const isFinishedPouring = pourProgress >= 1;
             const simulatedFlow = isFinishedPouring ? 0 : 3.4;
@@ -319,16 +250,60 @@ export const BrewFlowPage = () => {
         }
     }, [isSmartScale, isMock, engineState, activeRecipe, setMockWeight]);
 
-    // Audio chime when step target weight is reached
+    // Audio chime on target reached
     useEffect(() => {
         if (!activeRecipe || !engineState || !isScaleActive) return;
         const currentIdx = engineState.currentStepIndex;
 
-        if (stepTarget > 0 && currentWeight >= (stepTarget - 2) && targetReachedInStepRef.current !== currentIdx) {
+        if (stepTarget > 0 && currentWeight >= (stepTarget - 1.5) && targetReachedInStepRef.current !== currentIdx) {
             targetReachedInStepRef.current = currentIdx;
-            playTargetReachedChime();
+            playFeedback([
+                { freq: 523.25, start: 0, dur: 0.12, gain: 0.35 },
+                { freq: 659.25, start: 0.09, dur: 0.14, gain: 0.4 },
+                { freq: 783.99, start: 0.18, dur: 0.35, gain: 0.45 },
+            ], [100, 50, 150]);
         }
-    }, [engineState, currentWeight, isScaleActive, stepTarget, playTargetReachedChime, activeRecipe]);
+    }, [engineState, currentWeight, isScaleActive, stepTarget, playFeedback, activeRecipe]);
+
+    // Total recipe duration across all steps
+    const totalRecipeDuration = useMemo(() => {
+        if (!activeRecipe) return 1;
+        return activeRecipe.steps.reduce((sum, s) => sum + getStepDuration(s), 0) || 1;
+    }, [activeRecipe]);
+
+    const totalWaterRecipe = useMemo(() => {
+        if (!activeRecipe) return 0;
+        return getTotalTargetWeight(activeRecipe.steps) || activeRecipe.total_water || 0;
+    }, [activeRecipe]);
+
+    const maxChartWeight = Math.max(totalWaterRecipe, 1);
+
+    // Target extraction curve polyline
+    const targetCurvePoints = useMemo(() => {
+        if (!activeRecipe) return '0,105';
+        let cum = 0;
+        const pts: [number, number][] = [[0, 0]];
+        activeRecipe.steps.forEach((s) => {
+            cum += getStepDuration(s);
+            pts.push([cum, s.target_weight || 0]);
+        });
+        return pts.map(([time, wt]) => {
+            const x = ((time / totalRecipeDuration) * 300).toFixed(1);
+            const y = (105 - (wt / maxChartWeight) * 100).toFixed(1);
+            return `${x},${y}`;
+        }).join(' ');
+    }, [activeRecipe, totalRecipeDuration, maxChartWeight]);
+
+    // Actual extraction curve polyline
+    const actualCurvePoints = useMemo(() => {
+        if (curveData.length === 0) return '0,105';
+
+        return curveData.map((c) => {
+            const x = ((c.time / totalRecipeDuration) * 300).toFixed(1);
+            const y = (105 - (c.weight / maxChartWeight) * 100).toFixed(1);
+            return `${x},${y}`;
+        }).join(' ');
+    }, [curveData, totalRecipeDuration, maxChartWeight]);
 
     const confirmStop = () => {
         stopBrew();
@@ -344,421 +319,359 @@ export const BrewFlowPage = () => {
     const currentStep = activeRecipe.steps[engineState.currentStepIndex];
     if (!currentStep) return null;
 
+    const archetype = getBrewArchetype(activeRecipe.method_id);
     const valveStates = getValveStates(activeRecipe.steps);
+    const hasAnyValve = valveStates.some(v => v !== null);
     const currentValve = valveStates[engineState.currentStepIndex] ?? null;
 
-    // The scale reads only the water poured (any ice already sits in the server), so the gauge
-    // tracks the final pour target rather than the recipe total, which may include the ice.
-    const totalWaterRecipe = getTotalTargetWeight(activeRecipe.steps) || activeRecipe.total_water || 0;
     const iceWeight = Math.max(0, Math.round((activeRecipe.total_water || 0) - totalWaterRecipe));
-    const pouredBefore = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
-    const currentTargetWeight = Math.round(pouredBefore + (stepTarget - pouredBefore) * engineState.progress);
-    const progressPercent = getWaterProgressPercent(currentTargetWeight, totalWaterRecipe);
+    const previousTarget = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
+    const stepAdd = Math.max(0, stepTarget - previousTarget);
 
-    // Smart scale dynamic values
-    const effectiveWaterWeight = isScaleActive ? currentWeight : currentTargetWeight;
-    const effectiveProgressPercent = isScaleActive
-        ? Math.min(100, Math.max(0, (currentWeight / (totalWaterRecipe || 1)) * 100))
-        : progressPercent;
+    // Dynamic water weight
+    const effectiveWaterWeight = isScaleActive
+        ? currentWeight
+        : (stepAdd > 0 ? previousTarget + stepAdd * engineState.progress : previousTarget);
 
-    // Timer countdown proximity (5s before next step)
-    const isTimerNear = engineState.isRunning && engineState.remainingTime > 0 && engineState.remainingTime <= 5;
-    const isTimerEnded = engineState.isRunning && engineState.remainingTime === 0;
-
-    const timerColorClass = isTimerNear
-        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent animate-pulse'
-        : isTimerEnded
-        ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent'
-        : 'text-md-on-surface';
-
-    // Proximity to current step target for color states and audio chime
-    const isTargetReached = stepTarget > 0 && currentWeight >= (stepTarget - 2);
-    const isTargetNear = stepTarget > 0 && !isTargetReached && currentWeight >= (stepTarget - 8);
-    const isRestingPhase = isTargetReached && engineState.remainingTime > 3;
-
-    const waterColorClass = isTargetReached
-        ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 bg-clip-text text-transparent scale-[1.04]'
-        : isTargetNear
-        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent animate-pulse scale-[1.02]'
-        : 'text-md-primary';
-
-    const archetype = getBrewArchetype(activeRecipe.method_id);
-    const isYieldMode = archetype === 'espresso';
-    const hasStepTarget = typeof currentStep.target_weight === 'number' && currentStep.target_weight > 0;
-    const showWeightTelemetry = isSmartScale && (archetype === 'pour_over' || hasStepTarget);
-    const showWaterProgress = totalWaterRecipe > 0 && (archetype === 'pour_over' || archetype === 'immersion_press' || hasStepTarget);
-    const showExtractionCurve = isSmartScale && (archetype === 'pour_over' || archetype === 'espresso');
-    const waterMetricTitle = isYieldMode ? 'Shot Yield' : 'Total Water';
-    const stepTitle = formatStepActionTitle(activeRecipe.steps, engineState.currentStepIndex, archetype, unitSystem);
-    const rawInstruction = currentStep.instruction || '';
-    const stepInstruction = rawInstruction.replace(/^Target:\s*[\d.]+[a-zA-Z]*\s*on scale\s*[—–-]\s*/i, '').trim();
-    const intervalInfo = getStepIntervalInfo(currentStep);
     const isLastStep = engineState.currentStepIndex >= activeRecipe.steps.length - 1;
+    const isCompleted = engineState.isCompleted;
 
-    if (engineState.isCompleted) {
-        return (
-            <div className="flex flex-col h-dvh max-w-md mx-auto bg-md-surface text-md-on-surface font-sans overflow-x-hidden">
-                {/* Header for Done state */}
-                <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
+    // Next step preview
+    const nextStepIdx = engineState.currentStepIndex + 1;
+    const nextStep = activeRecipe.steps[nextStepIdx];
+    const nextValve = valveStates[nextStepIdx];
 
-                <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto scrollbar-hide">
-                    {/* Done Card */}
-                    <div className="shrink-0 flex flex-col justify-center items-center mb-6 relative">
-                        <div className="w-full bg-md-surface-container-low rounded-3xl p-6 border border-md-outline-variant/30 shadow-md-2 flex flex-col items-center justify-center text-center relative overflow-hidden space-y-3">
-                            <div className="absolute top-0 left-0 w-full h-1.5 bg-md-primary"></div>
+    // Hint for valve transition within 10s
+    const valveHint = (engineState.isRunning && nextValve && currentValve && nextValve !== currentValve && engineState.remainingTime <= 10)
+        ? `Switch to ${nextValve === 'open' ? 'OPEN' : 'CLOSED'} in ${Math.ceil(engineState.remainingTime)}s`
+        : '';
 
-                            <div className="size-20 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center mb-2 shadow-inner">
-                                <Icon name="emoji_events" className="text-4xl" style={{ fontVariationSettings: "'FILL' 1" }} />
-                            </div>
+    // Step title and instruction
+    const stepTitle = isCompleted
+        ? 'Brew finished'
+        : formatStepActionTitle(activeRecipe.steps, engineState.currentStepIndex, archetype, unitSystem);
 
-                            <h2 className="typescale-headline-large font-extrabold text-md-on-surface">Done!</h2>
-                            <h3 className="typescale-title-large font-bold text-md-on-surface">Enjoy your coffee</h3>
-                            <p className="typescale-body-medium text-md-on-surface-variant max-w-[240px]">
-                                Great job! Your brew is complete and ready to serve.
-                            </p>
+    const rawInstruction = currentStep.instruction || '';
+    const stepInstruction = isCompleted
+        ? 'Swirl, pour over fresh ice and enjoy.'
+        : rawInstruction.replace(/^Target:\s*[\d.]+[a-zA-Z]*\s*on scale\s*[—–-]\s*/i, '').trim();
 
-                            {/* Final Water / Yield Progress */}
-                            {totalWaterRecipe > 0 && (
-                                <div className="w-full pt-2">
-                                    <WaterProgressBar
-                                        title={waterMetricTitle}
-                                        currentLabel={formatVolume(isScaleActive ? currentWeight : totalWaterRecipe, unitSystem)}
-                                        totalLabel={formatVolume(totalWaterRecipe, unitSystem)}
-                                        percent={100}
-                                        barHeightClass="h-3"
-                                    />
-                                </div>
-                            )}
+    // Calculations for the Circular Gauge and Big Center Display
+    const leftToPour = Math.max(0, stepTarget - effectiveWaterWeight);
+    const isTargetReached = stepAdd > 0 && effectiveWaterWeight >= (stepTarget - 0.5);
+    const isTargetNear = stepAdd > 0 && !isTargetReached && leftToPour < 8 && engineState.isRunning;
 
-                            {/* Extraction Curve Chart in Done State */}
-                            {showExtractionCurve && curveData.length > 0 && (
-                                <div className="w-full pt-3 text-left">
-                                    <BrewCurveChart
-                                        points={curveData}
-                                        maxDurationSeconds={totalElapsed}
-                                        targetWater={totalWaterRecipe}
-                                        waterLabel={isYieldMode ? 'Yield (g)' : 'Water (g)'}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
+    let bigVal = '0.0';
+    let bigUnit = 'g';
+    let capText = 'left to pour';
+    let bannerText = '';
+    let ringClass = 'bf-ringwrap';
+    let progressRatio = 0;
 
-                    {/* Previous Steps section */}
-                    <div className="mb-6">
-                        <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2.5 ml-1">Previous Steps</h3>
-                        <div className="flex items-center gap-4 p-4 rounded-2xl border border-md-outline-variant/30 bg-md-surface-container-low shadow-md-1">
-                            <div className="size-10 rounded-full bg-md-primary-container text-md-on-primary-container flex items-center justify-center shrink-0">
-                                <Icon name="check" className="text-xl font-bold" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">{activeRecipe.steps[activeRecipe.steps.length - 1].label}</h4>
-                                <p className="typescale-body-small text-md-on-surface-variant">Completed at {formatDuration(totalElapsed)}</p>
-                            </div>
-                            <span className="typescale-label-medium font-bold text-md-primary shrink-0">
-                                Done
-                            </span>
-                        </div>
-                    </div>
-                </div>
+    const currentStepDuration = getStepDuration(currentStep) || 1;
+    const currentStepElapsed = Math.max(0, currentStepDuration - engineState.remainingTime);
 
-                {/* Bottom Controls for Done State */}
-                <div className="sticky bottom-0 left-0 right-0 px-5 pt-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20 flex flex-col gap-2">
-                    <Button
-                        variant="filled"
-                        size="lg"
-                        onClick={() => navigate('/brew-log')}
-                        className="w-full"
-                    >
-                        <Icon name="assignment" style={{ fontVariationSettings: "'FILL' 1" }} />
-                        <span>Finish & Log Brew</span>
-                    </Button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            stopBrew();
-                            navigate('/home');
-                        }}
-                        className="w-full min-h-[44px] py-2.5 text-md-on-surface-variant font-bold hover:text-md-on-surface transition-colors cursor-pointer typescale-label-large"
-                    >
-                        Back to Homepage
-                    </button>
-                </div>
-            </div>
-        );
+    if (isCompleted) {
+        bigVal = '✓';
+        bigUnit = '';
+        capText = 'Saved to brew journal';
+        ringClass = 'bf-ringwrap hit';
+        progressRatio = 1;
+    } else if (stepAdd > 0) {
+        progressRatio = Math.min(1, Math.max(0, (effectiveWaterWeight - previousTarget) / stepAdd));
+        if (engineState.isRunning && (isTargetReached || leftToPour <= 0.2)) {
+            ringClass = 'bf-ringwrap hit';
+            bigVal = '0.0';
+            bigUnit = 'g';
+            capText = 'on target';
+            if (engineState.remainingTime > 0) {
+                bannerText = `Target reached! Resting for ${Math.ceil(engineState.remainingTime)}s`;
+            }
+        } else if (isTargetNear) {
+            ringClass = 'bf-ringwrap near';
+            bigVal = leftToPour.toFixed(1);
+            bigUnit = 'g';
+            capText = 'slow down';
+        } else {
+            bigVal = leftToPour.toFixed(1);
+            bigUnit = 'g';
+            capText = 'left to pour';
+        }
+    } else {
+        // No pour addition: bloom rest, steep, drawdown
+        progressRatio = engineState.isRunning ? Math.min(1, currentStepElapsed / currentStepDuration) : 0;
+        bigVal = `${Math.ceil(engineState.remainingTime)}`;
+        bigUnit = 's';
+        capText = 'no pouring, just wait';
     }
 
+    const ringDashOffset = CIRCLE_CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, progressRatio)));
+
     return (
-        <div className="flex flex-col h-dvh max-w-md mx-auto bg-md-surface text-md-on-surface font-sans overflow-x-hidden">
-            {/* Header */}
-            <BrewHeader recipe={activeRecipe} onBack={() => openStopConfirm('back')} />
-
-            <div className="flex-1 flex flex-col px-5 py-4 overflow-y-auto overflow-x-hidden scrollbar-hide">
-                {/* Active Step Card */}
-                <div className="shrink-0 flex flex-col justify-center items-center mb-6 relative">
-                    <div className="w-full bg-md-surface-container-low rounded-3xl p-5 border border-md-outline-variant/30 shadow-md-2 flex flex-col relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-md-primary"></div>
-
-                        {/* 1. Top Step Header (standalone) */}
-                        <div className="pb-3 border-b border-md-outline-variant/20 flex justify-center">
-                            <span className="inline-flex items-center px-4 py-1.5 rounded-full typescale-title-medium font-bold tabular-nums bg-md-secondary-container text-md-on-secondary-container">
-                                Step {engineState.currentStepIndex + 1} of {activeRecipe.steps.length}
-                            </span>
-                        </div>
-
-                        {/* 2. Live Telemetry */}
-                        <div className={showWeightTelemetry ? 'grid grid-cols-2 divide-x divide-md-outline-variant/20 py-4 text-center' : 'py-4 flex flex-col items-center text-center'}>
-                            <div className="flex flex-col items-center justify-center px-2 min-w-0">
-                                <span className={`typescale-label-small font-bold uppercase tracking-widest mb-1.5 transition-colors ${
-                                    isTimerNear ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse' : 'text-md-on-surface-variant'
-                                }`}>
-                                    Time (s)
-                                </span>
-                                <div className={`${showWeightTelemetry ? 'text-4xl sm:text-5xl' : 'typescale-display-large text-6xl'} font-black leading-none tracking-tight tabular-nums font-mono transition-all duration-300 ${timerColorClass}`}>
-                                    {formatDuration(totalElapsed)}
-                                </div>
-                                <span className={`typescale-label-small font-semibold tabular-nums mt-1.5 ${
-                                    isTimerNear ? 'text-amber-600 dark:text-amber-400' : 'text-md-on-surface-variant'
-                                }`}>
-                                    {isTimerNear ? `${engineState.remainingTime}s to next` : `Until ${formatDuration(currentStepEnd)}`}
-                                </span>
-                            </div>
-
-                            {showWeightTelemetry && (
-                                <div className="flex flex-col items-center justify-center px-2 min-w-0">
-                                    <span className={`typescale-label-small font-bold uppercase tracking-widest mb-1.5 transition-colors ${
-                                        isTargetReached
-                                            ? 'text-emerald-600 dark:text-emerald-400 font-extrabold'
-                                            : isTargetNear
-                                            ? 'text-amber-600 dark:text-amber-400 font-extrabold animate-pulse'
-                                            : 'text-md-on-surface-variant'
-                                    }`}>
-                                        {isYieldMode ? 'Yield (g)' : 'Water (g)'}
-                                    </span>
-                                    <div className={`text-4xl sm:text-5xl font-black leading-none tracking-tight tabular-nums font-mono transition-all duration-300 ${waterColorClass}`}>
-                                        {effectiveWaterWeight.toFixed(1)}
-                                    </div>
-                                    <span className="inline-flex items-center gap-1 typescale-label-small font-semibold text-md-on-surface-variant tabular-nums font-mono mt-1.5">
-                                        {isScaleActive ? (
-                                            <>
-                                                <Icon name="water_drop" className="text-xs text-md-primary" />
-                                                <span>{flowRate.toFixed(1)} g/s</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Icon name="warning" className="text-xs text-md-primary" />
-                                                <span>Scale off</span>
-                                            </>
-                                        )}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 3. Context Tags directly below Telemetry */}
-                        {(currentValve || intervalInfo.pourSeconds > 0) && (
-                            <div className="flex items-center justify-center gap-2 flex-wrap pb-3.5">
-                                {currentValve && (
-                                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-bold ${
-                                        currentValve === 'open'
-                                            ? 'bg-md-primary text-md-on-primary'
-                                            : 'bg-md-secondary-container text-md-on-secondary-container'
-                                    }`}>
-                                        <Icon name={currentValve === 'open' ? 'lock_open' : 'lock'} className="text-xs" />
-                                        <span>Switch {currentValve === 'open' ? 'Open' : 'Closed'}</span>
-                                    </span>
-                                )}
-                                {intervalInfo.pourSeconds > 0 && (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full typescale-label-small font-semibold tabular-nums bg-md-surface-container-high text-md-on-surface-variant">
-                                        <Icon name="hourglass_empty" className="text-xs text-md-primary" />
-                                        Pour ~{intervalInfo.pourSeconds}s{intervalInfo.restSeconds > 0 ? ` · Rest ~${intervalInfo.restSeconds}s` : ''}
-                                    </span>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 4. Water / Yield Progress */}
-                        {showWaterProgress && (
-                            <div className="w-full">
-                                <WaterProgressBar
-                                    title={waterMetricTitle}
-                                    currentLabel={formatWeight(isSmartScale ? effectiveWaterWeight : currentTargetWeight, unitSystem)}
-                                    totalLabel={formatVolume(totalWaterRecipe, unitSystem)}
-                                    percent={isSmartScale ? effectiveProgressPercent : progressPercent}
-                                    transitionClass={isSmartScale ? 'transition-all duration-300 ease-out' : 'transition-[width] duration-1000 ease-linear'}
-                                />
-                                {iceWeight > 0 && !isYieldMode && (
-                                    <p className="typescale-body-small text-md-on-surface-variant mt-2 flex items-center gap-1.5 justify-center">
-                                        <Icon name="ac_unit" className="text-sm text-md-primary" />
-                                        Ice {formatWeight(iceWeight, unitSystem)} already in the server, pour from 0
-                                    </p>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 5. Current Action & Instruction */}
-                        <div className={`w-full text-center space-y-2.5 ${showWaterProgress || currentValve || intervalInfo.pourSeconds > 0 ? 'mt-4 pt-3.5 border-t border-md-outline-variant/20' : 'pt-2 border-t border-md-outline-variant/20'}`}>
-                            {showWeightTelemetry && isRestingPhase ? (
-                                <div className="w-full py-2.5 px-3.5 rounded-2xl bg-md-primary-container text-md-on-primary-container flex items-center justify-center gap-2">
-                                    <Icon name="local_cafe" className="text-lg text-md-primary animate-pulse shrink-0" />
-                                    <span className="typescale-label-medium font-bold tabular-nums">
-                                        Target reached! Resting for {formatStepSeconds(engineState.remainingTime)}
-                                    </span>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-2">
-                                    <h2 className="text-[28px] sm:text-3xl font-extrabold text-md-on-surface leading-tight tracking-tight tabular-nums">
-                                        {stepTitle}
-                                    </h2>
-                                    {(hasStepTarget || (isSmartScale && isScaleActive && stepTarget > 0 && !isTargetReached)) && (
-                                        <div className="flex items-center justify-center gap-3 flex-wrap">
-                                            {hasStepTarget && (
-                                                <span className="text-[15px] font-bold text-md-on-surface-variant tabular-nums">
-                                                    Target {formatWeight(currentStep.target_weight!, unitSystem)}
-                                                </span>
-                                            )}
-                                            {hasStepTarget && isSmartScale && isScaleActive && stepTarget > 0 && !isTargetReached && (
-                                                <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[15px] font-bold tabular-nums ${
-                                                    isTargetNear
-                                                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse'
-                                                        : 'bg-md-primary-container text-md-on-primary-container'
-                                                }`}>
-                                                    <Icon name="water_drop" className="text-base text-md-primary" />
-                                                    <span>{Math.max(0, stepTarget - currentWeight).toFixed(1)}g left</span>
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {stepInstruction && stepInstruction !== stepTitle && (
-                                <p className="typescale-body-small text-md-on-surface-variant leading-relaxed max-w-[340px] mx-auto">
-                                    {stepInstruction}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Collapsible Live Extraction Curve (Pour-Over & Espresso in Smart Scale Mode) */}
-                        {showExtractionCurve && (
-                            <div className="w-full mt-3 pt-2.5 border-t border-md-outline-variant/20">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowLiveChart(!showLiveChart)}
-                                    aria-expanded={showLiveChart}
-                                    className="flex items-center justify-between w-full min-h-[44px] py-2 typescale-label-small font-bold text-md-on-surface-variant hover:text-md-on-surface transition-colors cursor-pointer px-1 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
-                                >
-                                    <span className="flex items-center gap-1.5">
-                                        <Icon name="show_chart" className="text-sm text-md-primary" />
-                                        <span>Live Extraction Curve</span>
-                                    </span>
-                                    <Icon name={showLiveChart ? 'expand_less' : 'expand_more'} className="text-base" />
-                                </button>
-                                {showLiveChart && (
-                                    <BrewCurveChart
-                                        embedded
-                                        points={curveData}
-                                        currentTime={totalElapsed}
-                                        maxDurationSeconds={currentStepEnd}
-                                        targetWater={totalWaterRecipe}
-                                        waterLabel={isYieldMode ? 'Yield (g)' : 'Water (g)'}
-                                        className="mt-1.5 text-left"
-                                    />
-                                )}
-                            </div>
-                        )}
-                    </div>
+        <div className="bf-app">
+            {/* Top Bar */}
+            <div className="bf-top">
+                <button
+                    onClick={() => openStopConfirm('back')}
+                    aria-label="Back"
+                    type="button"
+                >
+                    ←
+                </button>
+                <div className="min-w-0 flex-1">
+                    <small>{formatMethodName(activeRecipe.method_id)}</small>
+                    <h1 className="truncate">{activeRecipe.name}</h1>
                 </div>
-
-                {/* Next Up - All Remaining Steps */}
-                {engineState.currentStepIndex < activeRecipe.steps.length - 1 && (
-                    <div className="mb-6">
-                        <h3 className="typescale-label-medium font-bold text-md-on-surface-variant uppercase tracking-wider mb-2.5 ml-1">Next Up</h3>
-                        <div className="space-y-2.5">
-                            {activeRecipe.steps.slice(engineState.currentStepIndex + 1).map((step, idx) => {
-                                const absoluteIdx = engineState.currentStepIndex + idx + 1;
-                                const valve = valveStates[absoluteIdx];
-                                const nextHasTarget = typeof step.target_weight === 'number' && step.target_weight > 0;
-                                return (
-                                    <div key={step.id || idx} className="flex items-center gap-3.5 p-3.5 rounded-2xl border border-md-outline-variant/20 bg-md-surface-container-low/70 opacity-75">
-                                        <div className="size-8 rounded-full bg-md-surface-container-highest border border-md-outline-variant/20 flex items-center justify-center text-md-on-surface-variant typescale-label-medium font-bold tabular-nums shrink-0">
-                                            {absoluteIdx + 1}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="typescale-title-small font-bold text-md-on-surface line-clamp-1">
-                                                {formatStepActionTitle(activeRecipe.steps, absoluteIdx, archetype, unitSystem)}
-                                            </h4>
-                                            <p className="typescale-body-small text-md-on-surface-variant line-clamp-2">
-                                                {nextHasTarget
-                                                    ? `Target: ${formatWeight(step.target_weight!, unitSystem)}`
-                                                    : step.instruction || step.label}
-                                            </p>
-                                        </div>
-                                        {valve && (
-                                            <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full typescale-label-small font-bold shrink-0 ${valve === 'open' ? 'bg-md-primary text-md-on-primary' : 'bg-md-secondary-container text-md-on-secondary-container'}`}>
-                                                <Icon name={valve === 'open' ? 'lock_open' : 'lock'} className="text-[13px]" />
-                                                Switch {valve === 'open' ? 'Open' : 'Closed'}
-                                            </span>
-                                        )}
-                                        <span className="typescale-label-medium font-semibold text-md-on-surface-variant tabular-nums shrink-0">
-                                            {formatStepSeconds(step.duration_seconds)}
-                                        </span>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                <div className={`bf-conn ${isScaleActive ? '' : 'off'}`}>
+                    <i></i>
+                    <span>
+                        {isScaleActive
+                            ? (isMock ? 'Demo Scale' : 'Scale')
+                            : (isSmartScale ? 'Connecting' : 'Timer')}
+                    </span>
+                </div>
             </div>
 
-            {/* Bottom Controls */}
-            <div className="sticky bottom-0 left-0 right-0 px-5 pt-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] bg-md-surface/95 backdrop-blur-md border-t border-md-outline-variant/30 z-20">
-                <div className="flex w-full gap-2.5">
-                    {totalElapsed === 0 && !engineState.isRunning ? (
-                        <Button
-                            variant="filled"
-                            size="lg"
-                            onClick={resumeBrew}
-                            className="w-full"
-                        >
-                            <Icon name="play_arrow" style={{ fontVariationSettings: "'FILL' 1" }} />
-                            <span>Start Brew</span>
-                        </Button>
-                    ) : (
+            <main className="bf-main">
+                {/* Progress Segments */}
+                <div className="bf-seg" id="seg">
+                    {activeRecipe.steps.map((step, idx) => {
+                        const isDone = isCompleted || idx < engineState.currentStepIndex;
+                        const isCurrent = !isCompleted && idx === engineState.currentStepIndex;
+                        const stepDur = getStepDuration(step) || 1;
+                        const stepElapsed = Math.max(0, stepDur - engineState.remainingTime);
+                        const fillPercent = isDone
+                            ? 100
+                            : (isCurrent && engineState.isRunning ? Math.min(100, (stepElapsed / stepDur) * 100) : 0);
+
+                        return (
+                            <i key={step.id || idx} className={isDone ? 'done' : ''}>
+                                <b style={{ width: `${fillPercent}%` }} />
+                            </i>
+                        );
+                    })}
+                </div>
+
+                {/* Hero Card */}
+                <div className="bf-card" id="card">
+                    <div className="bf-lbl" id="stepLbl">
+                        {isCompleted ? 'Complete' : `Step ${engineState.currentStepIndex + 1} of ${activeRecipe.steps.length}`}
+                    </div>
+                    <div className="bf-title" id="title">{stepTitle}</div>
+                    <p className="bf-desc" id="desc">{stepInstruction}</p>
+
+                    {/* Valve indicator for switch / immersion brewers */}
+                    {hasAnyValve && (
                         <>
-                            <Button
-                                variant="secondary"
-                                size="lg"
-                                onClick={() => openStopConfirm('home')}
-                                className="flex-1 px-3 text-sm bg-md-surface-container-high text-md-on-surface hover:bg-md-surface-container-highest border border-md-outline-variant/30"
-                            >
-                                <Icon name="stop" style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>Stop</span>
-                            </Button>
-                            <Button
-                                variant="filled"
-                                size="lg"
-                                onClick={engineState.isRunning ? pauseBrew : resumeBrew}
-                                className="flex-1 px-3 text-sm"
-                            >
-                                <Icon name={engineState.isRunning ? "pause" : "play_arrow"} style={{ fontVariationSettings: "'FILL' 1" }} />
-                                <span>{engineState.isRunning ? 'Pause' : 'Resume'}</span>
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="lg"
-                                onClick={skipStep}
-                                className="flex-1 px-3 text-sm"
-                                aria-label={isLastStep ? 'Finish brew' : 'Advance to next step'}
-                            >
-                                <span>{isLastStep ? 'Finish' : 'Next'}</span>
-                                <Icon name={isLastStep ? 'check' : 'skip_next'} />
-                            </Button>
+                            <div className="bf-valve" aria-live="polite">
+                                <span id="vc" className={currentValve === 'closed' ? 'on' : ''}>Switch Closed</span>
+                                <span id="vo" className={currentValve === 'open' ? 'on' : ''}>Switch Open</span>
+                            </div>
+                            <div className="bf-vhint" id="vhint">{valveHint}</div>
                         </>
                     )}
-                </div>
-            </div>
 
+                    {/* Circular Ring Gauge */}
+                    <div className={ringClass} id="ringwrap">
+                        <svg viewBox="0 0 236 236">
+                            <circle className="tr" cx="118" cy="118" r="104" />
+                            <circle
+                                className="pg"
+                                id="pg"
+                                cx="118"
+                                cy="118"
+                                r="104"
+                                strokeDasharray={CIRCLE_CIRCUMFERENCE}
+                                strokeDashoffset={ringDashOffset}
+                            />
+                        </svg>
+                        <div className="bf-centre">
+                            <div className="bf-big" id="big">
+                                {bigVal}
+                                {bigUnit && <small>{bigUnit}</small>}
+                            </div>
+                            <div className="bf-cap" id="cap">{capText}</div>
+                        </div>
+                    </div>
+
+                    <div className="bf-banner" id="banner">{bannerText}</div>
+
+                    {/* Stats Row */}
+                    <div className="bf-stats">
+                        <div>
+                            <span className="bf-lbl">Weight</span>
+                            <b id="wt">{effectiveWaterWeight.toFixed(1)}g</b>
+                        </div>
+                        <div>
+                            <span className="bf-lbl">Flow</span>
+                            <b id="fl">{flowRate.toFixed(1)} g/s</b>
+                        </div>
+                        <div>
+                            <span className="bf-lbl">Time</span>
+                            <b id="tm">{formatDuration(totalElapsed)}</b>
+                        </div>
+                    </div>
+
+                    {/* Total Water Progress */}
+                    <div className="bf-total">
+                        <div className="bf-row">
+                            <span>Total water</span>
+                            <span id="tot">
+                                {Math.round(effectiveWaterWeight)} / {Math.round(totalWaterRecipe)} ml
+                            </span>
+                        </div>
+                        <div className="bar">
+                            <b
+                                id="totbar"
+                                style={{
+                                    width: `${Math.min(100, Math.max(0, (effectiveWaterWeight / (totalWaterRecipe || 1)) * 100))}%`,
+                                }}
+                            />
+                        </div>
+                        {iceWeight > 0 ? (
+                            <div>❄ Ice {iceWeight}g already in the server, pour from 0</div>
+                        ) : (
+                            <div>
+                                {activeRecipe.ratio
+                                    ? `Ratio ${activeRecipe.ratio} · ${calculateCoffeeDose(activeRecipe.total_water, activeRecipe.ratio)}g coffee`
+                                    : ''}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Next Up Card */}
+                <div className="bf-next">
+                    <div>
+                        <span className="bf-lbl">{isCompleted || isLastStep ? 'Status' : 'Next up'}</span>
+                        <strong id="nx">
+                            {isCompleted
+                                ? 'All done'
+                                : isLastStep
+                                ? 'Finish brew'
+                                : formatStepActionTitle(activeRecipe.steps, nextStepIdx, archetype, unitSystem)}
+                        </strong>
+                    </div>
+                    <span className="bf-pill" id="nxp">
+                        {isCompleted
+                            ? 'Logged'
+                            : isLastStep
+                            ? 'Last step'
+                            : `${nextValve ? `Switch ${nextValve === 'open' ? 'Open' : 'Closed'} · ` : ''}${nextStep?.duration_seconds || 0}s`}
+                    </span>
+                </div>
+
+                {/* Details Accordion: Live Extraction Curve */}
+                <details className="bf-details">
+                    <summary>Live extraction curve</summary>
+                    <svg className="bf-curve" viewBox="0 0 300 110" role="img" aria-label="Extraction curve">
+                        <polyline
+                            id="tgt"
+                            fill="none"
+                            stroke="var(--bf-mute)"
+                            strokeWidth="1.5"
+                            strokeDasharray="4 3"
+                            points={targetCurvePoints}
+                        />
+                        <polyline
+                            id="act"
+                            fill="none"
+                            stroke="var(--bf-brand)"
+                            strokeWidth="2.5"
+                            points={actualCurvePoints}
+                        />
+                    </svg>
+                </details>
+
+                {/* Details Accordion: All Steps */}
+                <details className="bf-details">
+                    <summary>All steps</summary>
+                    <ol id="all">
+                        {activeRecipe.steps.map((s, k) => {
+                            const v = valveStates[k];
+                            const isCur = k === engineState.currentStepIndex && !isCompleted;
+                            return (
+                                <li key={s.id || k} className={isCur ? 'cur' : ''} data-k={k}>
+                                    <span>{k + 1}</span>
+                                    <span>{formatStepActionTitle(activeRecipe.steps, k, archetype, unitSystem)}</span>
+                                    <em>
+                                        {v ? `Switch ${v === 'open' ? 'Open' : 'Closed'} · ` : ''}
+                                        {s.duration_seconds}s
+                                    </em>
+                                </li>
+                            );
+                        })}
+                    </ol>
+                </details>
+
+                {isMock && !Capacitor.isNativePlatform() && (
+                    <p className="demo">Mockup mode: simulated scale running in browser</p>
+                )}
+            </main>
+
+            {/* Sticky Bottom Actions */}
+            <footer className="bf-footer">
+                {isCompleted ? (
+                    <>
+                        <button
+                            type="button"
+                            className="bf-btn alt"
+                            id="stop"
+                            onClick={() => {
+                                stopBrew();
+                                navigate('/home');
+                            }}
+                        >
+                            Home
+                        </button>
+                        <button
+                            type="button"
+                            className="bf-btn"
+                            id="go"
+                            onClick={() => navigate('/brew-log')}
+                        >
+                            Finish & Log Brew
+                        </button>
+                    </>
+                ) : totalElapsed === 0 && !engineState.isRunning ? (
+                    <button
+                        type="button"
+                        className="bf-btn"
+                        id="go"
+                        onClick={resumeBrew}
+                    >
+                        Start Brew
+                    </button>
+                ) : (
+                    <>
+                        <button
+                            type="button"
+                            className="bf-btn alt"
+                            id="stop"
+                            onClick={() => openStopConfirm('home')}
+                        >
+                            Stop
+                        </button>
+                        <button
+                            type="button"
+                            className="bf-btn"
+                            id="go"
+                            onClick={engineState.isRunning ? pauseBrew : resumeBrew}
+                        >
+                            {engineState.isRunning ? 'Pause' : 'Resume'}
+                        </button>
+                        <button
+                            type="button"
+                            className="bf-btn alt"
+                            onClick={skipStep}
+                        >
+                            {isLastStep ? 'Finish' : 'Next'}
+                        </button>
+                    </>
+                )}
+            </footer>
+
+            {/* Stop Confirmation Modal */}
             <Modal
                 isOpen={isStopModalOpen}
                 onClose={() => setIsStopModalOpen(false)}
