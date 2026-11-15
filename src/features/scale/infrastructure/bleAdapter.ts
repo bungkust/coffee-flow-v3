@@ -12,28 +12,12 @@ export interface ScaleDevice {
     rssi?: number;
 }
 
-export interface IBleScaleAdapter {
-    isAvailable(): Promise<boolean>;
-    requestPermissions(): Promise<boolean>;
-    startScan(onDiscovered: (device: ScaleDevice) => void): Promise<void>;
-    stopScan(): Promise<void>;
-    connect(
-        deviceId: string,
-        onData: (data: DataView) => void,
-        onDisconnect: () => void
-    ): Promise<void>;
-    disconnect(): Promise<void>;
-    send(data: Uint8Array): Promise<void>;
-}
-
-/**
- * Capacitor BLE Implementation (Native Android / iOS)
- */
-class CapacitorBleAdapter implements IBleScaleAdapter {
+export class BleScaleAdapter {
     private connectedDeviceId: string | null = null;
     private isInitialized = false;
 
     private async ensureInit(): Promise<void> {
+        if (!Capacitor.isNativePlatform()) throw new Error('BLE scale is only available on native mobile.');
         if (!this.isInitialized) {
             await BleClient.initialize();
             this.isInitialized = true;
@@ -45,6 +29,7 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     }
 
     async requestPermissions(): Promise<boolean> {
+        if (!Capacitor.isNativePlatform()) return false;
         try {
             await this.ensureInit();
             return true;
@@ -56,19 +41,26 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     async startScan(onDiscovered: (device: ScaleDevice) => void): Promise<void> {
         await this.ensureInit();
         await BleClient.requestLEScan(
-            { services: [TIMEMORE_SERVICE_UUID] },
+            { allowDuplicates: false },
             (result: ScanResult) => {
-                const name = result.localName || result.device.name || 'Timemore Scale';
-                onDiscovered({
-                    id: result.device.deviceId,
-                    name,
-                    rssi: result.rssi
-                });
+                const name = result.localName || result.device.name || '';
+                const services = (result.uuids || []).map((s: string) => s.toLowerCase());
+                const isTimemoreService = services.includes(TIMEMORE_SERVICE_UUID.toLowerCase()) || services.some((s: string) => s.includes('fff0'));
+                const isScaleName = /timemore|black\s*mirror|tes\d+|coffee|scale/i.test(name);
+
+                if (isTimemoreService || isScaleName) {
+                    onDiscovered({
+                        id: result.device.deviceId,
+                        name: name || 'Timemore Scale',
+                        rssi: result.rssi
+                    });
+                }
             }
         );
     }
 
     async stopScan(): Promise<void> {
+        if (!Capacitor.isNativePlatform()) return;
         await this.ensureInit();
         await BleClient.stopLEScan();
     }
@@ -96,7 +88,7 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     }
 
     async disconnect(): Promise<void> {
-        if (this.connectedDeviceId) {
+        if (this.connectedDeviceId && Capacitor.isNativePlatform()) {
             await BleClient.disconnect(this.connectedDeviceId);
             this.connectedDeviceId = null;
         }
@@ -114,21 +106,8 @@ class CapacitorBleAdapter implements IBleScaleAdapter {
     }
 }
 
-class NoopBleAdapter implements IBleScaleAdapter {
-    async isAvailable(): Promise<boolean> { return false; }
-    async requestPermissions(): Promise<boolean> { return false; }
-    async startScan(): Promise<void> { throw new Error('BLE scale scanning is only available on native mobile.'); }
-    async stopScan(): Promise<void> {}
-    async connect(): Promise<void> { throw new Error('BLE scale connection is only available on native mobile.'); }
-    async disconnect(): Promise<void> {}
-    async send(): Promise<void> {}
-}
+const adapterInstance = new BleScaleAdapter();
 
-let adapterInstance: IBleScaleAdapter | null = null;
-
-export function getBleScaleAdapter(): IBleScaleAdapter {
-    if (!adapterInstance) {
-        adapterInstance = Capacitor.isNativePlatform() ? new CapacitorBleAdapter() : new NoopBleAdapter();
-    }
+export function getBleScaleAdapter(): BleScaleAdapter {
     return adapterInstance;
 }

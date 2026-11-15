@@ -86,21 +86,40 @@ export const HomePage = () => {
                     {/* 1. Dominant Hero CTA: Start Brewing */}
                     <button
                         onClick={() => setWizardOpen(true)}
-                        className="group relative flex items-center justify-between rounded-2xl bg-gradient-to-r from-md-primary to-md-primary/90 text-md-on-primary p-4 shadow-md-2 hover:shadow-md-3 transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden text-left"
+                        className="group relative flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#6e4432] via-[#653e2d] to-[#593526] text-white p-4 sm:p-4.5 shadow-md-2 hover:shadow-md-3 transition-all duration-200 active:scale-[0.99] cursor-pointer overflow-hidden text-left"
                     >
-                        <div className="flex items-center gap-3.5 z-10">
-                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-md-on-primary/15 backdrop-blur-md shadow-xs">
-                                <Icon name="coffee_maker" className="text-2xl" style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }} />
-                            </div>
-                            <div>
-                                <span className="typescale-label-small uppercase tracking-wider text-md-on-primary/75 font-bold">Guided Flow</span>
-                                <h3 className="typescale-title-medium font-bold text-md-on-primary leading-tight">
-                                    Start Brewing
-                                </h3>
-                            </div>
+                        {/* Faint coffee cup watermark in background on the right */}
+                        <svg
+                            className="absolute -right-2 -bottom-3 w-28 h-28 text-white/[0.13] pointer-events-none select-none"
+                            viewBox="0 0 120 120"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <path d="M30 24 L78 24 L68 50 L38 50 Z" />
+                            <path d="M38 50 L30 94 L76 94 L68 50" />
+                            <path d="M30 50 L76 50" />
+                            <path d="M70 56 C92 56 92 86 74 86" />
+                        </svg>
+
+                        {/* Content on the left */}
+                        <div className="flex flex-col z-10 pr-3">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">
+                                Guided Flow
+                            </span>
+                            <h3 className="text-lg sm:text-xl font-bold text-white leading-tight mt-0.5 mb-1 tracking-tight">
+                                Start Brewing
+                            </h3>
+                            <p className="text-xs font-medium text-white/80">
+                                Bean &rarr; Brewer &rarr; Recipe
+                            </p>
                         </div>
-                        <div className="flex size-9 items-center justify-center rounded-full bg-md-on-primary/20 group-hover:translate-x-0.5 transition-transform z-10">
-                            <Icon name="arrow_forward" className="text-lg" />
+
+                        {/* Crisp white action button on the right */}
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[#3e271e] shadow-md z-10 transition-transform duration-200 group-hover:scale-105 group-active:scale-95">
+                            <Icon name="arrow_forward" className="text-lg font-bold" />
                         </div>
                     </button>
 

@@ -34,7 +34,6 @@ export const BrewFlowPage = () => {
         stopBrew,
         pauseBrew,
         resumeBrew,
-        skipStep,
         hydrateBrew,
         selectedBeanId,
         selectedFilterId,
@@ -65,15 +64,15 @@ export const BrewFlowPage = () => {
     const audioContextRef = useRef<AudioContext | null>(null);
     const lastBeepRef = useRef<{ stepIndex: number; second: number } | null>(null);
 
-    const isSmartScale = brewMode === 'smart-scale';
-    const isScaleActive = isSmartScale && (connectionState === 'connected' || (!Capacitor.isNativePlatform() && isMock));
+    const isScaleConnected = connectionState === 'connected';
+    const isScaleActive = isScaleConnected || (!Capacitor.isNativePlatform() && brewMode === 'smart-scale' && isMock);
 
-    // In web preview or non-native, auto-activate mock scale for smart scale mode
+    // In web preview or non-native, auto-activate mock scale only if smart-scale mode was explicitly selected
     useEffect(() => {
-        if (!Capacitor.isNativePlatform() && isSmartScale && connectionState !== 'connected') {
+        if (!Capacitor.isNativePlatform() && brewMode === 'smart-scale' && connectionState !== 'connected') {
             connectMock();
         }
-    }, [isSmartScale, connectionState, connectMock]);
+    }, [brewMode, connectionState, connectMock]);
 
     const openStopConfirm = (target: 'back' | 'home') => {
         stopTarget.current = target;
@@ -221,19 +220,19 @@ export const BrewFlowPage = () => {
         }
     }, [isScaleActive, engineState, tare, activeRecipe]);
 
-    // Record curve data point
+    // Record curve data point (only when real or mock scale is active)
     useEffect(() => {
         if (!activeRecipe || !engineState) return;
-        if (engineState.isRunning) {
+        if (engineState.isRunning && isScaleActive) {
             recordCurvePoint(totalElapsed);
         }
-    }, [engineState, totalElapsed, recordCurvePoint, activeRecipe]);
+    }, [engineState, totalElapsed, recordCurvePoint, activeRecipe, isScaleActive]);
 
-    // Simulated pouring when running in Demo/Mock mode (e.g. web preview)
+    // Simulated pouring when running in Demo/Mock mode (web preview only)
     useEffect(() => {
         if (Capacitor.isNativePlatform()) return;
         if (!activeRecipe || !engineState) return;
-        if (!isSmartScale || !isMock || !engineState.isRunning) return;
+        if (brewMode !== 'smart-scale' || !isMock || !engineState.isRunning) return;
 
         const currentTarget = getCurrentTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
         const previousTarget = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
@@ -248,7 +247,7 @@ export const BrewFlowPage = () => {
         } else {
             setMockWeight(currentTarget > 0 ? currentTarget : previousTarget, 0);
         }
-    }, [isSmartScale, isMock, engineState, activeRecipe, setMockWeight]);
+    }, [brewMode, isMock, engineState, activeRecipe, setMockWeight]);
 
     // Audio chime on target reached
     useEffect(() => {
@@ -328,10 +327,8 @@ export const BrewFlowPage = () => {
     const previousTarget = getPreviousTargetWeight(activeRecipe.steps, engineState.currentStepIndex);
     const stepAdd = Math.max(0, stepTarget - previousTarget);
 
-    // Dynamic water weight
-    const effectiveWaterWeight = isScaleActive
-        ? currentWeight
-        : (stepAdd > 0 ? previousTarget + stepAdd * engineState.progress : previousTarget);
+    // Water weight (ONLY comes from scale when active; never simulated/faked)
+    const effectiveWaterWeight = isScaleActive ? currentWeight : 0;
 
     const isLastStep = engineState.currentStepIndex >= activeRecipe.steps.length - 1;
     const isCompleted = engineState.isCompleted;
@@ -357,9 +354,9 @@ export const BrewFlowPage = () => {
         : rawInstruction.replace(/^Target:\s*[\d.]+[a-zA-Z]*\s*on scale\s*[—–-]\s*/i, '').trim();
 
     // Calculations for the Circular Gauge and Big Center Display
-    const leftToPour = Math.max(0, stepTarget - effectiveWaterWeight);
-    const isTargetReached = stepAdd > 0 && effectiveWaterWeight >= (stepTarget - 0.5);
-    const isTargetNear = stepAdd > 0 && !isTargetReached && leftToPour < 8 && engineState.isRunning;
+    const leftToPour = isScaleActive ? Math.max(0, stepTarget - effectiveWaterWeight) : 0;
+    const isTargetReached = isScaleActive && stepAdd > 0 && effectiveWaterWeight >= (stepTarget - 0.5);
+    const isTargetNear = isScaleActive && stepAdd > 0 && !isTargetReached && leftToPour < 8 && engineState.isRunning;
 
     let bigVal = '0.0';
     let bigUnit = 'g';
@@ -377,32 +374,48 @@ export const BrewFlowPage = () => {
         capText = 'Saved to brew journal';
         ringClass = 'bf-ringwrap hit';
         progressRatio = 1;
-    } else if (stepAdd > 0) {
-        progressRatio = Math.min(1, Math.max(0, (effectiveWaterWeight - previousTarget) / stepAdd));
-        if (engineState.isRunning && (isTargetReached || leftToPour <= 0.2)) {
-            ringClass = 'bf-ringwrap hit';
-            bigVal = '0.0';
-            bigUnit = 'g';
-            capText = 'on target';
-            if (engineState.remainingTime > 0) {
-                bannerText = `Target reached! Resting for ${Math.ceil(engineState.remainingTime)}s`;
+    } else if (isScaleActive) {
+        // Smart Scale Mode: Gauge tracks physical water poured on the scale
+        if (stepAdd > 0) {
+            progressRatio = Math.min(1, Math.max(0, (effectiveWaterWeight - previousTarget) / stepAdd));
+            if (engineState.isRunning && (isTargetReached || leftToPour <= 0.2)) {
+                ringClass = 'bf-ringwrap hit';
+                bigVal = '0.0';
+                bigUnit = 'g';
+                capText = 'on target';
+                if (engineState.remainingTime > 0) {
+                    bannerText = `Target reached! Resting for ${Math.ceil(engineState.remainingTime)}s`;
+                }
+            } else if (isTargetNear) {
+                ringClass = 'bf-ringwrap near';
+                bigVal = leftToPour.toFixed(1);
+                bigUnit = 'g';
+                capText = 'slow down';
+            } else {
+                bigVal = leftToPour.toFixed(1);
+                bigUnit = 'g';
+                capText = 'left to pour';
             }
-        } else if (isTargetNear) {
-            ringClass = 'bf-ringwrap near';
-            bigVal = leftToPour.toFixed(1);
-            bigUnit = 'g';
-            capText = 'slow down';
         } else {
-            bigVal = leftToPour.toFixed(1);
-            bigUnit = 'g';
-            capText = 'left to pour';
+            // No pour addition: bloom rest, steep, drawdown
+            progressRatio = engineState.isRunning ? Math.min(1, currentStepElapsed / currentStepDuration) : 0;
+            bigVal = `${Math.ceil(engineState.remainingTime)}`;
+            bigUnit = 's';
+            capText = 'no pouring, just wait';
         }
     } else {
-        // No pour addition: bloom rest, steep, drawdown
+        // Timer Mode (no smart scale): Ring tracks step countdown timer, guides pour target
         progressRatio = engineState.isRunning ? Math.min(1, currentStepElapsed / currentStepDuration) : 0;
         bigVal = `${Math.ceil(engineState.remainingTime)}`;
         bigUnit = 's';
-        capText = 'no pouring, just wait';
+        if (stepAdd > 0) {
+            capText = `pour to ${Math.round(stepTarget)}g`;
+            if (engineState.remainingTime <= 5 && engineState.isRunning) {
+                bannerText = 'Finishing pour...';
+            }
+        } else {
+            capText = 'no pouring, just wait';
+        }
     }
 
     const ringDashOffset = CIRCLE_CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, progressRatio)));
@@ -427,7 +440,7 @@ export const BrewFlowPage = () => {
                     <span>
                         {isScaleActive
                             ? (isMock ? 'Demo Scale' : 'Scale')
-                            : (isSmartScale ? 'Connecting' : 'Timer')}
+                            : (brewMode === 'smart-scale' ? 'Connecting' : 'Timer Mode')}
                     </span>
                 </div>
             </div>
@@ -500,11 +513,11 @@ export const BrewFlowPage = () => {
                     <div className="bf-stats">
                         <div>
                             <span className="bf-lbl">Weight</span>
-                            <b id="wt">{effectiveWaterWeight.toFixed(1)}g</b>
+                            <b id="wt">{isScaleActive ? `${effectiveWaterWeight.toFixed(1)}g` : '--'}</b>
                         </div>
                         <div>
                             <span className="bf-lbl">Flow</span>
-                            <b id="fl">{flowRate.toFixed(1)} g/s</b>
+                            <b id="fl">{isScaleActive ? `${flowRate.toFixed(1)} g/s` : '--'}</b>
                         </div>
                         <div>
                             <span className="bf-lbl">Time</span>
@@ -515,16 +528,18 @@ export const BrewFlowPage = () => {
                     {/* Total Water Progress */}
                     <div className="bf-total">
                         <div className="bf-row">
-                            <span>Total water</span>
+                            <span>{isScaleActive ? 'Total water' : 'Target water'}</span>
                             <span id="tot">
-                                {Math.round(effectiveWaterWeight)} / {Math.round(totalWaterRecipe)} ml
+                                {isScaleActive
+                                    ? `${Math.round(effectiveWaterWeight)} / ${Math.round(totalWaterRecipe)} ml`
+                                    : `${Math.round(stepTarget)} / ${Math.round(totalWaterRecipe)} ml`}
                             </span>
                         </div>
                         <div className="bar">
                             <b
                                 id="totbar"
                                 style={{
-                                    width: `${Math.min(100, Math.max(0, (effectiveWaterWeight / (totalWaterRecipe || 1)) * 100))}%`,
+                                    width: `${Math.min(100, Math.max(0, (((isScaleActive ? effectiveWaterWeight : stepTarget) / (totalWaterRecipe || 1)) * 100)))}%`,
                                 }}
                             />
                         </div>
@@ -659,13 +674,6 @@ export const BrewFlowPage = () => {
                             onClick={engineState.isRunning ? pauseBrew : resumeBrew}
                         >
                             {engineState.isRunning ? 'Pause' : 'Resume'}
-                        </button>
-                        <button
-                            type="button"
-                            className="bf-btn alt"
-                            onClick={skipStep}
-                        >
-                            {isLastStep ? 'Finish' : 'Next'}
                         </button>
                     </>
                 )}

@@ -13,13 +13,8 @@ export const OPCODE_WRITE = 0x03;
 
 // Commands
 export const CMD_WEIGHT_FLOW_STREAM = 0x01;
-export const CMD_TIMER = 0x02;
 export const CMD_BATTERY = 0x05;
-export const CMD_WEIGHT_UNIT = 0x06;
-export const CMD_POWER_OFF = 0x0B;
-export const CMD_DEVICE_NAME = 0x0C;
 export const CMD_TARE = 0x0D;
-export const CMD_FIRMWARE_VERSION = 0x10;
 
 export interface WeightStreamData {
     type: 'weight_stream';

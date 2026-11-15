@@ -782,11 +782,11 @@ svg.bf-curve {
 }
 
 .bf-btn.alt {
-  flex: 0 0 auto;
+  flex: 1;
   background: transparent;
   color: var(--bf-ink);
   border: 1.5px solid var(--bf-line);
-  padding: 16px 18px;
+  padding: 16px 14px;
 }
 
 .bf-btn:focus-visible,

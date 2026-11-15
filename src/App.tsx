@@ -29,7 +29,6 @@ const DrinkPreparationPage = lazy(() => import('./pages/DrinkPreparationPage').t
 const DrinkFlowPage = lazy(() => import('./pages/DrinkFlowPage').then(m => ({ default: m.DrinkFlowPage })));
 const DrinkLogPage = lazy(() => import('./pages/DrinkLogPage').then(m => ({ default: m.DrinkLogPage })));
 const DrinkEditPage = lazy(() => import('./pages/DrinkEditPage').then(m => ({ default: m.DrinkEditPage })));
-const PlaygroundPage = lazy(() => import('./pages/PlaygroundPage').then(m => ({ default: m.PlaygroundPage })));
 const QuickTimerPage = lazy(() => import('./pages/QuickTimerPage').then(m => ({ default: m.QuickTimerPage })));
 const RatioCalculatorPage = lazy(() => import('./pages/RatioCalculatorPage').then(m => ({ default: m.RatioCalculatorPage })));
 const ScalePage = lazy(() => import('./pages/ScalePage').then(m => ({ default: m.ScalePage })));
@@ -118,7 +117,6 @@ function App() {
           <Route path="/drink-log/:id" element={<DrinkLogPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/backup" element={<BackupRestorePage />} />
-          <Route path="/playground" element={<PlaygroundPage />} />
           <Route path="/quick-timer" element={<QuickTimerPage />} />
           <Route path="/ratio-calculator" element={<RatioCalculatorPage />} />
           <Route path="/scale" element={<ScalePage />} />
