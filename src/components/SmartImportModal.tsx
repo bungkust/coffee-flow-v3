@@ -245,8 +245,13 @@ export const SmartImportModal = ({
     };
 
     const handleGoToPrompt = () => {
-        if (!videoUrl.trim()) {
+        const trimmed = videoUrl.trim();
+        if (!trimmed) {
             setParseError('Tempel link video YouTube terlebih dahulu.');
+            return;
+        }
+        if (/instagram\.com|tiktok\.com/i.test(trimmed)) {
+            setParseError('Gemini dan ChatGPT tidak dapat membaca link Instagram atau TikTok. Gunakan link YouTube.');
             return;
         }
         setParseError('');
@@ -441,8 +446,8 @@ export const SmartImportModal = ({
                     {step === 1 && (
                         <div className="space-y-4">
                             <div>
-                                <h2 className="text-base font-bold text-md-on-surface">Tempel link video</h2>
-                                <p className="text-xs text-md-on-surface-variant mt-0.5">Resep kopinya kita ambil dari video ini.</p>
+                                <h2 className="text-base font-bold text-md-on-surface">Tempel link video YouTube</h2>
+                                <p className="text-xs text-md-on-surface-variant mt-0.5">Khusus link YouTube (Gemini & ChatGPT tidak dapat mengakses Instagram atau TikTok).</p>
                             </div>
 
                             <div className="space-y-3">

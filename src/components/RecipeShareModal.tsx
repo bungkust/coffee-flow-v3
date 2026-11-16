@@ -154,7 +154,7 @@ export const RecipeShareModal = ({
                                 )}
                             </div>
                             <span className="typescale-label-small text-md-on-surface-variant/80 mt-2 text-center">
-                                Ready for Instagram Story, Threads image, or WhatsApp status.
+                                Ready to share as image or WhatsApp status.
                             </span>
                         </div>
                     ) : (

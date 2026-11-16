@@ -42,6 +42,8 @@ interface ScaleState {
 const STORAGE_LAST_SCALE_ID = 'coffee_flow_last_scale_id';
 const STORAGE_LAST_SCALE_NAME = 'coffee_flow_last_scale_name';
 
+let tareLockUntil = 0;
+
 export const useScaleStore = create<ScaleState>((set, get) => ({
     connectionState: 'disconnected',
     device: null,
@@ -119,6 +121,14 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                     if (!packet) return;
 
                     if (packet.type === 'weight_stream') {
+                        if (Date.now() < tareLockUntil) {
+                            if (Math.abs(packet.weight) > 1.5) {
+                                // Still reporting pre-tare weight while in-flight, suppress it
+                                return;
+                            }
+                            // Zero or near-zero reading received, tare confirmed
+                            tareLockUntil = 0;
+                        }
                         set({
                             currentWeight: packet.weight,
                             flowRate: packet.flowRate,
@@ -193,15 +203,19 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
     },
 
     tare: async () => {
+        tareLockUntil = Date.now() + 800;
         if (get().isMock) {
             set({ currentWeight: 0, flowRate: 0 });
             return;
         }
         const adapter = getBleScaleAdapter();
-        if (get().connectionState !== 'connected') return;
+        if (get().connectionState !== 'connected') {
+            set({ currentWeight: 0, flowRate: 0 });
+            return;
+        }
         try {
             await adapter.send(buildTareCommand());
-            set({ currentWeight: 0 });
+            set({ currentWeight: 0, flowRate: 0 });
         } catch (error: unknown) {
             console.warn('Tare failed', error);
         }

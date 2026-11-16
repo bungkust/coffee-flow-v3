@@ -14,8 +14,6 @@ import { useSafeBack } from '../shared/utils/backNavigation';
 const sourceMeta = (url: string): { icon: string; label: string } => {
     const u = url.toLowerCase();
     if (u.includes('youtube.') || u.includes('youtu.be')) return { icon: 'play_circle', label: 'Watch on YouTube' };
-    if (u.includes('tiktok.')) return { icon: 'music_note', label: 'Open on TikTok' };
-    if (u.includes('instagram.')) return { icon: 'photo_camera', label: 'Open on Instagram' };
     try {
         return { icon: 'open_in_new', label: new URL(url).hostname.replace(/^www\./, '') };
     } catch {
