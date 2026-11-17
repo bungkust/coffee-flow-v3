@@ -31,9 +31,31 @@ const bootstrapDb = async () => {
       await customElements.whenDefined('jeep-sqlite');
     }
 
-    // Initialize Database
-    await dbService.initialize();
-    await seedInitialData();
+    // Initialize Database with retry
+    let dbInitSuccess = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await dbService.initialize();
+        dbInitSuccess = true;
+        break;
+      } catch (err) {
+        console.warn(`Database init attempt ${attempt} failed:`, err);
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 200 * attempt));
+        }
+      }
+    }
+
+    if (!dbInitSuccess) {
+      throw new Error('Database initialization failed after retries');
+    }
+
+    // Seeding is non-fatal: app can still mount and run if seeding encounters an issue
+    try {
+      await seedInitialData();
+    } catch (seedErr) {
+      console.warn('Seeding non-fatal warning:', seedErr);
+    }
 
     // Resolve initial destination before React mounts so index.html pre-splash
     // transitions directly to Home/Welcome with zero intermediate splash blip.
@@ -56,9 +78,13 @@ const bootstrapDb = async () => {
     const rootEl = document.getElementById('root');
     if (rootEl) {
       rootEl.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:white;">
-          <p style="color:red; font-weight:bold;">Fatal Error: Database initialization failed.</p>
-          <p>Please check the console for details.</p>
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center; font-family:sans-serif; background:#FBF9F5; color:#1C1B1A;">
+          <div style="width:64px; height:64px; border-radius:50%; background:#FEE2E2; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+            <span style="color:#DC2626; font-size:32px;">⚠️</span>
+          </div>
+          <h2 style="font-size:20px; font-weight:700; margin:0 0 8px;">Database Setup</h2>
+          <p style="color:#78716C; font-size:14px; max-width:320px; margin:0 0 24px; line-height:1.5;">We encountered an issue preparing local storage. Tap below to reload.</p>
+          <button onclick="window.location.reload()" style="background:#5B3E2B; color:white; border:none; padding:12px 24px; border-radius:12px; font-weight:600; font-size:14px; cursor:pointer;">Retry</button>
         </div>
       `;
     }

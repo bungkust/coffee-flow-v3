@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useBrewStore } from '../state/useBrewStore';
 import { Modal } from '../components/Modal';
-import { brewService, settingsService } from '../core/services';
+import { settingsService } from '../core/services';
 import { sendNotification } from '../shared/utils/notify';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
-import { useBackHandler, useSafeBack } from '../shared/utils/backNavigation';
+import { useBackHandler } from '../shared/utils/backNavigation';
 import {
     formatDuration,
     formatMethodName,
@@ -26,7 +26,6 @@ const CIRCLE_CIRCUMFERENCE = 653.5;
 
 export const BrewFlowPage = () => {
     const navigate = useNavigate();
-    const safeBack = useSafeBack();
     const {
         activeRecipe,
         engineState,
@@ -35,9 +34,7 @@ export const BrewFlowPage = () => {
         pauseBrew,
         resumeBrew,
         hydrateBrew,
-        selectedBeanId,
-        selectedFilterId,
-        coffeeConsumed,
+        autoLogBrew,
     } = useBrewStore();
 
     const {
@@ -68,7 +65,6 @@ export const BrewFlowPage = () => {
     const hasHydratedRef = useRef(false);
     const hasAutoTaredRef = useRef(false);
     const stopTarget = useRef<'back' | 'home'>('home');
-    const hasAutoLoggedRef = useRef(false);
     const targetReachedInStepRef = useRef<number | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const lastBeepRef = useRef<{ stepIndex: number; second: number } | null>(null);
@@ -88,7 +84,19 @@ export const BrewFlowPage = () => {
         setIsStopModalOpen(true);
     };
 
-    useBackHandler(!isStopModalOpen, () => openStopConfirm('back'));
+    const handleBack = useCallback(() => {
+        if (engineState?.isCompleted) {
+            stopBrew();
+            navigate('/home', { replace: true });
+            return;
+        }
+        openStopConfirm('back');
+    }, [engineState?.isCompleted, stopBrew, navigate]);
+
+    useBackHandler(!isStopModalOpen, () => {
+        handleBack();
+        return true;
+    });
 
     useEffect(() => {
         settingsService.getAppUnit().then(setUnitSystem);
@@ -152,19 +160,10 @@ export const BrewFlowPage = () => {
     useWakeLock(true);
 
     useEffect(() => {
-        if (!engineState?.isCompleted || !activeRecipe || hasAutoLoggedRef.current) return;
-        hasAutoLoggedRef.current = true;
-        brewService.logBrew(
-            activeRecipe.id,
-            undefined,
-            undefined,
-            undefined,
-            [],
-            selectedBeanId || undefined,
-            selectedFilterId || undefined,
-            coffeeConsumed || undefined
-        ).then((id) => sessionStorage.setItem('coffee_flow_last_logged_id', id)).catch(console.error);
-    }, [engineState?.isCompleted, activeRecipe, selectedBeanId, selectedFilterId, coffeeConsumed]);
+        if (engineState?.isCompleted && activeRecipe) {
+            void autoLogBrew();
+        }
+    }, [engineState?.isCompleted, activeRecipe, autoLogBrew]);
 
     useEffect(() => {
         if (!engineState || !engineState.isRunning || engineState.isCompleted) return;
@@ -308,9 +307,9 @@ export const BrewFlowPage = () => {
         setHasStarted(false);
         stopBrew();
         if (stopTarget.current === 'back') {
-            safeBack(activeRecipe ? `/recipes/${activeRecipe.id}` : '/recipes');
+            navigate(activeRecipe ? `/recipes/${activeRecipe.id}` : '/recipes', { replace: true });
         } else {
-            navigate('/brew-methods');
+            navigate('/brew-methods', { replace: true });
         }
     };
 
@@ -446,7 +445,7 @@ export const BrewFlowPage = () => {
             {/* Top Bar */}
             <div className="bf-top">
                 <button
-                    onClick={() => openStopConfirm('back')}
+                    onClick={handleBack}
                     aria-label="Back"
                     type="button"
                 >
@@ -663,7 +662,7 @@ export const BrewFlowPage = () => {
                             id="stop"
                             onClick={() => {
                                 stopBrew();
-                                navigate('/home');
+                                navigate('/home', { replace: true });
                             }}
                         >
                             Home
@@ -672,7 +671,10 @@ export const BrewFlowPage = () => {
                             type="button"
                             className="bf-btn"
                             id="go"
-                            onClick={() => navigate('/brew-log')}
+                            onClick={async () => {
+                                await autoLogBrew();
+                                navigate('/brew-log');
+                            }}
                         >
                             Finish & Log Brew
                         </button>

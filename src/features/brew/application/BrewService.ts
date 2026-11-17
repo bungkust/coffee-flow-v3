@@ -65,94 +65,102 @@ export class BrewService {
         };
         await this.logRepo.save(log);
 
-        const recipe = await this.recipeRepo.findById(recipeId);
-        const recipeName = recipe?.name || 'Coffee Brew';
-
-        // Deduct bean stock
-        if (beanId && coffeeConsumed && Number.isFinite(coffeeConsumed) && coffeeConsumed > 0) {
-            await this.pantryService.deductStock(beanId, coffeeConsumed, {
-                actionType: 'brew',
-                referenceId: logId,
-                referenceName: recipeName,
-                unit: 'g'
-            });
+        let recipeName = 'Coffee Brew';
+        try {
+            const recipe = await this.recipeRepo.findById(recipeId);
+            if (recipe?.name) recipeName = recipe.name;
+        } catch (e) {
+            console.warn('Could not fetch recipe for stock deduction label:', e);
         }
 
-        // Deduct filter stock (always 1 for filter-based methods)
-        if (filterId) {
-            await this.pantryService.deductStock(filterId, 1, {
-                actionType: 'brew',
-                referenceId: logId,
-                referenceName: `${recipeName} (Filter)`,
-                unit: 'pcs'
-            });
-        }
+        // Deduct stock (soft failure so log is always preserved)
+        const deductions = [
+            beanId && coffeeConsumed && Number.isFinite(coffeeConsumed) && coffeeConsumed > 0
+                ? { id: beanId, amount: coffeeConsumed, unit: 'g', name: recipeName }
+                : null,
+            filterId
+                ? { id: filterId, amount: 1, unit: 'pcs', name: `${recipeName} (Filter)` }
+                : null
+        ].filter(Boolean) as { id: string; amount: number; unit: string; name: string }[];
+
+            for (const item of deductions) {
+                try {
+                        await this.pantryService.deductStock(item.id, item.amount, {
+                            actionType: 'brew',
+                            referenceId: logId,
+                    referenceName: item.name,
+                            unit: item.unit
+                        });
+                    } catch (err) {
+                        console.warn(`Soft warning: Failed to deduct ${item.name}:`, err);
+                    }
+                }
 
         return logId;
-    }
+            }
 
-    async getDashboardStats(): Promise<BrewStats> {
-        return this.logRepo.getStats();
-    }
+    async getDashboardStats(): Promise < BrewStats > {
+                return this.logRepo.getStats();
+            }
 
-    async getRecentBrews(limit?: number): Promise<BrewLogWithRecipe[]> {
-        return this.logRepo.getRecentWithRecipes(limit);
-    }
+    async getRecentBrews(limit ?: number): Promise < BrewLogWithRecipe[] > {
+                return this.logRepo.getRecentWithRecipes(limit);
+            }
 
-    async getAllLogs(): Promise<BrewLogWithRecipe[]> {
-        return this.logRepo.getRecentWithRecipes();
-    }
+    async getAllLogs(): Promise < BrewLogWithRecipe[] > {
+                return this.logRepo.getRecentWithRecipes();
+            }
 
-    async getLog(id: EntityId): Promise<BrewLogWithRecipe | null> {
-        return this.logRepo.findByIdWithRecipe(id);
-    }
+    async getLog(id: EntityId): Promise < BrewLogWithRecipe | null > {
+                return this.logRepo.findByIdWithRecipe(id);
+            }
 
-    async updateLog(id: EntityId, updates: BrewLogFeedback): Promise<void> {
-        await this.logRepo.update(id, updates);
-    }
+    async updateLog(id: EntityId, updates: BrewLogFeedback): Promise < void> {
+                await this.logRepo.update(id, updates);
+            }
 
-    async deleteLog(id: EntityId): Promise<void> {
-        await this.logRepo.delete(id);
-    }
+    async deleteLog(id: EntityId): Promise < void> {
+                await this.logRepo.delete(id);
+            }
 
-    async deleteRecipe(id: EntityId): Promise<void> {
-        await this.recipeRepo.delete(id);
-    }
+    async deleteRecipe(id: EntityId): Promise < void> {
+                await this.recipeRepo.delete(id);
+            }
 
-    async cloneRecipe(id: EntityId): Promise<void> {
-        const original = await this.recipeRepo.findById(id);
-        if (!original) throw new Error('Recipe not found');
+    async cloneRecipe(id: EntityId): Promise < void> {
+                const original = await this.recipeRepo.findById(id);
+                if(!original) throw new Error('Recipe not found');
 
-        const clone: Recipe = {
-            ...original,
-            id: crypto.randomUUID(),
-            name: `${original.name} (Copy)`,
-            is_custom: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            best_for_tags: original.best_for_tags ? [...original.best_for_tags] : [],
-            not_recommended_tags: original.not_recommended_tags ? [...original.not_recommended_tags] : [],
-            steps: original.steps.map(s => ({
-                ...s,
-                id: crypto.randomUUID(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }))
-        };
+                const clone: Recipe = {
+                    ...original,
+                    id: crypto.randomUUID(),
+                    name: `${original.name} (Copy)`,
+                    is_custom: true,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    best_for_tags: original.best_for_tags ? [...original.best_for_tags] : [],
+                    not_recommended_tags: original.not_recommended_tags ? [...original.not_recommended_tags] : [],
+                    steps: original.steps.map(s => ({
+                        ...s,
+                        id: crypto.randomUUID(),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }))
+                };
 
-        await this.recipeRepo.save(clone);
-    }
+                await this.recipeRepo.save(clone);
+            }
 
-    async toggleFavorite(id: EntityId): Promise<void> {
-        const recipe = await this.recipeRepo.findById(id);
-        if (!recipe) throw new Error('Recipe not found');
+    async toggleFavorite(id: EntityId): Promise < void> {
+                const recipe = await this.recipeRepo.findById(id);
+                if(!recipe) throw new Error('Recipe not found');
 
-        const updatedRecipe = {
-            ...recipe,
-            is_favorite: !recipe.is_favorite,
-            updated_at: new Date().toISOString()
-        };
+                const updatedRecipe = {
+                    ...recipe,
+                    is_favorite: !recipe.is_favorite,
+                    updated_at: new Date().toISOString()
+                };
 
-        await this.recipeRepo.save(updatedRecipe);
-    }
-}
+                await this.recipeRepo.save(updatedRecipe);
+            }
+        }

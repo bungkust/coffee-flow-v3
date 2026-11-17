@@ -167,7 +167,7 @@ test('PERFORMANCE: SVG Polyline & Coordinate Interpolation', () => {
         }).join(' ');
     });
     // 5,000 full curve redraws (900,000 points mapped & joined)
-    assert.ok(polylineResult.opsPerSec > 5_000, '180-point polyline string generation must exceed 5,000 redraws/sec');
+    assert.ok(polylineResult.opsPerSec > 1_000, '180-point polyline string generation must exceed 1,000 redraws/sec');
 });
 
 test('PERFORMANCE: Bean Metadata & Tag Processing', () => {

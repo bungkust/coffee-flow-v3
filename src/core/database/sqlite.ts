@@ -9,7 +9,10 @@ class DatabaseService {
     private initPromise: Promise<void> | null = null;
 
     async initialize(): Promise<void> {
-        if (this.isInitialized) return;
+        if (this.isInitialized && this.db) {
+            const isDbOpen = (await this.db.isDBOpen().catch(() => ({ result: false }))).result;
+            if (isDbOpen) return;
+        }
         if (this.initPromise) return this.initPromise;
 
         this.initPromise = (async () => {
@@ -21,18 +24,32 @@ class DatabaseService {
                 if (platform === 'web') {
                     // Stencil jeep-sqlite component is injected in main.tsx BEFORE React begins.
                     // Just initialize the webstore mechanism here.
-                    await this.sqlite.initWebStore();
+                    await this.sqlite.initWebStore().catch(err => {
+                        console.warn('initWebStore warning:', err);
+                    });
                 }
 
-                this.db = await this.sqlite.createConnection(
-                    'coffee_flow_db',
-                    false,
-                    'no-encryption',
-                    1,
-                    false
-                );
+                // Check connection consistency and reuse existing connection if present
+                const ret = await this.sqlite.checkConnectionsConsistency().catch(() => ({ result: false }));
+                const isConn = (await this.sqlite.isConnection('coffee_flow_db', false).catch(() => ({ result: false }))).result;
 
-                await this.db.open();
+                if (ret.result && isConn) {
+                    this.db = await this.sqlite.retrieveConnection('coffee_flow_db', false);
+                } else {
+                    this.db = await this.sqlite.createConnection(
+                        'coffee_flow_db',
+                        false,
+                        'no-encryption',
+                        1,
+                        false
+                    );
+                }
+
+                const isDbOpen = (await this.db.isDBOpen().catch(() => ({ result: false }))).result;
+                if (!isDbOpen) {
+                    await this.db.open();
+                }
+
                 await this.runMigrations();
 
                 // Save to store immediately after initializing/migrating
@@ -42,7 +59,7 @@ class DatabaseService {
             } catch (error) {
                 console.error('Database initialization failed:', error);
                 this.initPromise = null; // allow retrying
-                throw new Error('Database initialization failed');
+                throw error;
             }
         })();
 
@@ -79,7 +96,16 @@ class DatabaseService {
                             if (exists) continue; // skip if column already exists
                         }
                     }
-                    await this.db.execute(trimmed);
+                    try {
+                        await this.db.execute(trimmed);
+                    } catch (stmtErr: unknown) {
+                        const errMsg = String((stmtErr as Error)?.message || stmtErr).toLowerCase();
+                        if (errMsg.includes('duplicate column') || errMsg.includes('already exists')) {
+                            console.warn(`Migration notice (already applied): ${trimmed}`);
+                            continue;
+                        }
+                        throw stmtErr;
+                    }
                 }
                 await this.db.execute(`PRAGMA user_version = ${migration.version}`);
             }

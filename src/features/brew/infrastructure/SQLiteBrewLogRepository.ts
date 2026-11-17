@@ -55,25 +55,29 @@ export class SQLiteBrewLogRepository {
 
     async save(log: BrewLog): Promise<void> {
         const now = new Date().toISOString();
-        await this.db.run(
-            `INSERT INTO brew_logs (id, recipe_id, bean_id, rating, notes, sweetness, acidity, body, bitterness, flavor_tags, brewed_at, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                log.id,
-                log.recipe_id,
-                log.bean_id ?? null,
-                log.rating ?? null,
-                log.notes ?? null,
-                log.sweetness ?? null,
-                log.acidity ?? null,
-                log.body ?? null,
-                log.bitterness ?? null,
-                log.flavor_tags ?? null,
-                log.brewed_at,
-                log.created_at || now
-            ]
-        );
-        await dbService.saveToLocalStore();
+        try {
+            await this.db.run(
+                `INSERT OR REPLACE INTO brew_logs (id, recipe_id, bean_id, rating, notes, sweetness, acidity, body, bitterness, flavor_tags, brewed_at, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    log.id,
+                    log.recipe_id,
+                    log.bean_id ?? null,
+                    log.rating ?? null,
+                    log.notes ?? null,
+                    log.sweetness ?? null,
+                    log.acidity ?? null,
+                    log.body ?? null,
+                    log.bitterness ?? null,
+                    log.flavor_tags ?? null,
+                    log.brewed_at,
+                    log.created_at || now
+                ]
+            );
+            await dbService.saveToLocalStore();
+        } catch (e) {
+            console.error('Failed to save brew_logs in SQLite:', e);
+        }
     }
 
     async update(id: EntityId, updates: BrewLogFeedback): Promise<void> {
@@ -84,13 +88,21 @@ export class SQLiteBrewLogRepository {
         const values: (string | number | null)[] = columns.map(column => updates[column] ?? null);
         values.push(id);
 
-        await this.db.run(`UPDATE brew_logs SET ${setClause} WHERE id = ?`, values);
-        await dbService.saveToLocalStore();
+        try {
+            await this.db.run(`UPDATE brew_logs SET ${setClause} WHERE id = ?`, values);
+            await dbService.saveToLocalStore();
+        } catch (e) {
+            console.error('Failed to update brew_logs in SQLite:', e);
+        }
     }
 
     async delete(id: EntityId): Promise<void> {
-        await this.db.run('DELETE FROM brew_logs WHERE id = ?', [id]);
-        await dbService.saveToLocalStore();
+        try {
+            await this.db.run('DELETE FROM brew_logs WHERE id = ?', [id]);
+            await dbService.saveToLocalStore();
+        } catch (e) {
+            console.error('Failed to delete from brew_logs in SQLite:', e);
+        }
     }
 
     async findByIdWithRecipe(id: EntityId): Promise<BrewLogWithRecipe | null> {
