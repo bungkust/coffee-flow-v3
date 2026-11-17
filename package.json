@@ -11,6 +11,9 @@
     "cap": "cap",
     "android": "cap run android",
     "cap:sync": "npm run build && cap sync",
+    "test": "node --test src/features/scale/protocol/timemoreProtocol.test.ts src/features/scale/domain/scaleModes.test.ts",
+    "test:perf": "node --test src/tests/performance.test.ts",
+    "test:all": "node --test src/features/scale/protocol/timemoreProtocol.test.ts src/features/scale/domain/scaleModes.test.ts src/tests/performance.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

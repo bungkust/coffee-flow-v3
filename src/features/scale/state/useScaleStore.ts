@@ -28,7 +28,6 @@ interface ScaleState {
     errorMessage: string | null;
     curveData: CurvePoint[];
 
-    // Actions
     startScan: () => Promise<void>;
     stopScan: () => Promise<void>;
     connectDevice: (device: ScaleDevice) => Promise<void>;
@@ -142,7 +141,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                     }
                 },
                 () => {
-                    // On disconnect callback
                     set({
                         connectionState: 'disconnected',
                         device: null,
@@ -152,14 +150,12 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                 }
             );
 
-            // Connected successfully
             set({
                 connectionState: 'connected',
                 device,
                 errorMessage: null,
             });
 
-            // Persist last paired device
             try {
                 localStorage.setItem(STORAGE_LAST_SCALE_ID, device.id);
                 localStorage.setItem(STORAGE_LAST_SCALE_NAME, device.name);
@@ -167,7 +163,6 @@ export const useScaleStore = create<ScaleState>((set, get) => ({
                 // Ignore storage error
             }
 
-            // Query initial battery status
             try {
                 await adapter.send(buildBatteryQueryCommand());
             } catch {

@@ -124,12 +124,10 @@ export const OnboardingPage = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState<'name' | 'equipment' | 'beans' | 'smart_import'>('name');
 
-    // Step 1 State
     const [name, setName] = useState('');
     const [brewingGoal, setBrewingGoal] = useState('Improve my skills');
     const [appUnit, setAppUnit] = useState<UnitSystem>('metric');
 
-    // Step 2 State
     const [selectedEquipment, setSelectedEquipment] = useState<string[]>(['v60']);
     const [allMethods, setAllMethods] = useState<(BrewingMethod & { image: string; category: string })[]>([]);
 
@@ -150,7 +148,6 @@ export const OnboardingPage = () => {
         loadMethods();
     }, []);
 
-    // Step 3 State
     const [beanName, setBeanName] = useState('');
     const [roastery, setRoastery] = useState('');
     const [beanQuantity, setBeanQuantity] = useState('');
@@ -191,7 +188,6 @@ export const OnboardingPage = () => {
         }
     };
 
-    // Step 4 State
     const [demoExtracted, setDemoExtracted] = useState(false);
     const [isExtracting, setIsExtracting] = useState(false);
 

@@ -153,10 +153,10 @@ export const parseBeanTags = (tags: string[]): { fields: BeanTagFields; preserve
     return { fields, preserved };
 };
 
-export const formatBeanTags = (fields: BeanTagFields): string[] =>
+export const formatBeanTags = (fields: Partial<BeanTagFields>): string[] =>
     TAG_FIELDS
-        .filter((field) => fields[FIELD_KEY[field]].trim())
-        .map((field) => `${field}:${fields[FIELD_KEY[field]].trim()}`);
+        .filter((field) => fields[FIELD_KEY[field]]?.trim())
+        .map((field) => `${field}:${fields[FIELD_KEY[field]]!.trim()}`);
 
 export interface BlendComponent {
     type: string;
